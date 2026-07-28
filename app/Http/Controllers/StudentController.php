@@ -165,69 +165,48 @@ class StudentController extends Controller
         $activeYear = AcademicYear::active();
         $suggestedMatricule = Student::generateMatricule();
 
-        // Pré-sélection classe si vient de la page classe
         $preSelectedClass = $request->filled('class_id')
-            ? ClassGroup::with('level.section', 'academicYear')
-                ->find($request->class_id)
+            ? ClassGroup::with('level.section', 'academicYear')->find($request->class_id)
             : null;
 
-        // Sections avec leurs cycles et classes
-        $sectionsJson = Section::with(['levels' => fn($q) =>
-            $q->orderBy('order_index')
-        ])->orderBy('id')->get()->map(function($s) {
-            return [
-                'id'     => $s->id,
-                'name'   => $s->name,
-                'levels' => $s->levels->map(fn($l) => [
-                    'id'    => $l->id,
-                    'name'  => $l->name,
-                    'cycle' => $l->cycle,
-                ])->values()->toArray(),
-            ];
-        })->values()->toArray();
+        $sectionsJson = Section::query()
+            ->orderBy('id')
+            ->get(['id', 'name'])
+            ->map(fn ($section) => ['id' => $section->id, 'name' => $section->name])
+            ->values()
+            ->toArray();
 
-        // Classes de l'année active avec stats et cycle
         $classesJson = [];
         if ($activeYear) {
             $classes = ClassGroup::where('academic_year_id', $activeYear->id)
                 ->with(['level.section'])
+                ->orderBy('name')
                 ->get();
 
-            foreach ($classes as $c) {
-                $cycle = $c->level?->cycle
-                    ?? (($c->level?->order_index ?? 0) <= 4 ? '1er' : '2nd');
-
+            foreach ($classes as $classGroup) {
                 $classesJson[] = [
-                    'id'            => $c->id,
-                    'full_name'     => $c->full_name,
-                    'level_id'      => $c->level_id,
-                    'level_name'    => $c->level?->name,
-                    'cycle'         => $cycle,
-                    'section_id'    => $c->level?->section_id,
-                    'section_code'  => $c->level?->section?->code,
-                    'section_name'  => $c->level?->section?->name,
-                    'max_students'  => $c->max_students,
-                    'students_count'=> $c->studentEnrollments()
-                                        ->where('status', 'active')
-                                        ->count(),
+                    'id' => $classGroup->id,
+                    'full_name' => $classGroup->full_name,
+                    'level_name' => $classGroup->level?->name,
+                    'section_id' => $classGroup->level?->section_id,
+                    'section_code' => $classGroup->level?->section?->code,
+                    'section_name' => $classGroup->level?->section?->name,
+                    'max_students' => $classGroup->max_students,
+                    'students_count' => $classGroup->studentEnrollments()->where('status', 'active')->count(),
                 ];
             }
         }
 
-        // Toutes les classes pour la liste "classe précédente" (de l'année passée)
         $allClasses = ClassGroup::with('level.section', 'academicYear')
-            ->whereHas('academicYear', fn($q) =>
-                $q->where('id', '!=', $activeYear?->id)
-            )
-            ->orderBy('name')->get();
+            ->whereHas('academicYear', fn ($query) => $query->where('id', '!=', $activeYear?->id))
+            ->orderBy('name')
+            ->get();
 
         return view('students.create', compact(
             'activeYear', 'suggestedMatricule', 'preSelectedClass',
             'sectionsJson', 'classesJson', 'allClasses'
         ));
     }
-
-    // ── ENREGISTREMENT ────────────────────────────────────────────────────
     public function store(StoreStudentRequest $request)
     {
         // Validation préalable des données critiques
@@ -520,18 +499,10 @@ class StudentController extends Controller
             )
             ->orderBy('name')->get();
 
-        $sectionsJson = Section::with(['levels' => fn ($q) =>
-            $q->orderBy('order_index')
-        ])->orderBy('id')->get()->map(function ($s) {
-            return [
-                'id'     => $s->id,
-                'name'   => $s->name,
-                'levels' => $s->levels->map(fn ($l) => [
-                    'id'   => $l->id,
-                    'name' => $l->name,
-                ])->values()->toArray(),
-            ];
-        })->values()->toArray();
+        $sectionsJson = Section::query()->orderBy('id')->get()->map(fn ($section) => [
+            'id' => $section->id,
+            'name' => $section->name,
+        ])->values()->toArray();
 
         $classesJson = [];
         $classes = ClassGroup::where('academic_year_id', $activeYear->id)
@@ -543,6 +514,7 @@ class StudentController extends Controller
                 'id'             => $c->id,
                 'full_name'      => $c->full_name,
                 'level_id'       => $c->level_id,
+                'level_order'    => $c->level?->order_index,
                 'section_id'     => $c->level?->section_id,
                 'max_students'   => $c->max_students,
                 'students_count' => $c->studentEnrollments()
@@ -553,8 +525,10 @@ class StudentController extends Controller
             ];
         }
 
+        $school = \App\Models\SchoolSetting::instance();
+
         return view('students.enroll', compact(
-            'student', 'activeYear', 'existingEnrollment', 'previousEnrollment',
+            'student', 'activeYear', 'existingEnrollment', 'previousEnrollment', 'school',
             'allClasses', 'sectionsJson', 'classesJson',
             'repeatClasses', 'promotionClasses'
         ));
@@ -587,22 +561,42 @@ class StudentController extends Controller
                 // ATTENTION: Limite de capacité RETIRÉE par choix du client (point 2 du feedback)
                 // $this->enrollments->assertClassHasCapacity($class);
 
-                $previousClassId = $request->previous_class_group_id;
+                $previousEnrollment = $this->enrollments
+                    ->previousEnrollmentForRenewal($student, $activeYear);
+                $previousClass = $previousEnrollment?->classGroup;
 
-                if (! $previousClassId) {
-                    $prev = $this->enrollments
-                        ->previousEnrollmentForRenewal($student, $activeYear);
-                    $previousClassId = $prev?->class_group_id;
+                if (! $previousClass) {
+                    throw new \InvalidArgumentException(
+                        'Aucune inscription précédente n’a été trouvée pour cet élève.'
+                    );
                 }
+
+                $class->loadMissing('level.section');
+                $previousClass->loadMissing('level.section');
+
+                $sameLevel = (int) $class->level_id === (int) $previousClass->level_id;
+                $sameSection = (int) $class->level?->section_id === (int) $previousClass->level?->section_id;
+                $isPromotion = $sameSection
+                    && (int) $class->level?->order_index > (int) $previousClass->level?->order_index;
+
+                if (! $sameLevel && ! $isPromotion) {
+                    throw new \InvalidArgumentException(
+                        'La classe choisie doit être le même niveau (redoublement) ou un niveau supérieur de la même section (promotion).'
+                    );
+                }
+
+                $isRepeating = $sameLevel;
+                $school = \App\Models\SchoolSetting::instance();
 
                 $enrollment = StudentEnrollment::create([
                     'student_id'              => $student->id,
                     'academic_year_id'        => $activeYear->id,
                     'class_group_id'          => $request->class_group_id,
                     'enrollment_date'         => $request->enrollment_date,
-                    'is_repeating'            => $request->boolean('is_repeating'),
-                    'previous_class_group_id' => $previousClassId,
-                    'origin_school'           => $request->origin_school,
+                    'is_repeating'            => $isRepeating,
+                    'previous_class_group_id' => $previousClass->id,
+                    'previous_class_label'    => $previousClass->full_name,
+                    'origin_school'           => $school->full_name,
                     'status'                  => StudentEnrollment::STATUS_ACTIVE,
                 ]);
 

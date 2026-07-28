@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mot de passe oublié — COPTAN</title>
+    <title>Mot de passe oublié — PERSEVERANCE</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>
         .bg-login { background-color: #2D7DD2; }
@@ -77,7 +77,7 @@
                         <input type="email"
                                name="email"
                                value="{{ old('email') }}"
-                               placeholder="nom@coptan.cm"
+                               placeholder="nom@perseverance.cm"
                                required autofocus
                                class="input-field w-full pl-10 pr-4 py-3 border
                                       border-gray-200 rounded-lg text-sm text-gray-700
@@ -123,7 +123,7 @@
     </div>
 
     <p class="mt-6 text-xs" style="color: rgba(255,255,255,0.6);">
-        COPTAN © {{ date('Y') }} • Tous droits réservés
+        PERSEVERANCE PLUS © 2026 • Tous droits réservés
     </p>
 
 </body>

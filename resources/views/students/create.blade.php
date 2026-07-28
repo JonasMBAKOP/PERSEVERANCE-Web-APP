@@ -156,7 +156,7 @@
                     {{-- Section --}}
                     <div>
                         <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Section <span class="text-red-500">*</span></label>
-                        <select x-model="selectedSection" @change="selectedCycle = ''; selectedClass = ''; previousClassLabel = ''"
+                        <select x-model="selectedSection" @change="selectedClass = ''; previousClassLabel = ''"
                                 class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-[#1A3A6B] focus:border-[#1A3A6B]">
                             <option value="">Sélectionner la section...</option>
                             <template x-for="sec in sections" :key="sec.id">
@@ -166,24 +166,13 @@
                         <span class="text-xs text-red-500 mt-1 block" x-text="errors.selectedSection"></span>
                     </div>
 
-                    {{-- Cycle --}}
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Cycle <span class="text-red-500">*</span></label>
-                        <select x-model="selectedCycle" @change="selectedClass = ''; previousClassLabel = ''" :disabled="!selectedSection"
-                                class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-[#1A3A6B] focus:border-[#1A3A6B] disabled:bg-gray-100 disabled:text-gray-400">
-                            <option value="">Sélectionner le cycle...</option>
-                            <option value="1er">1er Cycle</option>
-                            <option value="2nd">2nd Cycle</option>
-                        </select>
-                        <span class="text-xs text-red-500 mt-1 block" x-text="errors.selectedCycle"></span>
-                    </div>
 
-                    {{-- Classe (section + cycle) --}}
-                    <div class="sm:col-span-2">
+                    {{-- Classe (section) --}}
+                    <div>
                         <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Classe <span class="text-red-500">*</span></label>
                         <select name="class_group_id" x-model="selectedClass"
                                 @change="updatePreviousClassLabel()"
-                                :disabled="!selectedSection || !selectedCycle"
+                                :disabled="!selectedSection"
                                 class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-[#1A3A6B] focus:border-[#1A3A6B] disabled:bg-gray-100 disabled:text-gray-400">
                             <option value="">Sélectionner une classe...</option>
                             <template x-for="cls in filteredClasses" :key="cls.id">
@@ -506,10 +495,6 @@
                             <dt class="text-gray-400">Section :</dt>
                             <dd class="text-gray-800 font-semibold" x-text="getSectionName()"></dd>
 
-                            <dt class="text-gray-400">Cycle :</dt>
-                            <dd class="text-gray-800 font-semibold"
-                                x-text="selectedCycle ? (selectedCycle === '1er' ? '1er Cycle' : '2nd Cycle') : '—'"></dd>
-
                             <dt class="text-gray-400">Classe affectée :</dt>
                             <dd class="font-bold text-sm text-[#9c4005]" x-text="getClassName()"></dd>
 
@@ -635,7 +620,6 @@
             sections: _sectionsData,
             classes: _classesData,
             selectedSection: '{{ old('section_id', '') }}',
-            selectedCycle: '{{ old('cycle', '') }}',
             selectedClass: '{{ old('class_group_id', $preSelectedClass?->id ?? '') }}',
             enrollmentDate: '{{ old('enrollment_date', date('Y-m-d')) }}',
             situation: '{{ old('is_repeating') == 1 ? 'redoublant' : 'nouveau' }}',
@@ -662,7 +646,6 @@ $errorMap = [
     'place_of_birth' => 'placeOfBirth',
     'birth_certificate_number' => 'birthCertificateNumber',
     'section_id' => 'selectedSection',
-    'cycle' => 'selectedCycle',
     'class_group_id' => 'selectedClass',
     'previous_class_label' => 'previousClassLabel',
     'enrollment_date' => 'enrollmentDate',
@@ -681,17 +664,15 @@ foreach($errors->toArray() as $field => $messages) {
                     const foundClass = this.classes.find(c => String(c.id) === String(this.selectedClass));
                     if (foundClass) {
                         this.selectedSection = foundClass.section_id;
-                        this.selectedCycle = foundClass.cycle;
                     }
                 }
                 this.updatePreviousClassLabel();
             },
 
             get filteredClasses() {
-                if (!this.selectedSection || !this.selectedCycle) return [];
+                if (!this.selectedSection) return [];
                 return this.classes.filter(c =>
                     String(c.section_id) === String(this.selectedSection)
-                    && c.cycle === this.selectedCycle
                 );
             },
 
@@ -699,31 +680,27 @@ foreach($errors->toArray() as $field => $messages) {
                 if (!cls?.level_name) return '';
 
                 const level = cls.level_name;
-                const sectionCode = cls.section_code;
 
                 const defaults = {
-                    '6ème': 'CM2',
-                    '5ème': '6ème',
-                    '4ème': '5ème',
-                    '3ème': '4ème',
-                    '1ère Année': 'CM2',
-                    '2ème Année': '1ère Année',
-                    '3ème Année': '2ème Année',
-                    '4ème Année': '3ème Année',
-                    '1ère': '2nde',
-                    'Terminale': '1ère',
-                    'Form 1': 'Class 6',
-                    'Form 2': 'Form 1',
-                    'Form 3': 'Form 2',
-                    'Form 4': 'Form 3',
-                    'Form 5': 'Form 4',
-                    'Lower Sixth': 'Form 5',
-                    'Upper Sixth': 'Lower Sixth',
+                    'Petite Section': '',
+                    'Moyenne Section': 'Petite Section',
+                    'Grande Section': 'Moyenne Section',
+                    'SIL': 'Grande Section',
+                    'CP': 'SIL',
+                    'CE1': 'CP',
+                    'CE2': 'CE1',
+                    'CM1': 'CE2',
+                    'CM2': 'CM1',
+                    'Pre-Nursery': '',
+                    'Nursery 1': 'Pre-Nursery',
+                    'Nursery 2': 'Nursery 1',
+                    'Class 1': 'Nursery 2',
+                    'Class 2': 'Class 1',
+                    'Class 3': 'Class 2',
+                    'Class 4': 'Class 3',
+                    'Class 5': 'Class 4',
+                    'Class 6': 'Class 5',
                 };
-
-                if (level === '2nde') {
-                    return sectionCode === 'EST' ? '4ème Année' : '3ème';
-                }
 
                 return defaults[level] || '';
             },
@@ -758,7 +735,6 @@ foreach($errors->toArray() as $field => $messages) {
                 this.errors = {};
                 if (s === 1) {
                     if (!this.selectedSection) this.errors.selectedSection = "La section est requise.";
-                    if (!this.selectedCycle) this.errors.selectedCycle = "Le cycle est requis.";
                     if (!this.selectedClass) this.errors.selectedClass = "La classe est requise.";
                     if (!this.enrollmentDate) this.errors.enrollmentDate = "La date d'inscription est requise.";
                     if (!this.situation) this.errors.situation = "La situation est requise.";

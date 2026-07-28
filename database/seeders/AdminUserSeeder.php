@@ -14,8 +14,15 @@ class AdminUserSeeder extends Seeder
      */
     public function run(): void
     {
+        // $email = env('INITIAL_ADMIN_EMAIL');
+        // $password = env('INITIAL_ADMIN_PASSWORD');
+
+        // if (! $email || ! $password) {
+        //     throw new \RuntimeException('Definissez INITIAL_ADMIN_EMAIL et INITIAL_ADMIN_PASSWORD dans .env avant le seeding.');
+        // }
+
         $admin = User::firstOrCreate(
-            ['email' => 'admin@coptan.cm'],
+            ['email' => 'admin@perseverance.cm'],
             [
                 'name'      => 'Super Administrateur',
                 'password'  => Hash::make('mamounette3.0'),
@@ -27,7 +34,7 @@ class AdminUserSeeder extends Seeder
         $admin->assignRole('super-admin');
 
         $this->command->info('✅ Compte Super Admin créé.');
-        $this->command->info('   Email    : admin@coptan.cm');
+        $this->command->info('   Email    : admin@perseverance.cm');
         $this->command->info('   Password : mamounette3.0');
         $this->command->warn('   ⚠️  Changez ce mot de passe après la première connexion !');
     

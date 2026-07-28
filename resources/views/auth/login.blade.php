@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Connexion — COPTAN</title>
+    <title>Connexion — PERSEVERANCE</title>
     <link rel="icon" href="{{ asset('images/logo.jpg') }}" type="image/jpeg">
     <link rel="shortcut icon" href="{{ asset('images/logo.jpg') }}" type="image/jpeg">
     <link rel="apple-touch-icon" href="{{ asset('images/logo.jpg') }}">
@@ -64,7 +64,7 @@
             {{-- Titre --}}
             <div class="text-center mb-6">
                 <h1 class="text-xl uppercase font-bold" style="color: #1A3A6B;">
-                    Collège Polyvalent NTANKEU
+                    ECOLE PRIVEE LAÏC BILINGUE LA PERSEVERANCE PLUS
                 </h1>
                 <p class="text-sm text-gray-500 mt-1">
                     Plateforme de Gestion Scolaire
@@ -108,7 +108,7 @@
                         <input type="email"
                                name="email"
                                value="{{ old('email') }}"
-                               placeholder="nom@coptan.cm"
+                               placeholder="nom@perseverance.cm"
                                required
                                autofocus
                                class="input-field w-full pl-10 pr-4 py-3 border border-gray-200
@@ -213,7 +213,7 @@
 
     {{-- Copyright --}}
     <p class="mt-6 text-xs" style="color: white;">
-        COPTAN © {{ date('Y') }} • Tous droits réservés
+        PERSEVERANCE PLUS © 2026 • Tous droits réservés
     </p>
 
     {{-- Script toggle password --}}

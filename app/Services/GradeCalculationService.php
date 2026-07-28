@@ -70,41 +70,7 @@ class GradeCalculationService
             return null;
         }
 
-        $count = $sequences->count();
-        if ($count === 3) {
-            // Identifier le CC (label contient "CC")
-            $ccSeq = $sequences->first(fn($s) => str_contains(strtoupper($s->label), 'CC'));
-            if (!$ccSeq) {
-                $sorted = $sequences->sortBy('number')->values();
-                $ccSeq = $sorted[0];
-            }
-
-            $ccGrade = $grades->first(fn($g) => $g && $g->sequence_id === $ccSeq->id);
-            $dsGrades = $grades->filter(fn($g) => $g && $g->sequence_id !== $ccSeq->id)->values();
-
-            $ccVal = ($ccGrade && $ccGrade->grade !== null && !$ccGrade->is_absent) ? (float)$ccGrade->grade : null;
-            $ds1Val = (isset($dsGrades[0]) && $dsGrades[0]->grade !== null && !$dsGrades[0]->is_absent) ? (float)$dsGrades[0]->grade : null;
-            $ds2Val = (isset($dsGrades[1]) && $dsGrades[1]->grade !== null && !$dsGrades[1]->is_absent) ? (float)$dsGrades[1]->grade : null;
-
-            $weightSum = 0;
-            $pointsSum = 0;
-            if ($ccVal !== null) {
-                $weightSum += 0.20;
-                $pointsSum += $ccVal * 0.20;
-            }
-            if ($ds1Val !== null) {
-                $weightSum += 0.40;
-                $pointsSum += $ds1Val * 0.40;
-            }
-            if ($ds2Val !== null) {
-                $weightSum += 0.40;
-                $pointsSum += $ds2Val * 0.40;
-            }
-
-            return $weightSum > 0 ? round($pointsSum / $weightSum, 2) : null;
-        }
-
-        // Moyenne simple si 1 ou 2 évaluations
+        // Every trimester contains exactly two sequences. Their available grades have equal weight.
         $vals = $validGrades->pluck('grade')->map(fn($g) => (float)$g);
         return round($vals->avg(), 2);
     }

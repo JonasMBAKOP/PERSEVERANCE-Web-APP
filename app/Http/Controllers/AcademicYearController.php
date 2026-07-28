@@ -480,23 +480,7 @@ class AcademicYearController extends Controller
     // Copie les classes d'une année vers une autre
     private function defaultSequenceConfig(): array
     {
-        return [
-            1 => [
-                1 => 'CC1',
-                2 => 'DS1',
-                3 => 'DS2',
-            ],
-            2 => [
-                4 => 'CC2',
-                5 => 'DS3',
-                6 => 'DS4',
-            ],
-            3 => [
-                7 => 'CC3',
-                8 => 'DS5',
-                9 => 'DS6',
-            ],
-        ];
+        return AcademicYear::sequenceCalendar();
     }
 
     private function copyClassesFrom(
@@ -510,13 +494,9 @@ class AcademicYearController extends Controller
                                    ->get();
 
         foreach ($sourceClasses as $sourceClass) {
-            $series = trim((string) $sourceClass->series);
-            $subGroup = trim((string) $sourceClass->sub_group);
-            $name = $sourceClass->name ?: ClassGroup::composeName(
-                $sourceClass->level?->name ?? '',
-                $series,
-                $subGroup
-            );
+            $series = '';
+            $subGroup = '';
+            $name = ClassGroup::composeName($sourceClass->level?->name ?? '');
 
             $newClass = ClassGroup::updateOrCreate([
                 'academic_year_id' => $target->id,

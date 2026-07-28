@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#1A3A6B">
-    <title>@yield('title', 'COPTAN') — Gestion Scolaire</title>
+    <title>@yield('title', 'PERSEVERANCE PLUS') — Gestion Scolaire</title>
     <link rel="icon" href="{{ asset('images/logo.jpg') }}" type="image/jpeg">
     <link rel="shortcut icon" href="{{ asset('images/logo.jpg') }}" type="image/jpeg">
     <link rel="apple-touch-icon" href="{{ asset('images/logo.jpg') }}">
@@ -82,7 +82,7 @@
             {{-- Footer --}}
             <footer class="shrink-0 px-4 lg:px-6 py-3 border-t border-gray-200 bg-white">
                 <p class="text-xs text-gray-400 text-center">
-                    COPTAN © {{ date('Y') }} — Plateforme de Gestion Scolaire
+                    PERSEVERANCE PLUS © 2026 — Plateforme de Gestion Scolaire
                 </p>
             </footer>
             @stack('fixed_footer')

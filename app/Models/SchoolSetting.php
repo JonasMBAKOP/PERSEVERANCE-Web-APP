@@ -30,8 +30,8 @@ class SchoolSetting extends Model
     public static function instance(): static
     {
         return static::firstOrCreate([], [
-            'full_name'  => 'Collège Polyvalent NTANKEU',
-            'short_name' => 'COPTAN',
+            'full_name'  => 'LA PERSEVERANCE PLUS',
+            'short_name' => 'PERSEVERANCE PLUS',
         ]);
     }
 }

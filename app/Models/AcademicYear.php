@@ -9,6 +9,22 @@ class AcademicYear extends Model
 {
     use HasFactory;
 
+    public const TRIMESTERS_PER_YEAR = 3;
+
+    public const SEQUENCES_PER_TRIMESTER = 2;
+
+    public const SEQUENCES_PER_YEAR = self::TRIMESTERS_PER_YEAR * self::SEQUENCES_PER_TRIMESTER;
+    /** @return array<int, array<int, string>> */
+    public static function sequenceCalendar(): array
+    {
+        return [
+            1 => [1 => 'SEQ 1', 2 => 'SEQ 2'],
+            2 => [3 => 'SEQ 3', 4 => 'SEQ 4'],
+            3 => [5 => 'SEQ 5', 6 => 'SEQ 6'],
+        ];
+    }
+
+
     protected $fillable = [
         'label',
         'start_date',

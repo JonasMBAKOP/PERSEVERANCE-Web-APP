@@ -15,8 +15,8 @@ class SchoolSettingsSeeder extends Seeder
     {
         // Paramètres principaux de l'établissement
         DB::table('school_settings')->insertOrIgnore([
-            'full_name'   => 'Collège Polyvalent NTANKEU',
-            'short_name'  => 'COPTAN',
+            'full_name'   => 'ECOLE PRIVEE LAÏC BILINGUE LA PERSEVERANCE PLUS',
+            'short_name'  => 'PERSEVERANCE PLUS',
             'logo'        => null,
             'address'     => 'Douala, Cameroun',
             'postal_box'  => '11568 Douala-Cameroun',
@@ -24,9 +24,9 @@ class SchoolSettingsSeeder extends Seeder
             'region'      => 'Littoral',
             'email'       => null,
             'website'     => null,
-            'motto'       => 'Discipline - Travail - Honnêteté',
+            'motto'       => null,
             'order_type'  => 'Privé Laïc',
-            'ministry'    => 'Ministère des Enseignements Secondaires',
+            'ministry'    => 'Ministère de l\'Education de Base',
             'created_at'  => now(),
             'updated_at'  => now(),
         ]);

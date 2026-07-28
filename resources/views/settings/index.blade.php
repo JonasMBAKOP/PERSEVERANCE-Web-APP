@@ -2,7 +2,7 @@
 
 @section('title', 'Paramètres')
 @section('page-title', 'Paramètres de l\'établissement')
-@section('page-subtitle', 'Configuration de COPTAN')
+@section('page-subtitle', 'Configuration de LA PERSEVERANCE PLUS')
 
 @section('content')
 
@@ -252,7 +252,7 @@
                                 </label>
                                 <input type="email" name="email"
                                        value="{{ old('email', $settings->email) }}"
-                                       placeholder="Ex: contact@coptan.cm"
+                                       placeholder="Ex: contact@perseverance.cm"
                                        class="w-full px-3 py-2.5 border rounded-lg text-sm
                                               focus:outline-none
                                               @error('email') border-red-400 @else border-gray-200 @enderror">
@@ -267,7 +267,7 @@
                                 </label>
                                 <input type="url" name="website"
                                        value="{{ old('website', $settings->website) }}"
-                                       placeholder="Ex: https://www.coptan.cm"
+                                       placeholder="Ex: https://www.perseverance.cm"
                                        class="w-full px-3 py-2.5 border rounded-lg text-sm
                                               focus:outline-none
                                               @error('website') border-red-400 @else border-gray-200 @enderror">
@@ -366,7 +366,7 @@
                 <div class="flex items-center gap-6 mb-6 p-4 bg-gray-50 rounded-xl">
                     @if($settings->logo)
                         <img src="{{ asset('storage/' . $settings->logo) }}"
-                             alt="Logo COPTAN"
+                             alt="Logo PERSEVERANCE"
                              class="h-24 w-24 object-contain rounded-lg
                                     border border-gray-200 bg-white p-1">
                         <div>

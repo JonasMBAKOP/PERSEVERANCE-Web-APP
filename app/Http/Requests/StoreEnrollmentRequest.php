@@ -30,9 +30,6 @@ class StoreEnrollmentRequest extends FormRequest
             'academic_year_id'       => ['required', 'exists:academic_years,id'],
             'class_group_id'         => ['required', 'exists:class_groups,id'],
             'enrollment_date'        => ['required', 'date'],
-            'is_repeating'           => ['boolean'],
-            'previous_class_group_id'=> ['nullable', 'exists:class_groups,id'],
-            'origin_school'          => ['nullable', 'string', 'max:200'],
         ];
     }
 

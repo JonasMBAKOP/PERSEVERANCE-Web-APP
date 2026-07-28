@@ -14,7 +14,7 @@
     <div class="flex items-center gap-3 px-4 py-4
                 border-b border-white/10">
         <img src="{{ asset('images/logo.jpg') }}"
-             alt="COPTAN"
+             alt="PERSEVERANCE PLUS"
              class="w-10 h-10 flex-shrink-0">
         {{-- <img src="{{ asset('images/logo.jpg') }}"
              alt="COPTAN"
@@ -22,7 +22,7 @@
                     ring-2 ring-white/30 flex-shrink-0"> --}}
         <div class="overflow-hidden">
             <p class="text-white font-bold text-base leading-tight truncate">
-                COPTAN
+                GESPER
             </p>
             <p class="text-white/60 text-sm truncate">
                 Gestion Scolaire

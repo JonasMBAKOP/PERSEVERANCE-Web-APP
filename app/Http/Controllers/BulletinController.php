@@ -152,7 +152,7 @@ class BulletinController extends Controller
         if (preg_match('/DS\s*([1-5])/', $labelUpper, $matches)) {
             return "DEVOIR SURVEILLE " . $matches[1];
         }
-        if (preg_match('/SEQ(?:UENCE)?\s*([1-5])/', $labelUpper, $matches)) {
+        if (preg_match('/SEQ(?:UENCE)?\s*([1-6])/', $labelUpper, $matches)) {
             return "SEQUENCE " . $matches[1];
         }
         return $labelUpper;
@@ -575,7 +575,7 @@ class BulletinController extends Controller
         if (preg_match('/DS\s*([1-5])/', $labelUpper, $matches)) {
             return "SUPERVISED TEST " . $matches[1];
         }
-        if (preg_match('/SEQ(?:UENCE)?\s*([1-5])/', $labelUpper, $matches)) {
+        if (preg_match('/SEQ(?:UENCE)?\s*([1-6])/', $labelUpper, $matches)) {
             return "SEQUENCE " . $matches[1];
         }
         return $labelUpper;

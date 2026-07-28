@@ -52,7 +52,6 @@
                 </h3>
 
                 <div class="space-y-4">
-
                     {{-- Section --}}
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-1.5">
@@ -77,9 +76,7 @@
                                 class="w-full px-3 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 bg-white
                                        @error('level_id') border-red-400 @else border-gray-200 @enderror"
                                 style="color: #1A3A6B;">
-                            <option value="" x-text="selectedSection ? 'Sélectionner le niveau...' : 'Choisir une section d\'abord'">
-                                Choisir une section d'abord
-                            </option>
+                            <option value="" x-text="selectedSection ? 'Sélectionner le niveau...' : 'Choisir une section d\'abord'"></option>
                             <template x-for="level in filteredLevels" :key="level.id">
                                 <option :value="level.id" x-text="level.name"></option>
                             </template>
@@ -87,33 +84,7 @@
                         @error('level_id')
                         <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
                         @enderror
-                    </div>
-
-                    {{-- Série / Filière + Sous-groupe sur 2 colonnes --}}
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-sm font-semibold text-gray-700 mb-1.5">
-                                Série / Filière
-                                <span class="text-xs text-gray-400 font-normal">(optionnel)</span>
-                            </label>
-                            <input type="text" name="series" x-model="series" value="{{ old('series') }}"
-                                   placeholder="Ex: C, D, Sciences..."
-                                   class="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-100"
-                                   style="color: #1A3A6B;">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-semibold text-gray-700 mb-1.5">
-                                Sous-groupe
-                                <span class="text-xs text-gray-400 font-normal">(ex: A, B)</span>
-                            </label>
-                            <input type="text" name="sub_group" x-model="subGroup" value="{{ old('sub_group') }}"
-                                   placeholder="Ex: A, B, C" maxlength="10"
-                                   class="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-100"
-                                   style="color: #1A3A6B;">
-                        </div>
-                    </div>
-
-                    {{-- Titulaire de classe --}}
+                    </div>{{-- Titulaire de classe --}}
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-1.5">
                             <span class="flex items-center gap-1.5">
@@ -218,8 +189,6 @@ function classForm(sections, initialSection, initialLevel) {
         sections:        sections,
         selectedSection: initialSection || '',
         selectedLevel:   initialLevel   || '',
-        subGroup:        '{{ old('sub_group') }}',
-        series:          '{{ old('series') }}',
 
         get filteredLevels() {
             if (!this.selectedSection) return [];
@@ -241,7 +210,7 @@ function classForm(sections, initialSection, initialLevel) {
         get previewName() {
             let n = this.levelName;
             if (!n) return '';
-            return [n, this.series.trim(), this.subGroup.trim()].filter(Boolean).join(' ');
+            return n;
         }
     }
 }

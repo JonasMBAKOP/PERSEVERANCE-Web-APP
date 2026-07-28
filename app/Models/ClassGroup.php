@@ -70,23 +70,11 @@ class ClassGroup extends Model
 
     public static function composeName(string $levelName, ?string $series = null, ?string $subGroup = null): string
     {
-        return Str::squish(implode(' ', array_filter([
-            $levelName,
-            $series,
-            $subGroup,
-        ], fn ($part) => filled($part))));
+        return Str::squish($levelName);
     }
 
     public function getFullNameAttribute(): string
     {
-        if ($this->relationLoaded('level') && $this->level) {
-            return self::composeName(
-                $this->level->name,
-                $this->series,
-                $this->sub_group
-            );
-        }
-
         return $this->name;
     }
 

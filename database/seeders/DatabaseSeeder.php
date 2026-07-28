@@ -24,7 +24,7 @@ class DatabaseSeeder extends Seeder
 
         $this->call([
             RolesAndPermissionsSeeder::class,   // 1. Rôles et permissions
-            SchoolSettingsSeeder::class,         // 2. Paramètres COPTAN
+            SchoolSettingsSeeder::class,         // 2. Paramètres l'etablissement
             SectionsAndLevelsSeeder::class,      // 4. Sections et niveaux
             SubjectCategoriesSeeder::class,      // 5. Catégories de matières
             AppreciationScalesSeeder::class,     // 6. Barème CNA → CTBA

@@ -102,12 +102,13 @@
 
                 <div class="space-y-4">
                     @php
-                        $trimestres = [
-                            1 => ['label' => 'Trimestre 1', 'seqs' => [1 => 'CC1', 2 => 'DS1', 3 => 'DS2']],
-                            2 => ['label' => 'Trimestre 2', 'seqs' => [4 => 'CC2', 5 => 'DS3', 6 => 'DS4']],
-                            3 => ['label' => 'Trimestre 3', 'seqs' => [7 => 'CC3', 8 => 'DS5', 9 => 'DS6']],
-                        ];
-                    @endphp
+                        $trimestres = [];
+                        foreach (\App\Models\AcademicYear::sequenceCalendar() as $number => $sequences) {
+                            $trimestres[$number] = [
+                                'label' => 'Trimestre ' . $number,
+                                'seqs' => $sequences,
+                            ];
+                        }                    @endphp
 
                     @foreach($trimestres as $tNum => $trimestre)
                     <div class="border border-gray-100 rounded-xl overflow-hidden">
@@ -313,7 +314,7 @@
                             <path stroke-linecap="round" stroke-linejoin="round"
                                   stroke-width="2" d="M5 13l4 4L19 7"/>
                         </svg>
-                        9 évaluations créées automatiquement
+                        6 évaluations créées automatiquement
                     </div>
                     <div class="flex items-center gap-2 text-gray-500">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor"

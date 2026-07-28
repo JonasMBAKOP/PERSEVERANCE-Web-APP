@@ -49,9 +49,9 @@ RUN composer install --no-dev --optimize-autoloader --no-interaction -vvv
 # Permissions Laravel
 RUN chmod -R 775 storage bootstrap/cache
 
-EXPOSE 10000
+EXPOSE 8100
 
 # RUN php artisan cache:clear
 RUN php artisan config:clear || true
 
-CMD php artisan config:clear && php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=10000
+CMD php artisan config:clear && php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=8100

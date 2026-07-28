@@ -182,7 +182,7 @@
                     <h3 class="text-2xl font-bold text-gray-900">
                         Sélectionner la classe
                     </h3>
-                    <p class="text-sm text-gray-500 mt-1">Choisissez la section, le niveau et la classe</p>
+                    <p class="text-sm text-gray-500 mt-1">Choisissez la section puis la classe</p>
                 </div>
             </div>
 
@@ -209,7 +209,7 @@
                         Section <span class="text-red-500">*</span>
                     </label>
                     <select x-model="selectedSection"
-                            @change="selectedLevel = ''; selectedClass = ''"
+                            @change="selectedClass = ''"
                             class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl 
                                    text-sm font-medium focus:outline-none focus:border-blue-500
                                    bg-white transition-colors">
@@ -222,23 +222,6 @@
                     </select>
                 </div>
 
-                {{-- Niveau --}}
-                <div>
-                    <label class="block text-sm font-bold text-gray-700 mb-2.5">
-                        Niveau <span class="text-red-500">*</span>
-                    </label>
-                    <select x-model="selectedLevel"
-                            @change="selectedClass = ''"
-                            class="w-full px-4 py-3 border-2 rounded-xl 
-                                   text-sm font-medium focus:outline-none transition-colors bg-white"
-                            :class="!selectedSection ? 'border-gray-200 opacity-50 cursor-not-allowed' : 'border-gray-300 focus:border-blue-500'"
-                            :disabled="!selectedSection">
-                        <option value="">Sélectionner...</option>
-                        <template x-for="level in filteredLevels" :key="level.id">
-                            <option :value="level.id" x-text="level.name"></option>
-                        </template>
-                    </select>
-                </div>
             </div>
 
             {{-- Classe (full width) --}}
@@ -250,8 +233,8 @@
                         x-model="selectedClass"
                         class="w-full px-4 py-3 border-2 rounded-xl text-sm font-medium 
                                focus:outline-none transition-colors bg-white"
-                        :class="!selectedLevel ? 'border-gray-200 opacity-50 cursor-not-allowed' : 'border-gray-300 focus:border-blue-500 @error(\"class_group_id\") border-red-500 @enderror'"
-                        :disabled="!selectedLevel">
+                        :class="!selectedSection ? 'border-gray-200 opacity-50 cursor-not-allowed' : 'border-gray-300 focus:border-blue-500 @error(\"class_group_id\") border-red-500 @enderror'"
+                        :disabled="!selectedSection">
                     <option value="">Sélectionner une classe...</option>
                     <template x-for="cls in filteredClasses" :key="cls.id">
                         <option :value="cls.id"
@@ -287,88 +270,30 @@
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {{-- Date d'inscription --}}
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                    <label class="block text-sm font-bold text-gray-700 mb-2.5">
-                        Date d'inscription <span class="text-red-500">*</span>
-                    </label>
-                    <input type="date" name="enrollment_date"
-                           value="{{ old('enrollment_date', date('Y-m-d')) }}"
-                           class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl 
-                                  text-sm font-medium focus:outline-none focus:border-blue-500
-                                  @error('enrollment_date') border-red-500 @enderror">
+                    <label class="block text-sm font-bold text-gray-700 mb-2.5">Date d'inscription <span class="text-red-500">*</span></label>
+                    <input type="date" name="enrollment_date" value="{{ old('enrollment_date', date('Y-m-d')) }}"
+                           class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl text-sm font-medium focus:outline-none focus:border-blue-500 @error('enrollment_date') border-red-500 @enderror">
                     @error('enrollment_date')
                     <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
-
-                {{-- Situation --}}
                 <div>
-                    <label class="block text-sm font-bold text-gray-700 mb-3">
-                        Situation scolaire <span class="text-red-500">*</span>
-                    </label>
-                    <div class="flex gap-3">
-                        <label class="flex-1 relative">
-                            <input type="radio" name="is_repeating" value="0"
-                                   {{ old('is_repeating', '0') === '0' ? 'checked' : '' }}
-                                   class="sr-only peer">
-                            <div class="p-3.5 border-2 border-gray-300 rounded-xl cursor-pointer 
-                                        text-center font-semibold text-sm text-gray-700
-                                        peer-checked:border-blue-500 peer-checked:bg-blue-50
-                                        transition-all">
-                                <svg class="inline h-4 w-4 mr-1 align-[-2px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>Nouveau / Promu(e)
-                            </div>
-                        </label>
-                        <label class="flex-1 relative">
-                            <input type="radio" name="is_repeating" value="1"
-                                   {{ old('is_repeating') === '1' ? 'checked' : '' }}
-                                   class="sr-only peer">
-                            <div class="p-3.5 border-2 border-gray-300 rounded-xl cursor-pointer
-                                        text-center font-semibold text-sm text-gray-700
-                                        peer-checked:border-amber-500 peer-checked:bg-amber-50
-                                        transition-all">
-                                Redoublant(e)
-                            </div>
-                        </label>
-                    </div>
+                    <p class="block text-sm font-bold text-gray-700 mb-2.5">Situation scolaire</p>
+                    <div class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-sm font-semibold bg-gray-50 text-gray-700"
+                         x-text="renewalSituation""></div>
                 </div>
-
-                {{-- École d'origine --}}
                 <div>
-                    <label class="block text-sm font-bold text-gray-700 mb-2.5">
-                        École d'origine
-                        <span class="text-xs font-normal text-gray-500">(si venant d'ailleurs)</span>
-                    </label>
-                    <input type="text" name="origin_school"
-                           value="{{ old('origin_school') }}"
-                           placeholder="Nom de l'école précédente"
-                           class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl 
-                                  text-sm font-medium focus:outline-none focus:border-blue-500">
+                    <p class="block text-sm font-bold text-gray-700 mb-2.5">École d'origine</p>
+                    <div class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-sm font-semibold bg-gray-50 text-gray-700">{{ $school->full_name }}</div>
                 </div>
-
-                {{-- Classe précédente --}}
                 <div>
-                    <label class="block text-sm font-bold text-gray-700 mb-2.5">
-                        Classe précédente
-                        <span class="text-xs font-normal text-gray-500">(si redoublant)</span>
-                    </label>
-                    <select name="previous_class_group_id"
-                            class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl
-                                   text-sm font-medium focus:outline-none focus:border-blue-500 bg-white">
-                        <option value="">Aucune / Inconnue</option>
-                        @foreach($allClasses as $cls)
-                        <option value="{{ $cls->id }}"
-                            {{ old('previous_class_group_id', $previousEnrollment?->class_group_id) == $cls->id ? 'selected' : '' }}>
-                            {{ $cls->full_name }} ({{ $cls->academicYear->label }})
-                        </option>
-                        @endforeach
-                    </select>
+                    <p class="block text-sm font-bold text-gray-700 mb-2.5">Classe précédente</p>
+                    <div class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-sm font-semibold bg-gray-50 text-gray-700">{{ $previousEnrollment?->classGroup?->full_name ?? 'Non renseignée' }}</div>
                 </div>
             </div>
         </div>
-
-        {{-- ═══════════════════════════════════════════════════════════════ --}}
         {{-- ACTIONS --}}
         {{-- ═══════════════════════════════════════════════════════════════ --}}
 
@@ -401,25 +326,36 @@
 
     function enrollForm() {
         return {
-            sections:        _sectionsData,
-            selectedYear:    '{{ $activeYear?->id }}',
+            sections: _sectionsData,
+            selectedYear: '{{ $activeYear?->id }}',
             selectedSection: '',
-            selectedLevel:   '',
-            selectedClass:   '',
-            allClasses:      _classesData,
-
-            get filteredLevels() {
-                if (!this.selectedSection) return [];
-                const s = this.sections.find(
-                    s => String(s.id) === String(this.selectedSection)
-                );
-                return s ? s.levels : [];
+            selectedClass: '',
+            allClasses: _classesData,
+            previousClass: {
+                levelId: {{ $previousEnrollment?->classGroup?->level_id ?? 'null' }},
+                sectionId: {{ $previousEnrollment?->classGroup?->level?->section_id ?? 'null' }},
+                levelOrder: {{ $previousEnrollment?->classGroup?->level?->order_index ?? 'null' }},
             },
 
+            get renewalSituation() {
+                if (!this.selectedClass) return 'Sélectionnez une classe';
+
+                const selected = this.allClasses.find(
+                    classGroup => String(classGroup.id) === String(this.selectedClass)
+                );
+                if (!selected || !this.previousClass.levelId) return 'Classe non admissible';
+                if (String(selected.level_id) === String(this.previousClass.levelId)) return 'Redoublant(e)';
+                if (String(selected.section_id) === String(this.previousClass.sectionId)
+                    && Number(selected.level_order) > Number(this.previousClass.levelOrder)) {
+                    return 'Promu(e)';
+                }
+
+                return 'Classe non admissible';
+            },
             get filteredClasses() {
-                if (!this.selectedLevel) return [];
+                if (!this.selectedSection) return [];
                 return this.allClasses.filter(
-                    c => String(c.level_id) === String(this.selectedLevel)
+                    classGroup => String(classGroup.section_id) === String(this.selectedSection)
                 );
             }
         }

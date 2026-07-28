@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nouveau mot de passe — COPTAN</title>
+    <title>Nouveau mot de passe — PERSEVERANCE</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>
         .bg-login { background-color: #2D7DD2; }
@@ -195,7 +195,7 @@
     </div>
 
     <p class="mt-6 text-xs" style="color: rgba(255,255,255,0.6);">
-        COPTAN © {{ date('Y') }} • Tous droits réservés
+        PERSEVERANCE PLUS © 2026 • Tous droits réservés
     </p>
 
     <script>
