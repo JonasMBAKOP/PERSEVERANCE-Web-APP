@@ -19,7 +19,8 @@
 <div class="max-w-5xl"
      x-data="classForm({{ json_encode($sections) }},
                         '{{ $selectedSectionId }}',
-                        '{{ $selectedLevelId }}')">
+                        '{{ $selectedLevelId }}',
+                        {{ json_encode(old('sub_group', '')) }})">
 
     {{-- Titre --}}
     {{-- <div class="mb-6">
@@ -67,6 +68,7 @@
                         </select>
                     </div>
 
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {{-- Niveau --}}
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-1.5">
@@ -84,7 +86,19 @@
                         @error('level_id')
                         <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
                         @enderror
-                    </div>{{-- Titulaire de classe --}}
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1.5">Sous-groupe <span class="text-gray-400 font-normal">(optionnel)</span></label>
+                        <input type="text" name="sub_group" x-model="subGroup" maxlength="50" placeholder="Ex. Spécial"
+                               class="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-100"
+                               style="color: #1A3A6B;">
+                        @error('sub_group')
+                        <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
+                        @enderror
+                    </div>                    </div>
+
+                    {{-- Titulaire de classe --}}
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-1.5">
                             <span class="flex items-center gap-1.5">
@@ -184,11 +198,12 @@
 </div>
 
 <script>
-function classForm(sections, initialSection, initialLevel) {
+function classForm(sections, initialSection, initialLevel, initialSubGroup) {
     return {
         sections:        sections,
         selectedSection: initialSection || '',
         selectedLevel:   initialLevel   || '',
+        subGroup:        initialSubGroup || '',
 
         get filteredLevels() {
             if (!this.selectedSection) return [];
@@ -210,7 +225,7 @@ function classForm(sections, initialSection, initialLevel) {
         get previewName() {
             let n = this.levelName;
             if (!n) return '';
-            return n;
+            return [n, this.subGroup.trim()].filter(Boolean).join(' ');
         }
     }
 }

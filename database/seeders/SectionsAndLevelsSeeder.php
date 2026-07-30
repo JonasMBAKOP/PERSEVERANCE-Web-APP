@@ -15,7 +15,7 @@ class SectionsAndLevelsSeeder extends Seeder
                 'name' => 'Francophone',
                 'code' => 'FR',
                 'language' => 'fr',
-                'levels' => ['Petite Section', 'Moyenne Section', 'Grande Section', 'SIL', 'CP', 'CE1', 'CE2', 'CM1', 'CM2'],
+                'levels' => ['Garderie', 'Pré-Maternelle', 'Petite Section', 'Moyenne Section', 'Grande Section', 'SIL', 'CP', 'CE1', 'CE2', 'CM1', 'CM2'],
             ],
             [
                 'name' => 'Anglophone',

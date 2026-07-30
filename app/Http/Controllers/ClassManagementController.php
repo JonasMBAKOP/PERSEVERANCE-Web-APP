@@ -162,16 +162,17 @@ class ClassManagementController extends Controller
     // ── ENREGISTREMENT ────────────────────────────────────────────────────
     public function store(StoreClassGroupRequest $request)
     {
-        // Verifier unicite annee + niveau + serie + sous-groupe.
+        // Verifier l'unicite annee + niveau + sous-groupe.
         $data = $request->validated();
         $level = Level::findOrFail($data['level_id']);
         $data['series'] = '';
-        $data['sub_group'] = '';
-        $data['name'] = ClassGroup::composeName($level->name);
+        $data['sub_group'] = $this->normalizeOptionalClassPart($data['sub_group'] ?? null);
+        $data['name'] = ClassGroup::composeName($level->name, null, $data['sub_group']);
 
         $exists = $this->classCombinationExists(
             (int) $data['academic_year_id'],
-            (int) $data['level_id']
+            (int) $data['level_id'],
+            $data['sub_group']
         );
 
         if ($exists) {
@@ -432,16 +433,17 @@ class ClassManagementController extends Controller
                 'Année clôturée — modification impossible.');
         }
 
-        // Verifier unicite annee + niveau + serie + sous-groupe.
+        // Verifier l'unicite annee + niveau + sous-groupe.
         $data = $request->validated();
         $level = Level::findOrFail($data['level_id']);
         $data['series'] = '';
-        $data['sub_group'] = '';
-        $data['name'] = ClassGroup::composeName($level->name);
+        $data['sub_group'] = $this->normalizeOptionalClassPart($data['sub_group'] ?? null);
+        $data['name'] = ClassGroup::composeName($level->name, null, $data['sub_group']);
 
         $exists = $this->classCombinationExists(
             (int) $classGroup->academic_year_id,
             (int) $data['level_id'],
+            $data['sub_group'],
             $classGroup->id
         );
 
@@ -563,10 +565,12 @@ class ClassManagementController extends Controller
     private function classCombinationExists(
         int $academicYearId,
         int $levelId,
+        string $subGroup,
         ?int $exceptId = null
     ): bool {
         return ClassGroup::where('academic_year_id', $academicYearId)
             ->where('level_id', $levelId)
+            ->where('sub_group', $subGroup)
             ->when($exceptId, fn ($query) => $query->where('id', '!=', $exceptId))
             ->exists();
     }

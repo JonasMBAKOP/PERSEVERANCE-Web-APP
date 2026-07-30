@@ -70,7 +70,10 @@ class ClassGroup extends Model
 
     public static function composeName(string $levelName, ?string $series = null, ?string $subGroup = null): string
     {
-        return Str::squish($levelName);
+        return Str::squish(implode(' ', array_filter([
+            $levelName,
+            $subGroup,
+        ], fn (?string $part) => filled($part))));
     }
 
     public function getFullNameAttribute(): string

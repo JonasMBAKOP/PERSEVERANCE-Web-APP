@@ -257,6 +257,11 @@
                 label="Bourses"
                 href="{{ route('finances.scholarships') }}"
                 :active="request()->routeIs('finances.scholarships*')" />
+            <x-sidebar-item
+                icon="x-circle"
+                label="Élèves insolvables"
+                href="{{ route('finances.insolvables') }}"
+                :active="request()->routeIs('finances.insolvables*')" />
 
             @can('configure-fees')
             <x-sidebar-item

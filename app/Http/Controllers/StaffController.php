@@ -7,7 +7,7 @@ use App\Http\Requests\UpdateStaffRequest;
 use App\Models\AcademicYear;
 use App\Models\AuditLog;
 use App\Models\Staff;
-use App\Models\StaffPaySlip;
+use App\Models\SchoolSetting;use App\Models\StaffPaySlip;
 use App\Models\TeacherAssignment;
 use App\Models\TimetableSetting;
 use App\Models\TimetableSlot;
@@ -288,6 +288,40 @@ class StaffController extends Controller
             'staff', 'activeYear', 'currentAssignments',
             'scheduleSlots', 'gridRows', 'scheduleTeacherSubjectCount', 'scheduleTotalHours'
         ));
+    }
+
+    public function printList(Request $request)
+    {
+        $query = Staff::with(['positions']);
+
+        if ($request->filled('search')) {
+            $query->where(fn ($q) => $q
+                ->where('first_name', 'like', "%{$request->search}%")
+                ->orWhere('last_name', 'like', "%{$request->search}%")
+                ->orWhere('email', 'like', "%{$request->search}%")
+                ->orWhere('phone', 'like', "%{$request->search}%")
+            );
+        }
+        if ($request->filled('position')) {
+            $query->whereHas('positions', fn ($q) => $q->where('position', $request->position));
+        }
+        if ($request->filled('subject_id')) {
+            $query->whereHas('teacherAssignments.classSubject', fn ($q) => $q->where('subject_id', $request->subject_id));
+        }
+        if ($request->filled('status')) {
+            $query->where('is_active', $request->status === 'active');
+        }
+        if ($request->filled('contract')) {
+            $query->where('contract_type', $request->contract);
+        }
+
+        return view('staff.print-list', [
+            'staff' => $query->orderBy('last_name')->orderBy('first_name')->get(),
+            'school' => SchoolSetting::instance(),
+            'academicYear' => AcademicYear::active(),
+            'phones' => collect(),
+            'agreements' => collect(),
+        ]);
     }
 
     // ── SALAIRES DU PERSONNEL ───────────────────────────────────────────────

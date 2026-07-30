@@ -384,8 +384,7 @@ Route::middleware(['auth', 'permission:view-staff'])
     ->name('staff.')
     ->group(function () {
         Route::get('/', [StaffController::class, 'index'])->name('index');
-
-        Route::middleware('permission:manage-staff')->group(function () {
+        Route::get('/print', [StaffController::class, 'printList'])->name('print');Route::middleware('permission:manage-staff')->group(function () {
             // Routes spécifiques AVANT les wildcards
             Route::get('/create', [StaffController::class, 'create'])->name('create');
             Route::post('/', [StaffController::class, 'store'])->name('store');
@@ -519,6 +518,10 @@ Route::middleware(['auth', 'permission:view-finances'])
             ->name('reports');
         Route::get('/reports/export', [FinanceController::class, 'exportReport'])
             ->name('reports.export');
+        Route::get('/insolvables', [FinanceController::class, 'insolvables'])
+            ->name('insolvables');
+        Route::get('/insolvables/print', [FinanceController::class, 'printInsolvables'])
+            ->name('insolvables.print');
 
         Route::middleware('role:directeur,super-admin')->group(function () {
             Route::get('/global', [FinanceController::class, 'global'])

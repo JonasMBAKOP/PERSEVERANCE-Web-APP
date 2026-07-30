@@ -18,11 +18,19 @@ class UpdateClassGroupRequest extends FormRequest
     {
         return [
             'level_id'         => ['required', 'exists:levels,id'],
+            'sub_group'        => ['nullable', 'string', 'max:50'],
             'name'             => ['sometimes', 'string', 'max:50'],
             'max_students'     => ['required', 'integer', 'min:1', 'max:200'],
             'titular_staff_id' => ['nullable', 'exists:staff,id'],
             'room'             => ['nullable', 'string', 'max:50'],
         ];
+    }
+
+    protected function prepareForValidation(): void
+    {
+        $this->merge([
+            'sub_group' => trim((string) $this->input('sub_group')),
+        ]);
     }
 
     public function messages(): array

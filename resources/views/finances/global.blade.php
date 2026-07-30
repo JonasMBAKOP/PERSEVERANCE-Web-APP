@@ -284,9 +284,12 @@
                 <h3 class="text-sm font-black" style="color:#1A3A6B;">Élèves avec impayés</h3>
                 <p class="text-xs text-gray-400">Top 10 des soldes restants les plus élevés</p>
             </div>
-            <span class="inline-flex items-center rounded-full bg-red-50 px-3 py-1 text-xs font-bold text-red-600">
-                {{ $debtors->count() }} débiteur(s)
-            </span>
+            <a href="{{ route('finances.insolvables', ['year_id' => $selectedYear?->id]) }}"
+               class="inline-flex items-center gap-2 rounded-lg border border-red-100 bg-white px-3 py-2 text-xs font-bold text-red-600 transition hover:border-red-200 hover:bg-red-50">
+                <span>{{ $debtors->count() }} débiteur(s)</span>
+                <span>Voir la liste</span>
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+            </a>
         </div>
         <div class="overflow-x-auto">
             <table class="w-full min-w-[860px] text-left">
@@ -312,7 +315,7 @@
                             <td class="px-4 py-4 text-right font-bold text-green-600">{{ number_format($d['paid']) }} FCFA</td>
                             <td class="px-4 py-4 text-right font-bold text-red-600">{{ number_format($d['remaining']) }} FCFA</td>
                             <td class="px-5 py-4 text-center no-print">
-                                <a href="{{ route('finances.student.receipt', $d['enrollment']) }}"
+                                <a href="{{ route('finances.student', $d['enrollment']) }}"
                                    class="inline-flex items-center justify-center rounded-lg border border-gray-200 bg-white px-3 py-2 text-[11px] font-bold transition hover:border-[#1A3A6B]/30 hover:bg-blue-50"
                                    style="color:#1A3A6B;">Voir dossier</a>
                             </td>

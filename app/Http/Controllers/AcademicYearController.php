@@ -495,8 +495,8 @@ class AcademicYearController extends Controller
 
         foreach ($sourceClasses as $sourceClass) {
             $series = '';
-            $subGroup = '';
-            $name = ClassGroup::composeName($sourceClass->level?->name ?? '');
+            $subGroup = trim((string) $sourceClass->sub_group);
+            $name = ClassGroup::composeName($sourceClass->level?->name ?? '', null, $subGroup);
 
             $newClass = ClassGroup::updateOrCreate([
                 'academic_year_id' => $target->id,

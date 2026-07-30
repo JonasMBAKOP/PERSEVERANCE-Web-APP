@@ -204,7 +204,9 @@
                         <th class="px-4 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Photo</th>
                         <th class="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Nom & Prénom</th>
                         <th class="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Matricule</th>
+                        @unless(!empty($renewalFilter))
                         <th class="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Inscrit(e) le</th>
+                        @endunless
                         <th class="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Classe</th>
                         <th class="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Section</th>
                         <th class="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Statut</th>
@@ -271,9 +273,11 @@
                                 {{ $student->matricule }}
                             </span>
                         </td>
+                        @unless(!empty($renewalFilter))
                         <td class="px-6 py-4 text-sm text-gray-700">
                             {{ $enrollment?->enrollment_date?->format('d/m/Y') ?? '—' }}
                         </td>
+                        @endunless
                         <td class="px-6 py-4 text-sm text-gray-700 font-medium">
                             @if($enrollment?->classGroup)
                             {{ $enrollment->classGroup->name }}

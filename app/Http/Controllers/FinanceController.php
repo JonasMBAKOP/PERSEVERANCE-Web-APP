@@ -1519,6 +1519,139 @@ class FinanceController extends Controller
             default => 'Annee scolaire ' . ($filters['selectedYear']?->label ?? '-'),
         };
     }
+    public function insolvables(Request $request)
+    {
+        return view('finances.insolvables', $this->insolvencyContext($request, true));
+    }
+
+    public function printInsolvables(Request $request)
+    {
+        $context = $this->insolvencyContext($request);
+        $context['school'] = \App\Models\SchoolSetting::instance();
+        $context['phones'] = \App\Models\SchoolPhone::orderBy('id')->get();
+        $context['agreements'] = \App\Models\SchoolAgreement::orderBy('id')->get();
+
+        return view('finances.insolvables-print', $context);
+    }
+
+    private function insolvencyContext(Request $request, bool $paginate = false): array
+    {
+        $activeYear = AcademicYear::active();
+        $selectedYear = $request->filled('year_id')
+            ? AcademicYear::find($request->integer('year_id'))
+            : $activeYear;
+        $selectedSectionId = $request->filled('section_id') ? $request->integer('section_id') : null;
+        $selectedClassId = $request->filled('class_id') ? $request->integer('class_id') : null;
+        $selectedInstallmentLabel = $request->filled('installment_label')
+            ? trim((string) $request->input('installment_label'))
+            : null;
+
+        $years = AcademicYear::orderByDesc('start_date')->get();
+        $sections = Section::orderBy('name')->get();
+        $classes = ClassGroup::query()
+            ->when($selectedYear, fn ($query) => $query->where('academic_year_id', $selectedYear->id))
+            ->when($selectedSectionId, fn ($query) => $query->whereHas('level', fn ($level) =>
+                $level->where('section_id', $selectedSectionId)
+            ))
+            ->with(['level.section', 'feeStructures.installments'])
+            ->orderBy('name')
+            ->get();
+
+        if ($selectedClassId && ! $classes->contains('id', $selectedClassId)) {
+            $selectedClassId = null;
+        }
+
+        $installmentLabels = $classes
+            ->flatMap(fn ($class) => $class->feeStructures->flatMap(fn ($structure) => $structure->installments))
+            ->pluck('label')->filter()->unique()->sort()->values();
+
+        if ($selectedInstallmentLabel && ! $installmentLabels->contains($selectedInstallmentLabel)) {
+            $selectedInstallmentLabel = null;
+        }
+
+        $installmentLabel = $selectedInstallmentLabel ?: 'Toutes les tranches';
+        $rows = $this->buildInsolvencyRows($selectedYear, $selectedSectionId, $selectedClassId, $selectedInstallmentLabel);
+        $summary = [
+            'count' => $rows->count(),
+            'due' => $rows->sum('total_due'),
+            'paid' => $rows->sum('total_paid'),
+            'remaining' => $rows->sum('remaining'),
+            'unpaid_count' => $rows->where('status', 'unpaid')->count(),
+        ];
+
+        if ($paginate) {
+            $rows = $this->paginateInsolvencyRows($rows, $request);
+        }
+
+        return compact('selectedYear', 'selectedSectionId', 'selectedClassId', 'years', 'sections', 'classes', 'installmentLabels', 'selectedInstallmentLabel', 'installmentLabel', 'paginate', 'rows', 'summary');
+    }
+
+    private function paginateInsolvencyRows($rows, Request $request)
+    {
+        $perPage = 30;
+        $page = max(1, $request->integer('page', 1));
+
+        return new \Illuminate\Pagination\LengthAwarePaginator(
+            $rows->forPage($page, $perPage)->values(),
+            $rows->count(),
+            $perPage,
+            $page,
+            ['path' => $request->url(), 'query' => $request->query()]
+        );
+    }
+
+    private function buildInsolvencyRows(?AcademicYear $selectedYear, ?int $sectionId = null, ?int $classId = null, ?string $installmentLabel = null)
+    {
+        if (! $selectedYear) {
+            return collect();
+        }
+
+        $enrollments = StudentEnrollment::query()
+            ->where('status', 'active')
+            ->where('academic_year_id', $selectedYear->id)
+            ->when($sectionId, fn ($query) => $query->whereHas('classGroup.level', fn ($level) => $level->where('section_id', $sectionId)))
+            ->when($classId, fn ($query) => $query->where('class_group_id', $classId))
+            ->with(['student', 'classGroup.level.section', 'classGroup.feeStructures.installments'])
+            ->get();
+
+        if ($enrollments->isEmpty()) {
+            return collect();
+        }
+
+        $enrollmentIds = $enrollments->pluck('id');
+        $paymentsByEnrollment = StudentPayment::query()->whereIn('student_enrollment_id', $enrollmentIds)->get()->groupBy('student_enrollment_id');
+        $visiblePayments = StudentPayment::visible()->whereIn('student_enrollment_id', $enrollmentIds)->get()->groupBy('student_enrollment_id');
+
+        return $enrollments->map(function (StudentEnrollment $enrollment) use ($paymentsByEnrollment, $visiblePayments, $installmentLabel) {
+            $installments = $enrollment->classGroup?->feeStructures->first()?->installments->sortBy('installment_number') ?? collect();
+            $paymentsByInstallment = $paymentsByEnrollment->get($enrollment->id, collect())
+                ->filter(fn ($payment) => ! is_null($payment->fee_installment_id))
+                ->groupBy('fee_installment_id');
+            $scopedInstallments = $installmentLabel ? $installments->where('label', $installmentLabel) : $installments;
+            $totalDue = (int) $scopedInstallments->sum('amount');
+            $totalPaid = $installmentLabel
+                ? (int) $scopedInstallments->sum(fn ($installment) => $paymentsByInstallment->get($installment->id, collect())->sum(fn ($payment) => (int) $payment->amount_paid + (int) $payment->scholarship_amount))
+                : (int) $visiblePayments->get($enrollment->id, collect())->sum(fn ($payment) => (int) $payment->amount_paid + (int) $payment->scholarship_amount);
+            $remaining = max(0, $totalDue - $totalPaid);
+            $remainingFees = $installmentLabel ? collect() : $installments->map(function ($installment) use ($paymentsByInstallment) {
+                $paid = (int) $paymentsByInstallment->get($installment->id, collect())->sum(fn ($payment) => (int) $payment->amount_paid + (int) $payment->scholarship_amount);
+                $remaining = max(0, (int) $installment->amount - $paid);
+                return $remaining > 0 ? ['label' => $installment->label, 'remaining' => $remaining] : null;
+            })->filter()->values();
+
+            return [
+                'enrollment' => $enrollment,
+                'total_due' => $totalDue,
+                'total_paid' => $totalPaid,
+                'remaining' => $remaining,
+                'remaining_fees' => $remainingFees,
+                'status' => $totalPaid <= 0 ? 'unpaid' : 'partial',
+            ];
+        })->filter(fn (array $row) => $row['remaining'] > 0)
+            ->sortBy(fn (array $row) => mb_strtoupper($row['enrollment']->student->full_name), SORT_NATURAL)
+            ->values();
+    }
+
     public function global(Request $request)
     {
         $activeYear     = AcademicYear::active();

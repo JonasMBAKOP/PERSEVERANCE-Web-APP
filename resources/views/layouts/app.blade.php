@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#1A3A6B">
-    <title>@yield('title', 'PERSEVERANCE PLUS') — Gestion Scolaire</title>
+    <title>@yield('title', 'PERSEVERANCE PLUS') — GESPER</title>
     <link rel="icon" href="{{ asset('images/logo.jpg') }}" type="image/jpeg">
     <link rel="shortcut icon" href="{{ asset('images/logo.jpg') }}" type="image/jpeg">
     <link rel="apple-touch-icon" href="{{ asset('images/logo.jpg') }}">

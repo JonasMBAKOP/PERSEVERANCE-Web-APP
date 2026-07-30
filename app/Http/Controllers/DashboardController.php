@@ -20,6 +20,7 @@ use App\Http\Requests\UpdateUserRequest;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\Models\Role;
 
@@ -356,7 +357,9 @@ class DashboardController extends Controller
             ->where('status', 'active')->get()
             ->filter(function($e) {
                 $due = $e->classGroup->feeStructures->first()?->installments->sum('amount') ?? 0;
-                $paid = StudentPayment::where('student_enrollment_id', $e->id)->sum('amount_paid');
+                $paid = StudentPayment::visible()
+                    ->where('student_enrollment_id', $e->id)
+                    ->sum(DB::raw('COALESCE(amount_paid, 0) + COALESCE(scholarship_amount, 0)'));
                 return $paid < $due;
             })->count();
 

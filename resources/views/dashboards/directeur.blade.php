@@ -40,7 +40,7 @@
     </a>
     @endif
     @if($debtorsCount > 0)
-    <a href="{{ route('finances.reports') }}"
+    <a href="{{ route('finances.insolvables') }}"
        class="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-red-50 border border-red-200
               text-red-700 text-sm font-bold hover:bg-red-100 transition-colors">
         <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v8"/><path d="M8 12h8"/><path d="M6 4h12v16H6z"/></svg>
@@ -345,7 +345,7 @@
             </a>
             @endif
             @if($debtorsCount > 0)
-            <a href="{{ route('finances.reports') }}" class="block rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700 hover:bg-red-100 transition">
+            <a href="{{ route('finances.insolvables') }}" class="block rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700 hover:bg-red-100 transition">
                 {{ $debtorsCount }} élève(s) débiteur(s)
             </a>
             @endif

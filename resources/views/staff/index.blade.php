@@ -7,36 +7,57 @@
 @section('content')
 <div x-data="{ viewMode: 'grid' }">
 
-    {{-- Title and pill inside content area --}}
-    <div class="flex items-center mb-1">
-        <h2 class="text-2xl font-bold text-gray-900">Enseignants & Personnel</h2>
-        <span class="bg-[#FFEADF] text-[#A2522D] text-xs font-semibold px-2.5 py-0.5 rounded-full uppercase tracking-wider ml-3">
-            {{ $stats['total'] }} membres
-        </span>
-    </div>
+    <div class="mb-6 flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+        <div>
+            {{-- Title and pill inside content area --}}
+            <div class="flex items-center mb-1">
+                <h2 class="text-2xl font-bold text-gray-900">Enseignants & Personnel</h2>
+                {{-- <a href="{{ route('staff.print', request()->query()) }}" target="_blank"
+                class="ml-auto inline-flex items-center gap-2 rounded-xl bg-[#1A3A6B] px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-[#163450]"
+                title="Print staff list">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2m-2 0H8v4h8v-4z"/>
+                    </svg>
+                    Imprimer la liste
+                </a> --}}
+                <span class="bg-[#FFEADF] text-[#A2522D] text-xs font-semibold px-2.5 py-0.5 rounded-full uppercase tracking-wider ml-3">
+                    {{ $stats['total'] }} membres
+                </span>
+            </div>
 
-    {{-- Stats Row --}}
-    <div class="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-gray-500 mb-6 font-medium">
-        <span class="flex items-center gap-2">
-            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+            {{-- Stats Row --}}
+            <div class="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-gray-500 mb-6 font-medium">
+                <span class="flex items-center gap-2">
+                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                    <span class="text-gray-900 font-bold">{{ $stats['teachers'] }}</span> enseignants
+                </span>
+                <span class="text-gray-300">|</span>
+                <span class="flex items-center gap-2">
+                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+                    </svg>
+                    <span class="text-gray-900 font-bold">{{ $stats['subjects_taught'] }}</span> matières enseignées
+                </span>
+                <span class="text-gray-300">|</span>
+                <span class="flex items-center gap-2 text-red-600 font-semibold">
+                    <svg class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
+                    <span>{{ $stats['no_class'] }} sans classe assignée</span>
+                </span>
+            </div>
+        </div>
+
+        <a href="{{ route('staff.print', request()->query()) }}" target="_blank"
+            class="ml-auto inline-flex items-center gap-2 rounded-xl bg-[#1A3A6B] px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-[#163450]"
+            title="Print staff list">
+            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2m-2 0H8v4h8v-4z"/>
             </svg>
-            <span class="text-gray-900 font-bold">{{ $stats['teachers'] }}</span> enseignants
-        </span>
-        <span class="text-gray-300">|</span>
-        <span class="flex items-center gap-2">
-            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
-            </svg>
-            <span class="text-gray-900 font-bold">{{ $stats['subjects_taught'] }}</span> matières enseignées
-        </span>
-        <span class="text-gray-300">|</span>
-        <span class="flex items-center gap-2 text-red-600 font-semibold">
-            <svg class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-            </svg>
-            <span>{{ $stats['no_class'] }} sans classe assignée</span>
-        </span>
+            Imprimer la liste
+        </a>
     </div>
 
     {{-- Filters and Actions Row --}}
@@ -140,6 +161,15 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
                     </svg>
                 </button>
+
+                <a href="{{ route('staff.print', request()->query()) }}" target="_blank"
+                   class="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                   title="Imprimer la liste du personnel">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 9V2h12v7m-1 5H7a3 3 0 00-3 3v3h16v-3a3 3 0 00-3-3zM7 14h10v8H7v-8z"/>
+                    </svg>
+                    Imprimer
+                </a>
 
                 <a href="{{ route('staff.documents.cards') }}"
                    class="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
