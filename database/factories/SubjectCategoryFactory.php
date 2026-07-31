@@ -14,9 +14,14 @@ class SubjectCategoryFactory extends Factory
 
     public function definition(): array
     {
+        $name = $this->faker->unique()->words(2, true);
+
         return [
-            'name_fr' => $this->faker->word(),
-            'name_en' => $this->faker->word(),
+            'section_id' => \App\Models\Section::factory(),
+            'code' => strtoupper($this->faker->unique()->bothify('CAT-###??')),
+            'name' => $name,
+            'name_fr' => $name,
+            'name_en' => null,
             'order_index' => $this->faker->numberBetween(1, 10),
         ];
     }

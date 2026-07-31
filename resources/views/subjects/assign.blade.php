@@ -116,12 +116,12 @@
                 overflow-hidden mb-24">
 
         {{-- En-tête colonnes (desktop uniquement, visuel) --}}
-        <div class="hidden sm:grid sm:grid-cols-12 gap-2 px-5 py-3
+        <div class="hidden sm:grid sm:grid-cols-10 gap-2 px-5 py-3
                     border-b border-gray-100 text-xs font-semibold
                     text-gray-400 uppercase tracking-wider"
             style="background-color:#F8FAFC;">
             <div class="col-span-3">Matière</div>
-            <div class="col-span-2">Type</div>
+            {{-- <div class="col-span-2">Type</div> --}}
             <div class="col-span-1 text-center">Coef.</div>
             <div class="col-span-3">Enseignant assigné</div>
             <div class="col-span-1 text-center">H/Sem</div>
@@ -151,11 +151,11 @@
                                 <span class="font-bold text-sm text-gray-800">
                                     {{ $cs->subject->name_fr }}
                                 </span>
-                                <span class="px-2 py-0.5 rounded-full text-xs font-bold"
+                                {{-- <span class="px-2 py-0.5 rounded-full text-xs font-bold"
                                     style="background-color:{{ $tc['bg'] }};
                                             color:{{ $tc['text'] }};">
                                     {{ $tc['label'] }}
-                                </span>
+                                </span> --}}
                                 @if($hasGrades)
                                 <svg class="w-3.5 h-3.5 text-amber-400"
                                     fill="currentColor" viewBox="0 0 20 20">
@@ -209,7 +209,7 @@
                     </div>
 
                     {{-- Layout unifié : grille responsive --}}
-                    <div class="grid grid-cols-2 sm:grid-cols-12 gap-3 items-center">
+                    <div class="grid grid-cols-2 sm:grid-cols-10 gap-3 items-center">
 
                         {{-- Matière (desktop seulement — mobile = voir au-dessus) --}}
                         <div class="hidden sm:flex sm:col-span-3 items-center gap-2
@@ -233,13 +233,13 @@
                         </div>
 
                         {{-- Type (desktop) --}}
-                        <div class="hidden sm:flex sm:col-span-2 items-center">
+                        {{-- <div class="hidden sm:flex sm:col-span-2 items-center">
                             <span class="px-2.5 py-1 rounded-full text-xs font-bold"
                                 style="background-color:{{ $tc['bg'] }};
                                         color:{{ $tc['text'] }};">
                                 {{ $tc['label'] }}
                             </span>
-                        </div>
+                        </div> --}}
 
                         {{-- Coefficient --}}
                         <div class="col-span-1 sm:col-span-1">

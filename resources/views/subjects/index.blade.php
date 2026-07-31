@@ -6,7 +6,22 @@
 
 @section('content')
 
-<div x-data="{ tab: '{{ request('tab', 'all') }}' }">
+<style>
+    label[for="category-name-fr"],
+    label[for="category-name-en"] { display: none; }
+    form[x-show="editCategory"] div:has(input[name="name_fr"]),
+    form[x-show="editCategory"] div:has(input[name="name_en"]) { display: none; }
+</style>
+
+<div x-data="{
+    tab: '{{ request('tab', 'all') }}',
+    fabOpen: false,
+    categoryModal: {{ $errors->has('section_id') || $errors->has('code') || $errors->has('name') ? 'true' : 'false' }},
+    categoryListModal: {{ request()->boolean('categories') ? 'true' : 'false' }},
+    editCategory: null,
+    categories: @js($categories->map(fn ($category) => ['id' => $category->id, 'section_id' => $category->section_id, 'section_name' => $category->section?->name, 'code' => $category->code, 'name' => $category->name, 'subjects_count' => $category->subjects_count])->values()),
+    openEditor(category) { this.editCategory = { ...category }; this.categoryListModal = false; }
+}">
 
 {{-- ── BARRE PRINCIPALE ────────────────────────────────────────────────── --}}
 <div class="flex flex-col sm:flex-row sm:items-center
@@ -95,21 +110,55 @@
             </form>
         </div>
 
-        {{-- Bouton nouvelle matière --}}
+        {{-- Gestion des catégories --}}
         @can('manage-subjects')
-        <a href="{{ route('subjects.create') }}"
-           class="flex items-center gap-2 px-4 py-2 rounded-xl text-white
-                  text-sm font-semibold transition-all hover:shadow-md
-                  whitespace-nowrap"
-           style="background-color: #E87722;">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor"
-                 viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round"
-                      stroke-width="2.5" d="M12 4v16m8-8H4"/>
-            </svg>
-            Nouvelle matière
-        </a>
+        <button type="button" @click="categoryListModal = true"
+                class="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-bold text-gray-700 transition hover:border-[#1A3A6B]/30 hover:bg-blue-50 whitespace-nowrap">
+            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+            Catégories
+        </button>
         @endcan
+    </div>
+</div>
+
+<div x-show="categoryModal" x-cloak
+     x-transition.opacity
+     @keydown.escape.window="categoryModal = false"
+     class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/40 p-4">
+    <div @click.outside="categoryModal = false" class="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl">
+        <div class="flex items-start justify-between gap-4">
+            <div>
+                <h2 class="text-lg font-black text-gray-900">Nouvelle catégorie</h2>
+                <p class="mt-1 text-sm text-gray-500">Elle sera disponible immédiatement dans les formulaires de matières.</p>
+            </div>
+            <button type="button" @click="categoryModal = false" class="rounded-lg p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700" aria-label="Fermer">
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+        <form method="POST" action="{{ route('subjects.categories.store') }}" class="mt-6 space-y-4">
+            @csrf
+            <div>
+                <label for="category-name-fr" class="mb-1.5 block text-sm font-semibold text-gray-700">Nom en français</label>
+                <label for="category-section" class="mb-1.5 block text-sm font-semibold text-gray-700">Section</label>
+                <select id="category-section" name="section_id" required class="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm text-gray-800 outline-none transition focus:border-[#1A3A6B] focus:ring-2 focus:ring-blue-100">
+                    <option value="">Selectionner une section</option>
+                    @foreach($sections as $section)
+                        <option value="{{ $section->id }}" {{ old('section_id') == $section->id ? 'selected' : '' }}>{{ $section->name }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div>
+                <label for="category-name-en" class="mb-1.5 block text-sm font-semibold text-gray-700">Nom en anglais <span class="font-normal text-gray-400">(facultatif)</span></label>
+                <label for="category-code" class="mb-1.5 block text-sm font-semibold text-gray-700">Code</label>
+                <input id="category-code" name="code" required maxlength="30" value="{{ old('code') }}" placeholder="Ex: SCI" class="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm text-gray-800 outline-none transition focus:border-[#1A3A6B] focus:ring-2 focus:ring-blue-100">
+                <label for="category-name" class="mb-1.5 mt-4 block text-sm font-semibold text-gray-700">Nom de la categorie</label>
+                <input id="category-name" name="name" required maxlength="100" value="{{ old('name') }}" class="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm text-gray-800 outline-none transition focus:border-[#1A3A6B] focus:ring-2 focus:ring-blue-100">
+            </div>
+            <div class="flex justify-end gap-3 border-t border-gray-100 pt-5">
+                <button type="button" @click="categoryModal = false" class="rounded-xl px-4 py-2.5 text-sm font-bold text-gray-600 transition hover:bg-gray-100">Annuler</button>
+                <button type="submit" class="inline-flex items-center gap-2 rounded-xl bg-[#1A3A6B] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#163450]"><svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>Créer la catégorie</button>
+            </div>
+        </form>
     </div>
 </div>
 
@@ -122,21 +171,15 @@
     <form method="GET" action="{{ route('subjects.index') }}"
           class="mb-4 flex gap-3">
         <div class="relative flex-1 max-w-sm">
-            <span class="absolute inset-y-0 left-3 flex items-center
-                         text-gray-400">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor"
-                     viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round"
-                          stroke-width="2"
-                          d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                </svg>
-            </span>
             <input type="text" name="search"
                    value="{{ request('search') }}"
                    placeholder="Rechercher une matière..."
-                   class="w-full pl-9 pr-4 py-2 border border-gray-200
+                   class="w-full px-4 pr-11 py-2 border border-gray-200
                           rounded-lg text-sm focus:outline-none
                           focus:ring-2 focus:ring-blue-200 bg-white">
+            <button type="submit" class="absolute inset-y-0 right-0 flex w-10 items-center justify-center text-gray-500 transition hover:text-[#1A3A6B]" aria-label="Rechercher">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+            </button>
         </div>
         @if(request()->hasAny(['search','type']))
         <a href="{{ route('subjects.index') }}"
@@ -177,10 +220,10 @@
                                    text-gray-400 uppercase tracking-wider">
                             Nom de la matière
                         </th>
-                        <th class="text-left px-5 py-3.5 text-xs font-semibold
+                        {{-- <th class="text-left px-5 py-3.5 text-xs font-semibold
                                    text-gray-400 uppercase tracking-wider">
                             Type
-                        </th>
+                        </th> --}}
                         <th class="text-left px-5 py-3.5 text-xs font-semibold
                                    text-gray-400 uppercase tracking-wider">
                             Sections concernées
@@ -217,9 +260,7 @@
                         $tc = $typeColors[$subject->type] ?? $typeColors['other'];
 
                         // Sections concernées
-                        $sections = $subject->classSubjects
-                            ->map(fn($cs) => $cs->classGroup?->level?->section)
-                            ->filter()->unique('id')->values();
+                        $categorySection = $subject->category?->section;
 
                         // Enseignants assignés (uniques)
                         $teachers = collect();
@@ -260,19 +301,19 @@
                         </td>
 
                         {{-- Type --}}
-                        <td class="px-5 py-4">
+                        {{-- <td class="px-5 py-4">
                             <span class="px-2.5 py-1 rounded-full text-xs
                                          font-bold"
                                   style="background-color: {{ $tc['bg'] }};
                                          color: {{ $tc['text'] }};">
                                 {{ $tc['label'] }}
                             </span>
-                        </td>
+                        </td> --}}
 
                         {{-- Sections --}}
                         <td class="px-5 py-4">
                             <div class="flex flex-wrap gap-1">
-                                @forelse($sections as $sec)
+                                @if($categorySection)
                                 @php
                                     $secColors = [
                                         'FG'  => ['bg' => '#DBEAFE',
@@ -285,22 +326,22 @@
                                                   'text' => '#991B1B',
                                                   'label' => 'ANGLO'],
                                     ];
-                                    $sc = $secColors[$sec->code]
+                                    $sc = $secColors[$categorySection->code]
                                         ?? ['bg' => '#F3F4F6',
                                             'text' => '#374151',
-                                            'label' => $sec->code];
+                                            'label' => $categorySection->code];
                                 @endphp
                                 <span class="px-1.5 py-0.5 rounded text-xs
                                              font-semibold"
                                       style="background-color: {{ $sc['bg'] }};
                                              color: {{ $sc['text'] }};">
-                                    {{ $sc['label'] }}
+                                    {{ $categorySection->name }}
                                 </span>
-                                @empty
+                                @else
                                 <span class="text-xs text-gray-300 italic">
-                                    Aucune classe
+                                    Sans section
                                 </span>
-                                @endforelse
+                                @endif
                             </div>
                         </td>
 
@@ -516,11 +557,11 @@
             $section      = $data['section'];
             $sectionSubs  = $data['subjects'];
             $secColors    = [
-                'ESG'  => ['color' => '#1D4ED8', 'bg' => '#DBEAFE',
+                'FR'  => ['color' => '#1D4ED8', 'bg' => '#DBEAFE',
                            'border' => '#93C5FD'],
-                'EST'  => ['color' => '#6D28D9', 'bg' => '#EDE9FE',
+                'ENG'  => ['color' => '#6D28D9', 'bg' => '#EDE9FE',
                            'border' => '#C4B5FD'],
-                'ANG' => ['color' => '#991B1B', 'bg' => '#FEE2E2',
+                'EN' => ['color' => '#991B1B', 'bg' => '#FEE2E2',
                            'border' => '#FCA5A5'],
             ];
             $sc = $secColors[$section->code]
@@ -600,13 +641,13 @@
                         </div>
                     </div>
                     <div class="flex items-center gap-2 flex-shrink-0">
-                        <span class="px-2 py-0.5 rounded-full text-xs font-bold"
+                        {{-- <span class="px-2 py-0.5 rounded-full text-xs font-bold"
                               style="background-color: {{ $tc['bg'] }};
                                      color: {{ $tc['text'] }};">
                             {{ $tc['label'] }}
-                        </span>
+                        </span> --}}
                         <span class="text-xs text-gray-400 whitespace-nowrap">
-                            {{ $classesInSection }} cl.
+                            {{ $classesInSection }} classes
                         </span>
                     </div>
                 </div>
@@ -698,6 +739,53 @@
 {{-- ONGLET : CATÉGORIES ─────────────────────────────────────────────── --}}
 {{-- (conservé mais accessible via un lien discret) --}}
 
+    <div x-show="categoryListModal" x-cloak x-transition.opacity @keydown.escape.window="categoryListModal = false" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/40 p-4">
+        <div @click.outside="categoryListModal = false" class="w-full max-w-2xl overflow-hidden rounded-2xl bg-white shadow-2xl">
+            <div class="flex items-start justify-between border-b border-gray-100 px-6 py-5">
+                <div><h2 class="text-lg font-black text-gray-900">Catégories de matières</h2><p class="mt-1 text-sm text-gray-500">Organisation du catalogue et des bulletins.</p></div>
+                <button type="button" @click="categoryListModal = false" class="rounded-lg p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700" aria-label="Fermer"><svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+            </div>
+            <div class="max-h-[60vh] divide-y divide-gray-100 overflow-y-auto">
+                <template x-if="categories.length === 0"><p class="px-6 py-10 text-center text-sm font-medium text-gray-400">Aucune catégorie enregistrée.</p></template>
+                <template x-for="category in categories" :key="category.id">
+                    <div class="flex items-center gap-4 px-6 py-4">
+                        <div class="min-w-0 flex-1"><p class="truncate text-sm font-bold text-gray-800"><span x-text="category.code"></span><span class="font-normal text-gray-400"> - </span><span x-text="category.name"></span></p><p class="mt-0.5 truncate text-xs text-gray-400" x-text="category.section_name"></p></div>
+                        <span class="hidden rounded-full bg-gray-100 px-2.5 py-1 text-xs font-bold text-gray-500 sm:inline-flex" x-text="category.subjects_count + ' matière(s)'"></span>
+                        <button type="button" @click="openEditor(category)" class="rounded-lg p-2 text-[#1A3A6B] transition hover:bg-blue-50" title="Modifier"><svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 4H6a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2v-5m-1.5-9.5a2.121 2.121 0 113 3L12 14l-4 1 1-4 9.5-9.5z"/></svg></button>
+                        <form :action="'{{ route('subjects.categories.destroy', ['category' => '__CATEGORY__']) }}'.replace('__CATEGORY__', category.id)" method="POST" @submit.prevent="if (confirm('Supprimer cette catégorie ?')) $el.submit()">
+                            @csrf @method('DELETE')
+                            <button type="submit" :disabled="category.subjects_count > 0" class="rounded-lg p-2 text-red-500 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-30" :title="category.subjects_count > 0 ? 'Cette catégorie contient des matières' : 'Supprimer'"><svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1H10a1 1 0 00-1 1v3m-4 0h14"/></svg></button>
+                        </form>
+                    </div>
+                </template>
+            </div>
+        </div>
+    </div>
+
+    <div x-show="editCategory" x-cloak x-transition.opacity @keydown.escape.window="editCategory = null" class="fixed inset-0 z-[60] flex items-center justify-center bg-gray-900/40 p-4">
+        <div @click.outside="editCategory = null" class="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl">
+            <div class="flex items-start justify-between gap-4"><div><h2 class="text-lg font-black text-gray-900">Modifier la catégorie</h2><p class="mt-1 text-sm text-gray-500">Les matières déjà associées seront conservées.</p></div><button type="button" @click="editCategory = null; categoryListModal = true" class="rounded-lg p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700" aria-label="Fermer"><svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button></div>
+            <form x-show="editCategory" x-init="$el.querySelectorAll('input[name=name_fr], input[name=name_en]').forEach(input => input.disabled = true)" :action="editCategory ? '{{ route('subjects.categories.update', ['category' => '__CATEGORY__']) }}'.replace('__CATEGORY__', editCategory.id) : ''" method="POST" class="mt-6 space-y-4">
+                @csrf @method('PUT')
+                <div><label class="mb-1.5 block text-sm font-semibold text-gray-700">Section</label><select name="section_id" required x-model="editCategory.section_id" class="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm text-gray-800 outline-none transition focus:border-[#1A3A6B] focus:ring-2 focus:ring-blue-100">@foreach($sections as $section)<option value="{{ $section->id }}">{{ $section->name }}</option>@endforeach</select></div>
+                <div><label class="mb-1.5 block text-sm font-semibold text-gray-700">Code</label><input name="code" required maxlength="30" x-model="editCategory.code" class="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm text-gray-800 outline-none transition focus:border-[#1A3A6B] focus:ring-2 focus:ring-blue-100"></div>
+                <div><label class="mb-1.5 block text-sm font-semibold text-gray-700">Nom de la categorie</label><input name="name" required maxlength="100" x-model="editCategory.name" class="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm text-gray-800 outline-none transition focus:border-[#1A3A6B] focus:ring-2 focus:ring-blue-100"></div>
+                <div><label class="mb-1.5 block text-sm font-semibold text-gray-700">Nom en français</label><input name="name_fr" required maxlength="100" x-model="editCategory.name_fr" class="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm text-gray-800 outline-none transition focus:border-[#1A3A6B] focus:ring-2 focus:ring-blue-100"></div>
+                <div><label class="mb-1.5 block text-sm font-semibold text-gray-700">Nom en anglais <span class="font-normal text-gray-400">(facultatif)</span></label><input name="name_en" maxlength="100" x-model="editCategory.name_en" class="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm text-gray-800 outline-none transition focus:border-[#1A3A6B] focus:ring-2 focus:ring-blue-100"></div>
+                <div class="flex justify-end gap-3 border-t border-gray-100 pt-5"><button type="button" @click="editCategory = null; categoryListModal = true" class="rounded-xl px-4 py-2.5 text-sm font-bold text-gray-600 transition hover:bg-gray-100">Annuler</button><button type="submit" class="inline-flex items-center gap-2 rounded-xl bg-[#1A3A6B] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#163450]"><svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>Enregistrer</button></div>
+            </form>
+        </div>
+    </div>
+
+    @can('manage-subjects')
+    <div class="fixed bottom-16 right-4 z-40 sm:bottom-20 sm:right-6" @click.outside="fabOpen = false">
+        <div x-show="fabOpen" x-cloak x-transition.origin.bottom.right class="absolute bottom-16 right-0 w-52 rounded-2xl border border-gray-100 bg-white p-2 shadow-xl">
+            <a href="{{ route('subjects.create') }}" class="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-bold text-gray-700 transition hover:bg-orange-50 hover:text-[#C2410C]"><span class="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-50 text-[#E87722]"><svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg></span>Nouvelle matière</a>
+            <button type="button" @click="categoryModal = true; fabOpen = false" class="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-bold text-gray-700 transition hover:bg-blue-50 hover:text-[#1A3A6B]"><span class="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-[#1A3A6B]"><svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4M5 20h14"/></svg></span>Nouvelle catégorie</button>
+        </div>
+        <button type="button" @click="fabOpen = !fabOpen" :aria-expanded="fabOpen.toString()" aria-label="Ajouter une matière ou une catégorie" class="flex h-14 w-14 items-center justify-center rounded-full bg-[#E87722] text-white shadow-lg transition hover:bg-[#C85D0E] hover:shadow-xl focus:outline-none focus:ring-4 focus:ring-orange-200"><svg class="h-6 w-6 transition-transform duration-200" :class="fabOpen ? 'rotate-45' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg></button>
+    </div>
+    @endcan
 </div>{{-- end x-data --}}
 @push('fixed_footer')
 <div class="fixed bottom-0 left-0 md:left-64 right-0 z-20

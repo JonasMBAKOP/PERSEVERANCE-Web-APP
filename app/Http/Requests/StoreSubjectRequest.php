@@ -5,41 +5,42 @@ namespace App\Http\Requests;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 
 class StoreSubjectRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
     public function authorize(): bool
     {
         /** @var \App\Models\User|null $user */
         $user = Auth::user();
+
         return Auth::check() && $user->can('manage-subjects');
     }
 
     /**
-     * Get the validation rules that apply to the request.
-     *
      * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
         return [
-            'subject_category_id' => ['required', 'exists:subject_categories,id'],
-            'name_fr'             => ['required', 'string', 'max:100'],
-            'type'                => ['required', 'in:general,technical,language,sport,other'],
+            'section_id' => ['required', 'exists:sections,id'],
+            'subject_category_id' => [
+                'required',
+                Rule::exists('subject_categories', 'id')->where(
+                    fn ($query) => $query->where('section_id', $this->input('section_id'))
+                ),
+            ],
+            'name' => ['required', 'string', 'max:100'],
         ];
     }
 
     public function messages(): array
     {
         return [
-            'subject_category_id.required' => 'La catégorie est obligatoire.',
-            'code.required'                => 'Le code est obligatoire.',
-            'code.unique'                  => 'Ce code existe déjà.',
-            'name_fr.required'             => 'Le nom en français est obligatoire.',
-            'type.required'                => 'Le type est obligatoire.',
+            'section_id.required' => 'La section est obligatoire.',
+            'subject_category_id.required' => 'La categorie est obligatoire.',
+            'subject_category_id.exists' => 'La categorie doit appartenir a la section choisie.',
+            'name.required' => 'Le nom de la matiere est obligatoire.',
         ];
     }
 }

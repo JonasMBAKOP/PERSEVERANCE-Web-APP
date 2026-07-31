@@ -80,11 +80,18 @@ class ProfileController extends Controller
         $user->email = $request->email;
         $user->phone = $request->phone;
 
+        $photosToDelete = [];
         if ($request->hasFile('photo')) {
-            if ($user->photo) {
-                Storage::disk('public')->delete($user->photo);
+            $staff = $user->staff;
+            $newPhotoPath = $request->file('photo')->store(
+                $staff ? 'staff/photos' : 'users/photos',
+                'public'
+            );
+            $photosToDelete = array_filter([$user->photo, $staff?->photo], fn ($path) => $path && $path !== $newPhotoPath);
+            $user->photo = $newPhotoPath;
+            if ($staff) {
+                $staff->update(['photo' => $newPhotoPath]);
             }
-            $user->photo = $request->file('photo')->store('users/photos', 'public');
         }
 
         // Traiter le cachet/signature (sauf pour les enseignants)
@@ -101,6 +108,10 @@ class ProfileController extends Controller
         }
 
         $user->save();
+
+        foreach (array_unique($photosToDelete) as $photoPath) {
+            Storage::disk('public')->delete($photoPath);
+        }
 
         return redirect()->route('profile.show')
             ->with('success', 'Votre profil a été mis à jour avec succès.');
@@ -128,9 +139,14 @@ class ProfileController extends Controller
     {
         /** @var \App\Models\User|null $user */
         $user = Auth::user();
-        if ($user->photo) {
-            Storage::disk('public')->delete($user->photo);
-            $user->update(['photo' => null]);
+        $staff = $user->staff;
+        $photosToDelete = array_filter([$user->photo, $staff?->photo]);
+        $user->update(['photo' => null]);
+        if ($staff) {
+            $staff->update(['photo' => null]);
+        }
+        foreach (array_unique($photosToDelete) as $photoPath) {
+            Storage::disk('public')->delete($photoPath);
         }
         return back()->with('success', 'Photo supprimée.');
     }

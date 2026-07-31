@@ -13,6 +13,7 @@ use App\Models\Subject;
 use App\Models\SubjectCategory;
 use App\Models\TeacherAssignment;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class SubjectController extends Controller
 {
@@ -22,7 +23,7 @@ class SubjectController extends Controller
         // $query = Subject::with('category')
         //                 ->withCount('classSubjects');
         $query = Subject::with([
-            'category',
+            'category.section',
             'classSubjects.classGroup.level.section',
             'classSubjects.teacherAssignments.staff',
         ])->withCount('classSubjects');
@@ -45,20 +46,20 @@ class SubjectController extends Controller
 
         $subjects   = $query->orderBy('code')->paginate(20)
                             ->withQueryString();
-        $categories = SubjectCategory::withCount('subjects')
+        $categories = SubjectCategory::with('section')
+                                     ->withCount('subjects')
+                                     ->orderBy('section_id')
                                      ->orderBy('order_index')->get();
 
         // Données par section pour l'onglet "Par Section"
         $sections    = \App\Models\Section::orderBy('id')->get();
-        $allSubjects = Subject::with([
-            'classSubjects.classGroup.level.section',
-        ])->orderBy('name_fr')->get();
+        $allSubjects = Subject::with('category.section')
+            ->orderBy('name_fr')
+            ->get();
     
         $sectionData = $sections->map(function($section) use ($allSubjects) {
             $subs = $allSubjects->filter(function($subject) use ($section) {
-                return $subject->classSubjects->some(
-                    fn($cs) => $cs->classGroup?->level?->section_id === $section->id
-                );
+                return $subject->category?->section_id === $section->id;
             })->values();
             return ['section' => $section, 'subjects' => $subs];
         });
@@ -87,14 +88,19 @@ class SubjectController extends Controller
     // ── CRÉATION ──────────────────────────────────────────────────────────
     public function create()
     {
-        $categories = SubjectCategory::orderBy('order_index')->get();
-        return view('subjects.create', compact('categories'));
+        $sections = \App\Models\Section::orderBy('name')->get();
+        $categories = SubjectCategory::with('section')
+            ->orderBy('section_id')
+            ->orderBy('order_index')
+            ->get();
+
+        return view('subjects.create', compact('sections', 'categories'));
     }
 
     // ── ENREGISTREMENT ────────────────────────────────────────────────────
     public function store(StoreSubjectRequest $request)
     {
-        $subject = Subject::create($request->validated());
+        $subject = Subject::create($this->subjectPayload($request->validated()));
         AuditLog::log('created', $subject, [], $subject->toArray());
 
         return redirect()
@@ -106,15 +112,21 @@ class SubjectController extends Controller
     // ── MODIFICATION ──────────────────────────────────────────────────────
     public function edit(Subject $subject)
     {
-        $categories = SubjectCategory::orderBy('order_index')->get();
-        return view('subjects.edit', compact('subject', 'categories'));
+        $subject->load('category.section');
+        $sections = \App\Models\Section::orderBy('name')->get();
+        $categories = SubjectCategory::with('section')
+            ->orderBy('section_id')
+            ->orderBy('order_index')
+            ->get();
+
+        return view('subjects.edit', compact('subject', 'sections', 'categories'));
     }
 
     // ── MISE À JOUR ───────────────────────────────────────────────────────
     public function update(UpdateSubjectRequest $request, Subject $subject)
     {
         $old = $subject->toArray();
-        $subject->update($request->validated());
+        $subject->update($this->subjectPayload($request->validated()));
         AuditLog::log('updated', $subject, $old, $subject->toArray());
 
         return redirect()
@@ -182,6 +194,10 @@ class SubjectController extends Controller
         $assignedIds = $classGroup->classSubjects->pluck('subject_id');
         $availableSubjects = Subject::with('category')
             ->whereNotIn('id', $assignedIds)
+            ->whereHas('category', fn ($query) => $query->where(
+                'section_id',
+                $classGroup->level->section_id
+            ))
             ->orderBy('name_fr')
             ->get();
 
@@ -377,32 +393,44 @@ class SubjectController extends Controller
     public function storeCategory(Request $request)
     {
         $request->validate([
-            'name_fr'     => ['required', 'string', 'max:100'],
-            'name_en'     => ['nullable', 'string', 'max:100'],
-            'order_index' => ['required', 'integer', 'min:1'],
+            'section_id' => ['required', 'exists:sections,id'],
+            'code' => ['required', 'string', 'max:30', 'alpha_dash', 'unique:subject_categories,code'],
+            'name' => ['required', 'string', 'max:100', 'unique:subject_categories,name'],
         ]);
 
-        SubjectCategory::create($request->only(
-            'name_fr', 'name_en', 'order_index'
-        ));
+        $name = trim((string) $request->input('name'));
+        SubjectCategory::create([
+            'section_id' => $request->integer('section_id'),
+            'code' => strtoupper(trim((string) $request->input('code'))),
+            'name' => $name,
+            'name_fr' => $name,
+            'name_en' => null,
+            'order_index' => ((int) SubjectCategory::max('order_index')) + 1,
+        ]);
 
-        return back()->with('success', 'Catégorie ajoutée.');
+        return redirect()->route('subjects.index', ['categories' => 1])
+            ->with('success', 'Catégorie ajoutée.');
     }
 
     public function updateCategory(Request $request,
                                    SubjectCategory $category)
     {
         $request->validate([
-            'name_fr'     => ['required', 'string', 'max:100'],
-            'name_en'     => ['nullable', 'string', 'max:100'],
-            'order_index' => ['required', 'integer', 'min:1'],
+            'section_id' => ['required', 'exists:sections,id'],
+            'code' => ['required', 'string', 'max:30', 'alpha_dash', Rule::unique('subject_categories', 'code')->ignore($category->id)],
+            'name' => ['required', 'string', 'max:100', Rule::unique('subject_categories', 'name')->ignore($category->id)],
         ]);
 
-        $category->update($request->only(
-            'name_fr', 'name_en', 'order_index'
-        ));
+        $name = trim((string) $request->input('name'));
+        $category->update([
+            'section_id' => $request->integer('section_id'),
+            'code' => strtoupper(trim((string) $request->input('code'))),
+            'name' => $name,
+            'name_fr' => $name,
+            'name_en' => null,
+        ]);
 
-        return back()->with('success',
+        return redirect()->route('subjects.index', ['categories' => 1])->with('success',
             "Catégorie « {$category->name_fr} » mise à jour.");
     }
 
@@ -414,10 +442,24 @@ class SubjectController extends Controller
                 . 'elle contient des matières.');
         }
 
-        $name = $category->name_fr;
+        $name = $category->name;
         $category->delete();
 
-        return back()->with('success',
+        return redirect()->route('subjects.index', ['categories' => 1])->with('success',
             "Catégorie « {$name} » supprimée.");
+    }
+
+    /**
+     * @param array<string, mixed> $validated
+     * @return array<string, mixed>
+     */
+    private function subjectPayload(array $validated): array
+    {
+        return [
+            'subject_category_id' => $validated['subject_category_id'],
+            'name_fr' => trim((string) $validated['name']),
+            'name_en' => null,
+            'type' => 'general',
+        ];
     }
 }

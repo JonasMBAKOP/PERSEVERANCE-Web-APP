@@ -2,43 +2,38 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
 class SubjectCategoriesSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
-        $categories = [
-            [
-                'name_fr'     => 'Matières Littéraires',
-                'name_en'     => 'Literary Subjects',
-                'order_index' => 1,
-            ],
-            [
-                'name_fr'     => 'Matières Scientifiques',
-                'name_en'     => 'Scientific Subjects',
-                'order_index' => 2,
-            ],
-            [
-                'name_fr'     => 'Autres Matières',
-                'name_en'     => 'Other Subjects',
-                'order_index' => 3,
-            ],
-        ];
+        $sections = DB::table('sections')->orderBy('id')->get();
 
-        foreach ($categories as $category) {
-            DB::table('subject_categories')->insertOrIgnore([
-                ...$category,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
+        foreach ($sections as $section) {
+            $categories = [
+                ['code' => 'LIT-' . $section->code, 'name' => 'Matieres litteraires - ' . $section->name],
+                ['code' => 'SCI-' . $section->code, 'name' => 'Matieres scientifiques - ' . $section->name],
+                ['code' => 'AUT-' . $section->code, 'name' => 'Autres matieres - ' . $section->name],
+            ];
+
+            foreach ($categories as $index => $category) {
+                DB::table('subject_categories')->updateOrInsert(
+                    ['code' => $category['code']],
+                    [
+                        'section_id' => $section->id,
+                        'name' => $category['name'],
+                        'name_fr' => $category['name'],
+                        'name_en' => null,
+                        'order_index' => $index + 1,
+                        'updated_at' => now(),
+                        'created_at' => now(),
+                    ]
+                );
+            }
         }
 
-        $this->command->info('✅ Catégories de matières créées.');
+        $this->command->info('Subject categories created by section.');
     }
 }

@@ -10,6 +10,9 @@ class SubjectCategory extends Model
     use HasFactory;
 
     protected $fillable = [
+        'section_id',
+        'code',
+        'name',
         'name_fr',
         'name_en',
         'order_index',
@@ -26,5 +29,10 @@ class SubjectCategory extends Model
     public function subjects()
     {
         return $this->hasMany(Subject::class);
+    }
+
+    public function section()
+    {
+        return $this->belongsTo(Section::class);
     }
 }

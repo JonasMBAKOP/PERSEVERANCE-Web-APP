@@ -24,4 +24,9 @@ class Subject extends Model
     {
         return $this->hasMany(ClassSubject::class);
     }
+
+    public function getNameAttribute(): string
+    {
+        return (string) $this->name_fr;
+    }
 }
