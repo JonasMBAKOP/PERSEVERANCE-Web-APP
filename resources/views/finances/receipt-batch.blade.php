@@ -412,14 +412,19 @@ body {
             </div>
         </div>
 
-        {{-- ── OBJET ────────────────────────────────────────────────────── --}}
+        {{-- ── OBJET / MODE ────────────────────────────────────────────────── --}}
+        @php $isManualInsolvablePayment = $p->fee_installment_id === null && ! $p->is_bulk; @endphp
         <div class="card-object">
-            <span class="obj-lbl">{{ $isEnglishReceipt ? 'Purpose' : 'Objet' }} :</span>
-            <span class="obj-val">
-                {{-- For bulk payments, show the allocation summary (fees included) --}}
-                {{ $p->is_bulk ? ($p->allocation_summary ?: ($p->feeInstallment?->label ?? 'Paiement groupé')) : ($p->feeInstallment?->label ?? '—') }}
-            </span>
-            @if($p->reference)
+            @if(!$isManualInsolvablePayment && $p->receipt_payment_subject)
+                <span class="obj-lbl">{{ $isEnglishReceipt ? 'Purpose' : 'Objet' }} :</span>
+                <span class="obj-val">
+                    {{ $p->receipt_payment_subject }}
+                </span>
+            @else
+                <span class="obj-lbl">{{ $isEnglishReceipt ? 'Payment Method' : 'Mode de paiement' }} :</span>
+                <span class="obj-val" style="font-size:11px;">{{ $p->payment_method_label }}</span>
+            @endif
+            @if($p->reference && ! $isManualInsolvablePayment)
                 <span class="obj-lbl">{{ $isEnglishReceipt ? 'Ref.' : 'Réf' }} :</span>
                 <span class="obj-val" style="font-size:9px;">
                     {{ $p->reference }}

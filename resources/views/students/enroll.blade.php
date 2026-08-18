@@ -186,7 +186,7 @@
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                 {{-- Année (affichage) --}}
                 <div>
                     <label class="block text-sm font-bold text-gray-700 mb-2.5">
@@ -270,31 +270,39 @@
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {{-- Date d'inscription --}}
                 <div>
-                    <label class="block text-sm font-bold text-gray-700 mb-2.5">Date d'inscription <span class="text-red-500">*</span></label>
-                    <input type="date" name="enrollment_date" value="{{ old('enrollment_date', date('Y-m-d')) }}"
-                           class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl text-sm font-medium focus:outline-none focus:border-blue-500 @error('enrollment_date') border-red-500 @enderror">
+                    <label class="block text-sm font-bold text-gray-700 mb-2.5">
+                        Date d'inscription <span class="text-red-500">*</span>
+                    </label>
+                    <input type="date" name="enrollment_date"
+                           value="{{ old('enrollment_date', date('Y-m-d')) }}"
+                           class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl 
+                                  text-sm font-medium focus:outline-none focus:border-blue-500
+                                  @error('enrollment_date') border-red-500 @enderror">
                     @error('enrollment_date')
                     <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
+
+                {{-- Situation scolaire automatique --}}
                 <div>
                     <p class="block text-sm font-bold text-gray-700 mb-2.5">Situation scolaire</p>
-                    <div class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-sm font-semibold bg-gray-50 text-gray-700"
-                         x-text="renewalSituation""></div>
+                    <div class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-sm font-semibold bg-gray-50 text-gray-700" x-text="renewalSituation"></div>
                 </div>
+                {{-- École d'origine automatique --}}
                 <div>
                     <p class="block text-sm font-bold text-gray-700 mb-2.5">École d'origine</p>
                     <div class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-sm font-semibold bg-gray-50 text-gray-700">{{ $school->full_name }}</div>
                 </div>
+                {{-- Classe précédente automatique --}}
                 <div>
                     <p class="block text-sm font-bold text-gray-700 mb-2.5">Classe précédente</p>
-                    <div class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-sm font-semibold bg-gray-50 text-gray-700">{{ $previousEnrollment?->classGroup?->full_name ?? 'Non renseignée' }}</div>
+                    <div class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-sm font-semibold bg-gray-50 text-gray-700">{{ $previousEnrollment?->classGroup?->full_name ?? '—' }}</div>
                 </div>
-            </div>
-        </div>
-        {{-- ACTIONS --}}
+
+                {{-- ACTIONS --}}
         {{-- ═══════════════════════════════════════════════════════════════ --}}
 
         <div class="flex gap-4 items-center justify-between">
@@ -326,37 +334,40 @@
 
     function enrollForm() {
         return {
-            sections: _sectionsData,
-            selectedYear: '{{ $activeYear?->id }}',
+            sections:        _sectionsData,
+            selectedYear:    '{{ $activeYear?->id }}',
             selectedSection: '',
-            selectedClass: '',
-            allClasses: _classesData,
+            selectedClass:   '',
+            allClasses:      _classesData,
             previousClass: {
                 levelId: {{ $previousEnrollment?->classGroup?->level_id ?? 'null' }},
                 sectionId: {{ $previousEnrollment?->classGroup?->level?->section_id ?? 'null' }},
                 levelOrder: {{ $previousEnrollment?->classGroup?->level?->order_index ?? 'null' }},
             },
 
-            get renewalSituation() {
-                if (!this.selectedClass) return 'Sélectionnez une classe';
-
-                const selected = this.allClasses.find(
-                    classGroup => String(classGroup.id) === String(this.selectedClass)
-                );
-                if (!selected || !this.previousClass.levelId) return 'Classe non admissible';
-                if (String(selected.level_id) === String(this.previousClass.levelId)) return 'Redoublant(e)';
-                if (String(selected.section_id) === String(this.previousClass.sectionId)
-                    && Number(selected.level_order) > Number(this.previousClass.levelOrder)) {
-                    return 'Promu(e)';
-                }
-
-                return 'Classe non admissible';
-            },
             get filteredClasses() {
                 if (!this.selectedSection) return [];
                 return this.allClasses.filter(
-                    classGroup => String(classGroup.section_id) === String(this.selectedSection)
+                    c => String(c.section_id) === String(this.selectedSection)
                 );
+            },
+
+            get renewalSituation() {
+                if (!this.selectedClass) return 'Sélectionnez une classe';
+                const selected = this.allClasses.find(c => String(c.id) === String(this.selectedClass));
+                if (!selected || !this.previousClass.levelId) return 'Nouvelle inscription';
+                if (String(selected.level_id) === String(this.previousClass.levelId)) {
+                    return String(selected.section_id) === String(this.previousClass.sectionId)
+                        ? 'Redoublant(e)'
+                        : 'Redoublant(e) avec changement de section';
+                }
+                const promoted = String(selected.section_id) === String(this.previousClass.sectionId)
+                    && Number(selected.level_order) > Number(this.previousClass.levelOrder);
+                if (promoted) return 'Promu(e)';
+
+                return String(selected.section_id) !== String(this.previousClass.sectionId)
+                    ? 'Renouvellement avec changement de section'
+                    : 'Renouvellement';
             }
         }
     }

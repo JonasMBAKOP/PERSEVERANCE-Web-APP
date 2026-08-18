@@ -119,6 +119,24 @@ class StudentPayment extends Model
         return $this->feeInstallment?->label ?? '—';
     }
 
+    public function getIsManualInsolvablePaymentAttribute(): bool
+    {
+        return $this->fee_installment_id === null && ! $this->is_bulk;
+    }
+
+    public function getReceiptPaymentSubjectAttribute(): ?string
+    {
+        if ($this->is_manual_insolvable_payment) {
+            return null;
+        }
+
+        if ($this->is_bulk) {
+            return $this->allocation_summary ?: ($this->feeInstallment?->label ?? 'Paiement groupe');
+        }
+
+        return $this->feeInstallment?->label;
+    }
+
     public function getAllocationSummaryAttribute(): string
     {
         if (! $this->is_bulk) {

@@ -223,7 +223,7 @@
     </div>
 </form>
 
-<form method="DELETE" action="{{ route('profile.photo.delete') }}"
+<form method="POST" action="{{ route('profile.photo.delete') }}"
       id="deletePhotoForm" class="hidden">
     @csrf @method('DELETE')
 </form>

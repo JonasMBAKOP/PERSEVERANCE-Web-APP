@@ -88,11 +88,15 @@ class ClassManagementController extends Controller
         $classGroups = collect();
 
         if ($selectedYear) {
+            $enrollmentStatuses = $selectedYear->is_active
+                ? ['active']
+                : ['active', 'inactive'];
+
             $classesQuery = ClassGroup::where('academic_year_id', $selectedYear->id)
                 ->with(['level.section', 'titularStaff', 'studentEnrollments'])
                 ->withCount([
                     'studentEnrollments' => fn ($q) =>
-                        $q->where('status', 'active'),
+                        $q->whereIn('status', $enrollmentStatuses),
                     'classSubjects',
                 ]);
 

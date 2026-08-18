@@ -201,7 +201,7 @@
                                 @foreach([
                                     'permanent' => 'Permanent',
                                     'vacataire' => 'Vacataire',
-                                    'stagiaire' => 'Stagiaire',
+                                    'semi_permanent' => 'Semi Permanent',
                                 ] as $val => $lbl)
                                 <option value="{{ $val }}" {{ old('contract_type', $staff->contract_type) === $val ? 'selected' : '' }}>
                                     {{ $lbl }}
@@ -211,13 +211,13 @@
                         </div>
 
                         {{-- Salaire mensuel --}}
-                        <div class="sm:col-span-2" x-show="contractType === 'permanent'" x-cloak>
+                        <div class="sm:col-span-2" x-show="contractType === 'permanent' || contractType === 'semi_permanent'" x-cloak>
                             <label class="block text-sm font-medium text-gray-700 mb-1">
                                 Salaire mensuel
                             </label>
                             <div class="relative">
                                 <input type="number" name="monthly_salary"
-                                       x-bind:disabled="contractType !== 'permanent'"
+                                       x-bind:disabled="contractType === 'vacataire'"
                                        value="{{ old('monthly_salary', $staff->monthly_salary) }}"
                                        min="0" step="500"
                                        class="w-full pl-3.5 pr-14 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-all">
@@ -228,13 +228,13 @@
                         </div>
 
                         {{-- Tarif horaire --}}
-                        <div class="sm:col-span-2" x-show="contractType !== 'permanent'" x-cloak>
+                        <div class="sm:col-span-2" x-show="contractType === 'vacataire'" x-cloak>
                             <label class="block text-sm font-medium text-gray-700 mb-1">
                                 Tarif horaire
                             </label>
                             <div class="relative">
                                 <input type="number" name="hourly_rate"
-                                       x-bind:disabled="contractType === 'permanent'"
+                                       x-bind:disabled="contractType !== 'vacataire'"
                                        value="{{ old('hourly_rate', $staff->hourly_rate) }}"
                                        min="0" step="100"
                                        class="w-full pl-3.5 pr-16 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-all">

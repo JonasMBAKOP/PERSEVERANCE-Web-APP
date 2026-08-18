@@ -13,6 +13,7 @@ use App\Models\Section;
 use App\Models\StudentEnrollment;
 use App\Models\StudentPayment;
 use App\Models\User;
+use App\Models\ManualInsolvable;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -234,6 +235,47 @@ class FinanceController extends Controller
             'installments', 'totalDue', 'totalPaid',
             'totalScholarship', 'totalRemaining', 'payments'
         ));
+    }
+
+    public function deletePayment(StudentPayment $payment)
+    {
+        $enrollmentId = $payment->student_enrollment_id;
+        $receiptNumber = $payment->receipt_number;
+        $amount = (int) $payment->amount_paid;
+        $isManual = $payment->is_manual_insolvable_payment;
+
+        DB::transaction(function () use ($payment, $enrollmentId, $receiptNumber, $amount, $isManual): void {
+            if ($payment->is_bulk) {
+                StudentPayment::where('parent_payment_id', $payment->id)->delete();
+            }
+
+            $payment->delete();
+
+            if ($isManual) {
+                $manual = ManualInsolvable::where('student_enrollment_id', $enrollmentId)
+                    ->latest('id')
+                    ->first();
+
+                if ($manual) {
+                    $totalPaid = max(0, (int) $manual->total_paid - $amount);
+                    $manual->update([
+                        'total_paid' => $totalPaid,
+                        'remaining' => max(0, (int) $manual->total_due - $totalPaid),
+                    ]);
+                }
+            }
+
+            AuditLog::log('payment_deleted', null, [], [
+                'payment_id' => $payment->id,
+                'receipt_number' => $receiptNumber,
+                'student_enrollment_id' => $enrollmentId,
+                'amount_paid' => $amount,
+                'was_bulk' => (bool) $payment->is_bulk,
+            ]);
+        });
+
+        return redirect()->route('finances.student', $enrollmentId)
+            ->with('success', 'Paiement supprimé. Les soldes financiers ont été recalculés.');
     }
 
     private function cleanupOverpaidPayments(StudentEnrollment $enrollment): void
@@ -687,19 +729,50 @@ class FinanceController extends Controller
         }
         $section     = $enrollment->classGroup?->level?->section;
 
-        $feeStructure   = $enrollment->classGroup()->with('feeStructures.installments')->first()?->feeStructures->first();
-        $totalDue = $payment->snapshot_total_due ?? ($feeStructure?->installments->sum('amount') ?? 0);
-        $totalPaid = $payment->snapshot_total_paid ?? StudentPayment::visible()->where('student_enrollment_id', $enrollment->id)
-            ->sum('amount_paid');
-        $totalScholarship = StudentPayment::visible()->where('student_enrollment_id', $enrollment->id)
-            ->sum('scholarship_amount');
-        $totalRemaining = $payment->snapshot_total_remaining ?? max(0, $totalDue - ($totalPaid + $totalScholarship));
+        ['totalDue' => $totalDue, 'totalPaid' => $totalPaid, 'totalRemaining' => $totalRemaining] = $this->resolveReceiptTotals($payment);
 
         $isEnglishReceipt = $section?->isAnglophone() ?? false;
 
         return view('finances.receipt',
             compact('payment', 'school', 'phones',
                     'totalDue', 'totalPaid', 'totalRemaining', 'isEnglishReceipt'));
+    }
+
+    private function resolveReceiptTotals(StudentPayment $payment): array
+    {
+        $enrollment = $payment->studentEnrollment;
+        if (! $enrollment) {
+            return ['totalDue' => 0, 'totalPaid' => 0, 'totalRemaining' => 0];
+        }
+
+        $manual = $payment->is_manual_insolvable_payment;
+        $manualRecord = $manual
+            ? ManualInsolvable::where('student_enrollment_id', $payment->student_enrollment_id)->latest('id')->first()
+            : null;
+
+        if ($manual) {
+            $totalDue = (int) ($payment->snapshot_total_due ?? $manualRecord?->total_due ?? 0);
+            $totalPaid = (int) ($payment->snapshot_total_paid ?? StudentPayment::visible()
+                ->where('student_enrollment_id', $payment->student_enrollment_id)
+                ->whereNull('fee_installment_id')->where('is_bulk', false)
+                ->where('id', '<=', $payment->id)->sum('amount_paid'));
+            return [
+                'totalDue' => $totalDue,
+                'totalPaid' => $totalPaid,
+                'totalRemaining' => (int) ($payment->snapshot_total_remaining ?? max(0, $totalDue - $totalPaid)),
+            ];
+        }
+
+        $feeStructure = $enrollment->classGroup()->with('feeStructures.installments')->first()?->feeStructures->first();
+        $totalDue = (int) ($payment->snapshot_total_due ?? $feeStructure?->installments->sum('amount') ?? 0);
+        $totalPaid = (int) ($payment->snapshot_total_paid ?? StudentPayment::visible()->where('student_enrollment_id', $enrollment->id)->sum('amount_paid'));
+        $scholarships = (int) StudentPayment::visible()->where('student_enrollment_id', $enrollment->id)->sum('scholarship_amount');
+
+        return [
+            'totalDue' => $totalDue,
+            'totalPaid' => $totalPaid,
+            'totalRemaining' => (int) ($payment->snapshot_total_remaining ?? max(0, $totalDue - $totalPaid - $scholarships)),
+        ];
     }
 
     // ── REÇU GLOBAL (tous les paiements d'un élève) ───────────────────────
@@ -1524,6 +1597,144 @@ class FinanceController extends Controller
         return view('finances.insolvables', $this->insolvencyContext($request, true));
     }
 
+    public function createManualInsolvable(Request $request)
+    {
+        $selectedYear = $request->filled('year_id')
+            ? AcademicYear::find($request->integer('year_id'))
+            : AcademicYear::active();
+
+        return view('finances.insolvables-create', [
+            'selectedYear' => $selectedYear,
+            'years' => AcademicYear::orderByDesc('start_date')->get(),
+        ]);
+    }
+
+    public function searchEnrollments(Request $request)
+    {
+        $data = $request->validate([
+            'year_id' => ['required', 'exists:academic_years,id'],
+            'q' => ['nullable', 'string', 'max:200'],
+        ]);
+
+        $query = StudentEnrollment::query()
+            ->where('academic_year_id', $data['year_id'])
+            ->with(['student', 'classGroup.level.section']);
+
+        if (AcademicYear::active()?->id === (int) $data['year_id']) {
+            $query->where('status', 'active');
+        }
+
+        $term = trim((string) ($data['q'] ?? ''));
+        if ($term !== '') {
+            $query->whereHas('student', fn ($student) => $student
+                ->where('first_name', 'like', "%{$term}%")
+                ->orWhere('last_name', 'like', "%{$term}%")
+                ->orWhere('matricule', 'like', "%{$term}%"));
+        }
+
+        return response()->json($query->orderByDesc('id')->limit(15)->get()->map(fn ($enrollment) => [
+            'id' => $enrollment->id,
+            'label' => $enrollment->student->full_name . ' - ' . $enrollment->student->matricule,
+            'name' => $enrollment->student->full_name,
+            'matricule' => $enrollment->student->matricule,
+            'class' => $enrollment->classGroup?->full_name,
+            'section' => $enrollment->classGroup?->level?->section?->name,
+        ])->values());
+    }
+
+    public function enrollmentInstallments(StudentEnrollment $enrollment)
+    {
+        $enrollment->load('classGroup.feeStructures.installments');
+        $structure = $enrollment->classGroup?->feeStructures->first();
+        $installments = $structure?->installments->sortBy('installment_number')->map(fn ($installment) => [
+            'id' => $installment->id,
+            'label' => $installment->label,
+            'amount' => (int) $installment->amount,
+        ])->values() ?? collect();
+
+        return response()->json([
+            'installments' => $installments,
+            'fee_total' => (int) $installments->sum('amount'),
+        ]);
+    }
+
+    public function storeManualInsolvable(Request $request)
+    {
+        $data = $request->validate([
+            'student_enrollment_id' => ['required', 'exists:student_enrollments,id'],
+            'year_id' => ['nullable', 'exists:academic_years,id'],
+            'total_due' => ['nullable', 'numeric', 'min:0'],
+            'total_paid' => ['required', 'numeric', 'min:0'],
+            'selected_installments' => ['nullable', 'array'],
+            'selected_installments.*' => ['integer', 'exists:fee_installments,id'],
+        ]);
+
+        $enrollment = StudentEnrollment::with('classGroup.feeStructures.installments')->findOrFail($data['student_enrollment_id']);
+        $totalDue = isset($data['total_due']) ? (int) round($data['total_due']) : (int) ($enrollment->classGroup?->feeStructures->first()?->installments->sum('amount') ?? 0);
+        $totalPaid = (int) round($data['total_paid']);
+
+        if ($totalPaid > $totalDue) {
+            return back()->withInput()->with('error', 'Le montant paye ne peut pas depasser le total des frais.');
+        }
+
+        if (ManualInsolvable::where('student_enrollment_id', $enrollment->id)->exists()) {
+            return back()->withInput()->with('warning', 'Un insolvable manuel existe deja pour cette inscription.');
+        }
+
+        ManualInsolvable::create([
+            'student_enrollment_id' => $enrollment->id,
+            'academic_year_id' => $data['year_id'] ?? $enrollment->academic_year_id,
+            'total_due' => $totalDue,
+            'total_paid' => $totalPaid,
+            'remaining' => max(0, $totalDue - $totalPaid),
+            'selected_installments' => $data['selected_installments'] ?? null,
+            'recorded_by' => Auth::id(),
+        ]);
+
+        return redirect()->route('finances.insolvables')->with('success', 'Eleve ajoute au registre des insolvables.');
+    }
+
+    public function payManualInsolvable(Request $request)
+    {
+        $data = $request->validate([
+            'manual_insolvable_id' => ['required', 'exists:manual_insolvables,id'],
+            'student_enrollment_id' => ['required', 'exists:student_enrollments,id'],
+            'amount_paid' => ['required', 'numeric', 'min:1'],
+            'payment_date' => ['required', 'date'],
+            'payment_method' => ['required', 'in:cash,orange_money,mtn_momo,bank_transfer,other'],
+        ]);
+
+        $manual = ManualInsolvable::findOrFail($data['manual_insolvable_id']);
+        abort_unless($manual->student_enrollment_id === (int) $data['student_enrollment_id'], 422);
+        $amount = (int) round($data['amount_paid']);
+        $remaining = (int) $manual->remaining;
+
+        if ($amount > $remaining) {
+            return back()->with('error', 'Le montant saisi depasse le restant du registre des insolvables.');
+        }
+
+        $newPaid = (int) $manual->total_paid + $amount;
+        $newRemaining = max(0, (int) $manual->total_due - $newPaid);
+        $payment = StudentPayment::create([
+            'student_enrollment_id' => $manual->student_enrollment_id,
+            'fee_installment_id' => null,
+            'amount_paid' => $amount,
+            'payment_date' => $data['payment_date'],
+            'payment_method' => $data['payment_method'],
+            'receipt_number' => StudentPayment::generateReceiptNumber(),
+            'recorded_by' => Auth::id(),
+            'notes' => 'Paiement manuel d\'un insolvable',
+            'snapshot_total_due' => (int) $manual->total_due,
+            'snapshot_total_paid' => $newPaid,
+            'snapshot_total_remaining' => $newRemaining,
+        ]);
+
+        $manual->update(['total_paid' => $newPaid, 'remaining' => $newRemaining]);
+        AuditLog::log('manual_insolvable_payment', $payment, [], ['manual_insolvable_id' => $manual->id, 'paid_amount' => $amount]);
+
+        return redirect()->route('finances.receipt', $payment)->with('success', 'Paiement enregistre.');
+    }
+
     public function printInsolvables(Request $request)
     {
         $context = $this->insolvencyContext($request);
@@ -1579,11 +1790,12 @@ class FinanceController extends Controller
             'unpaid_count' => $rows->where('status', 'unpaid')->count(),
         ];
 
-        if ($paginate) {
+        $isPaginated = $paginate;
+        if ($isPaginated) {
             $rows = $this->paginateInsolvencyRows($rows, $request);
         }
 
-        return compact('selectedYear', 'selectedSectionId', 'selectedClassId', 'years', 'sections', 'classes', 'installmentLabels', 'selectedInstallmentLabel', 'installmentLabel', 'paginate', 'rows', 'summary');
+        return compact('selectedYear', 'selectedSectionId', 'selectedClassId', 'years', 'sections', 'classes', 'installmentLabels', 'selectedInstallmentLabel', 'installmentLabel', 'isPaginated', 'rows', 'summary');
     }
 
     private function paginateInsolvencyRows($rows, Request $request)
@@ -1614,15 +1826,24 @@ class FinanceController extends Controller
             ->with(['student', 'classGroup.level.section', 'classGroup.feeStructures.installments'])
             ->get();
 
-        if ($enrollments->isEmpty()) {
-            return collect();
+        $manualEnrollmentIds = ManualInsolvable::where('academic_year_id', $selectedYear->id)
+            ->pluck('student_enrollment_id');
+        if ($manualEnrollmentIds->isNotEmpty()) {
+            $manualEnrollments = StudentEnrollment::with(['student', 'classGroup.level.section', 'classGroup.feeStructures.installments'])
+                ->whereIn('id', $manualEnrollmentIds)
+                ->when($sectionId, fn ($query) => $query->whereHas('classGroup.level', fn ($level) => $level->where('section_id', $sectionId)))
+                ->when($classId, fn ($query) => $query->where('class_group_id', $classId))
+                ->get();
+            $enrollments = $enrollments->merge($manualEnrollments)->unique('id')->values();
         }
+
+        if ($enrollments->isEmpty()) return collect();
 
         $enrollmentIds = $enrollments->pluck('id');
         $paymentsByEnrollment = StudentPayment::query()->whereIn('student_enrollment_id', $enrollmentIds)->get()->groupBy('student_enrollment_id');
         $visiblePayments = StudentPayment::visible()->whereIn('student_enrollment_id', $enrollmentIds)->get()->groupBy('student_enrollment_id');
 
-        return $enrollments->map(function (StudentEnrollment $enrollment) use ($paymentsByEnrollment, $visiblePayments, $installmentLabel) {
+        $rows = $enrollments->map(function (StudentEnrollment $enrollment) use ($paymentsByEnrollment, $visiblePayments, $installmentLabel) {
             $installments = $enrollment->classGroup?->feeStructures->first()?->installments->sortBy('installment_number') ?? collect();
             $paymentsByInstallment = $paymentsByEnrollment->get($enrollment->id, collect())
                 ->filter(fn ($payment) => ! is_null($payment->fee_installment_id))
@@ -1647,9 +1868,34 @@ class FinanceController extends Controller
                 'remaining_fees' => $remainingFees,
                 'status' => $totalPaid <= 0 ? 'unpaid' : 'partial',
             ];
-        })->filter(fn (array $row) => $row['remaining'] > 0)
-            ->sortBy(fn (array $row) => mb_strtoupper($row['enrollment']->student->full_name), SORT_NATURAL)
-            ->values();
+        })->filter(fn (array $row) => $row['remaining'] > 0)->values();
+
+        $manuals = ManualInsolvable::with('enrollment.student')
+            ->where('academic_year_id', $selectedYear->id)
+            ->when($sectionId, fn ($query) => $query->whereHas('enrollment.classGroup.level', fn ($level) => $level->where('section_id', $sectionId)))
+            ->when($classId, fn ($query) => $query->whereHas('enrollment', fn ($enrollment) => $enrollment->where('class_group_id', $classId)))
+            ->when($installmentLabel, fn ($query) => $query->whereHas('enrollment.classGroup.feeStructures.installments', fn ($installment) => $installment->where('label', $installmentLabel)))
+            ->get();
+
+        foreach ($manuals as $manual) {
+            if (! $manual->enrollment || (int) $manual->remaining <= 0) continue;
+            $existingIndex = $rows->search(fn ($row) => $row['enrollment']->id === $manual->student_enrollment_id);
+            $manualRow = [
+                'enrollment' => $manual->enrollment,
+                'total_due' => (int) $manual->total_due,
+                'total_paid' => (int) $manual->total_paid,
+                'remaining' => (int) $manual->remaining,
+                'remaining_fees' => collect(),
+                'status' => (int) $manual->total_paid <= 0 ? 'unpaid' : 'partial',
+                'manual' => true,
+                'manual_note' => $manual->note,
+                'manual_id' => $manual->id,
+            ];
+            if ($existingIndex === false) $rows->push($manualRow);
+            else $rows->put($existingIndex, $manualRow);
+        }
+
+        return $rows->sortBy(fn (array $row) => mb_strtoupper($row['enrollment']->student->full_name), SORT_NATURAL)->values();
     }
 
     public function global(Request $request)

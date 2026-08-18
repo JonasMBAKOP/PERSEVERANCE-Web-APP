@@ -136,8 +136,11 @@
                     {{-- Utilisateur --}}
                     <td class="px-4 py-3">
                         <div class="flex items-center gap-3">
-                            @if($user->photo)
-                                <img src="{{ asset('storage/' . $user->photo) }}" alt="{{ $user->name }}"
+                            @php
+                                $staffPhoto = $user->staff?->photo;
+                            @endphp
+                            @if($staffPhoto)
+                                <img src="{{ asset('storage/' . $staffPhoto) }}" alt="{{ $user->name }}"
                                      class="w-9 h-9 rounded-full object-cover ring-2 ring-gray-100 flex-shrink-0">
                             @else
                                 <div class="w-9 h-9 rounded-full flex items-center
@@ -293,8 +296,11 @@
         <div class="p-4 {{ !$user->is_active ? 'opacity-60' : '' }}">
             <div class="flex items-start justify-between gap-3">
                 <div class="flex items-center gap-3 min-w-0">
-                    @if($user->photo)
-                        <img src="{{ asset('storage/' . $user->photo) }}" alt="{{ $user->name }}"
+                    @php
+                        $staffPhoto = $user->staff?->photo;
+                    @endphp
+                    @if($staffPhoto)
+                        <img src="{{ asset('storage/' . $staffPhoto) }}" alt="{{ $user->name }}"
                              class="w-10 h-10 rounded-full object-cover ring-2 ring-gray-100 flex-shrink-0">
                     @else
                         <div class="w-10 h-10 rounded-full flex items-center justify-center

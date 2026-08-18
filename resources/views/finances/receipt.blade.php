@@ -114,14 +114,16 @@ body {
 /* ── BANDE OBJET ──────────────────────────────────────────────────── */
 .object-bar {
     background: #F4F9FD; border-bottom: 2px solid #7FA6C4;
-    padding: 7px 14px; display: flex; align-items: center; gap: 12px;
+    padding: 7px 14px; display: flex; align-items: flex-start; gap: 12px;
+    flex-wrap: wrap;
 }
-.object-label  { font-size: 10.5px; font-weight: 900; text-transform: uppercase; color: #64748B; }
-.object-value  { font-size: 13.5px; font-weight: 900; color: #7FA6C4; text-transform: uppercase; }
+.object-label  { font-size: 10.5px; font-weight: 900; text-transform: uppercase; color: #64748B; white-space: nowrap; }
+.object-value  { font-size: 12.5px; font-weight: 900; color: #7FA6C4; text-transform: uppercase; flex: 1; min-width: 150px; word-break: break-word; }
 .mode-pill {
     margin-left: auto; background: #7FA6C4; color: #fff;
     font-size: 11px; font-weight: 900; padding: 4px 11px;
     border-radius: 3px; text-transform: uppercase; letter-spacing: 0.5px;
+    white-space: nowrap;
 }
 
 /* ── MONTANTS ──────────────────────────────────────────────────────── */
@@ -306,30 +308,18 @@ body {
         </div>
     </div>
 
-    {{-- ── OBJET ────────────────────────────────────────────────────────── --}}
+    {{-- ── OBJET / MODE ────────────────────────────────────────────────── --}}
     <div class="object-bar">
-        <span class="object-label">{{ $isEnglishReceipt ? 'Payment purpose' : 'Objet du paiement' }} :</span>
-        @php
-            $paymentObjects = $payment->is_bulk
-                ? $payment->allocations->loadMissing('feeInstallment')
-                : collect([$payment]);
-        @endphp
-        @foreach($paymentObjects as $item)
-            <span class="object-value" style="font-size:11px;">
-                {{ $item->is_bulk ? 'Paiement en bloc' : ($item->feeInstallment?->label ?? '—') }}
-                @if($payment->is_bulk && $item->feeInstallment)
-                    ({{ number_format((int) $item->effective_amount_paid, 0, ',', ' ') }} FCFA)
-                @endif
+        @if(!$payment->is_manual_insolvable_payment && $payment->receipt_payment_subject)
+            {{-- Pour les paiements normaux: afficher l'objet du paiement --}}
+            <span class="object-label">{{ $isEnglishReceipt ? 'Payment Subject' : 'Objet du paiement' }} :</span>
+            <span class="object-value" style="font-size:12px;">
+                {{ strtoupper($payment->receipt_payment_subject) }}
             </span>
-            @if(!$loop->last)
-                <span class="object-label">•</span>
-            @endif
-        @endforeach
-        @if($payment->reference)
-            <span class="object-label">Réf :</span>
-            <span class="object-value" style="font-size:11px;">
-                {{ $payment->reference }}
-            </span>
+        @else
+            {{-- Pour les paiements d'insolvables: afficher le mode de paiement --}}
+            <span class="object-label">{{ $isEnglishReceipt ? 'Payment Method' : 'Mode de paiement' }} :</span>
+            <span class="object-value" style="font-size:11px;">{{ $payment->payment_method_label }}</span>
         @endif
         <span class="mode-pill">{{ $payment->payment_method_label }}</span>
     </div>

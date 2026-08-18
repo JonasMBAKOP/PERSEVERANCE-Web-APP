@@ -82,16 +82,9 @@ class ProfileController extends Controller
 
         $photosToDelete = [];
         if ($request->hasFile('photo')) {
-            $staff = $user->staff;
-            $newPhotoPath = $request->file('photo')->store(
-                $staff ? 'staff/photos' : 'users/photos',
-                'public'
-            );
-            $photosToDelete = array_filter([$user->photo, $staff?->photo], fn ($path) => $path && $path !== $newPhotoPath);
+            $newPhotoPath = $request->file('photo')->store('users/photos', 'public');
+            $photosToDelete = array_filter([$user->photo], fn ($path) => $path && $path !== $newPhotoPath);
             $user->photo = $newPhotoPath;
-            if ($staff) {
-                $staff->update(['photo' => $newPhotoPath]);
-            }
         }
 
         // Traiter le cachet/signature (sauf pour les enseignants)
@@ -110,7 +103,9 @@ class ProfileController extends Controller
         $user->save();
 
         foreach (array_unique($photosToDelete) as $photoPath) {
-            Storage::disk('public')->delete($photoPath);
+            if ($user->staff?->photo !== $photoPath) {
+                Storage::disk('public')->delete($photoPath);
+            }
         }
 
         return redirect()->route('profile.show')
@@ -139,14 +134,12 @@ class ProfileController extends Controller
     {
         /** @var \App\Models\User|null $user */
         $user = Auth::user();
-        $staff = $user->staff;
-        $photosToDelete = array_filter([$user->photo, $staff?->photo]);
+        $photosToDelete = array_filter([$user->photo]);
         $user->update(['photo' => null]);
-        if ($staff) {
-            $staff->update(['photo' => null]);
-        }
         foreach (array_unique($photosToDelete) as $photoPath) {
-            Storage::disk('public')->delete($photoPath);
+            if ($user->staff?->photo !== $photoPath) {
+                Storage::disk('public')->delete($photoPath);
+            }
         }
         return back()->with('success', 'Photo supprimée.');
     }

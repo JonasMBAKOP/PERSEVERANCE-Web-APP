@@ -211,7 +211,7 @@
             @enderror
         </div>
 
-        {{-- Salaire mensuel (permanent) ou Tarif horaire (vacataire/stagiaire) --}}
+        {{-- Salaire mensuel (permanent) ou Tarif horaire (vacataire) --}}
         <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">
                 Salaire mensuel / Tarif horaire

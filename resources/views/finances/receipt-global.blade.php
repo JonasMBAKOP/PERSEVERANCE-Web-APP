@@ -412,7 +412,12 @@ body {
                     <span class="receipt-id">{{ $p->receipt_number }}</span>
                 </td>
                 <td style="font-weight:900;">
-                    {{ $p->is_bulk ? ($p->allocation_summary ?: ($p->feeInstallment?->label ?? 'Paiement groupé')) : ($p->feeInstallment?->label ?? '—') }}
+                    @php $isManualInsolvablePayment = $p->fee_installment_id === null && ! $p->is_bulk; @endphp
+                    @if($isManualInsolvablePayment)
+                        {{ $isEnglishReceipt ? 'Manual Insolvable' : 'Insolvable manuel' }}
+                    @else
+                        {{ $p->is_bulk ? ($p->allocation_summary ?: ($p->feeInstallment?->label ?? ($isEnglishReceipt ? 'Bulk Payment' : 'Paiement groupé'))) : ($p->feeInstallment?->label ?? '—') }}
+                    @endif
                 </td>
                 <td>
                     <span class="mode-badge">{{ $p->payment_method_label }}</span>

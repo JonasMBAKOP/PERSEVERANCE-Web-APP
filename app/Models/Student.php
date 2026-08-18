@@ -43,6 +43,11 @@ class Student extends Model
         return $this->hasMany(StudentEnrollment::class);
     }
 
+    public function infirmaryVisits()
+    {
+        return $this->hasMany(InfirmaryVisit::class);
+    }
+
     public function currentEnrollment()
     {
         return $this->hasOne(StudentEnrollment::class)

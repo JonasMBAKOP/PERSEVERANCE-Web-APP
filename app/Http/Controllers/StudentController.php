@@ -116,9 +116,7 @@ class StudentController extends Controller
         // Stats (uniquement inscriptions actives)
         $stats = [
             'total'     => $selectedYear
-                ? StudentEnrollment::where('academic_year_id', $selectedYear->id)
-                    ->where('status', StudentEnrollment::STATUS_ACTIVE)
-                    ->count()
+                ? StudentEnrollment::where('academic_year_id', $selectedYear->id)->count()
                 : StudentEnrollment::where('status', StudentEnrollment::STATUS_ACTIVE)->count(),
             'boys'      => $selectedYear
                 ? StudentEnrollment::where('academic_year_id', $selectedYear->id)
@@ -499,10 +497,18 @@ class StudentController extends Controller
             )
             ->orderBy('name')->get();
 
-        $sectionsJson = Section::query()->orderBy('id')->get()->map(fn ($section) => [
-            'id' => $section->id,
-            'name' => $section->name,
-        ])->values()->toArray();
+        $sectionsJson = Section::with(['levels' => fn ($query) =>
+            $query->orderBy('order_index')
+        ])->orderBy('id')->get()->map(function ($section) {
+            return [
+                'id' => $section->id,
+                'name' => $section->name,
+                'levels' => $section->levels->map(fn ($level) => [
+                    'id' => $level->id,
+                    'name' => $level->name,
+                ])->values()->toArray(),
+            ];
+        })->values()->toArray();
 
         $classesJson = [];
         $classes = ClassGroup::where('academic_year_id', $activeYear->id)
@@ -574,18 +580,9 @@ class StudentController extends Controller
                 $class->loadMissing('level.section');
                 $previousClass->loadMissing('level.section');
 
-                $sameLevel = (int) $class->level_id === (int) $previousClass->level_id;
-                $sameSection = (int) $class->level?->section_id === (int) $previousClass->level?->section_id;
-                $isPromotion = $sameSection
-                    && (int) $class->level?->order_index > (int) $previousClass->level?->order_index;
-
-                if (! $sameLevel && ! $isPromotion) {
-                    throw new \InvalidArgumentException(
-                        'La classe choisie doit être le même niveau (redoublement) ou un niveau supérieur de la même section (promotion).'
-                    );
-                }
-
-                $isRepeating = $sameLevel;
+                // Le renouvellement peut se faire dans une autre section.
+                // Seul le même niveau caractérise un redoublement.
+                $isRepeating = (int) $class->level_id === (int) $previousClass->level_id;
                 $school = \App\Models\SchoolSetting::instance();
 
                 $enrollment = StudentEnrollment::create([

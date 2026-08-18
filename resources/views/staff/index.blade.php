@@ -162,14 +162,14 @@
                     </svg>
                 </button>
 
-                <a href="{{ route('staff.print', request()->query()) }}" target="_blank"
+                {{-- <a href="{{ route('staff.print', request()->query()) }}" target="_blank"
                    class="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
                    title="Imprimer la liste du personnel">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 9V2h12v7m-1 5H7a3 3 0 00-3 3v3h16v-3a3 3 0 00-3-3zM7 14h10v8H7v-8z"/>
                     </svg>
                     Imprimer
-                </a>
+                </a> --}}
 
                 <a href="{{ route('staff.documents.cards') }}"
                    class="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
@@ -458,16 +458,8 @@
         </div>
     </div>
 
-    {{-- Charger plus de membres button --}}
     @if($staff->hasPages())
-        <div class="flex justify-center mt-8 mb-4">
-            <a href="{{ $staff->nextPageUrl() }}" class="inline-flex items-center gap-2 px-6 py-2.5 border border-gray-300 rounded-full text-xs font-semibold text-gray-500 bg-white hover:bg-gray-50 transition-colors uppercase tracking-wider">
-                Charger plus de membres
-                <svg class="w-4.5 h-4.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-                </svg>
-            </a>
-        </div>
+        <div class="mt-8 border-t border-gray-100 pt-5">{{ $staff->onEachSide(1)->links() }}</div>
     @endif
 
     @can('manage-staff')

@@ -25,22 +25,25 @@ body { background:#fff; margin:0; padding:0; color:#111827; }
 .cert-official-header__logo-placeholder { width:22mm; height:22mm; }
 .cert-official-header__agreements { display:none; }
 .report-title { border-top:2px solid #1A3A6B; border-bottom:1px solid #D1D5DB; margin:2px 0 3px; padding:2px 0; text-align:center; }
-.report-title h1 { color:#1A3A6B; font-size:14.5px; font-weight:900; text-transform:uppercase; }
-.report-title p { color:#4B5563; font-size:10px; margin-top:1px; }
-.teacher-meta { width:100%; border-collapse:collapse; margin:0 0 4px; }
-.teacher-meta td { border:1px solid #D1D5DB; padding:3px 5px; font-size:8px; vertical-align:top; }
-.teacher-meta .label { width:24%; background:#F8FAFC; color:#1A3A6B; font-weight:900; }
-.teacher-meta .value { font-weight:800; color:#111827; }
-.timetable-print { width:100%; border-collapse:collapse; table-layout:fixed; font-size:10px; }
+.report-title h1 { color:#1A3A6B; font-size:17px; font-weight:900; text-transform:uppercase; }
+.report-title p { color:#4B5563; font-size:11px; margin-top:1px; }
+.teacher-meta { width:100%; border-collapse:collapse; margin:0 0 8px; }
+.teacher-meta td { border:1px solid #D1D5DB; padding:7px 9px; font-size:10.5px; line-height:1.6; vertical-align:top; }
+.teacher-meta .label { width:24%; background:#F8FAFC; color:#1A3A6B; font-size:11px; font-weight:900; }
+.teacher-meta .value { font-size:11.5px; font-weight:800; color:#111827; }
+.timetable-print { width:100%; border-collapse:collapse; table-layout:fixed; font-size:12.5px; }
 .timetable-print th,
-.timetable-print td { border:1px solid #CBD5E1; padding:6px 7px; vertical-align:middle; text-align:center; }
-.timetable-print th { background:#EEF2F7; color:#1A3A6B; font-size:10.5px; font-weight:900; text-transform:uppercase; }
-.timetable-print .period { width:22mm; color:#4B5563; font-size:9.5px; font-weight:800; text-align:center; }
-.timetable-print td { min-height:11mm; text-align:center; vertical-align:middle; }
-.break-row td { background:#FFF7ED; color:#9A3412; font-size:10px; font-weight:900; text-align:center; }
-.slot { border-left:3px solid #1A5C2A; background:#F8FAFC; padding:6px; min-height:12mm; text-align:center; display:flex; flex-direction:column; justify-content:center; align-items:center; height:100%; }
-.slot strong { color:#0F5132; display:block; font-size:10px; line-height:1.15; }
-.slot span { color:#374151; display:block; font-size:8.5px; line-height:1.15; }
+.timetable-print td { border:1px solid #CBD5E1; padding:10px 10px; vertical-align:middle; text-align:center; }
+.timetable-print th { background:#EEF2F7; color:#1A3A6B; font-size:12.5px; font-weight:900; text-transform:uppercase; }
+.timetable-print .period { width:28mm; color:#4B5563; font-size:11.5px; font-weight:800; text-align:center; white-space:nowrap; }
+.timetable-print td { min-height:13mm; text-align:center; vertical-align:middle; }
+.break-row td { background:#FFF7ED; color:#9A3412; font-size:11.5px; font-weight:900; text-align:center; }
+.slot { border-left:3px solid #1A5C2A; background:#F8FAFC; padding:9px 8px; min-height:14mm; text-align:center; display:flex; flex-direction:column; justify-content:center; align-items:center; height:100%; }
+.slot strong { color:#0F5132; display:block; font-size:12.5px; line-height:1.25; }
+.slot span { color:#374151; display:block; font-size:10.5px; line-height:1.3; }
+.teacher-slot-block { width:100%; }
+.teacher-slot-block strong { display:block; color:#0F5132; font-size:12.5px; line-height:1.25; }
+.teacher-slot-block span { display:block; color:#374151; font-size:10.5px; line-height:1.3; }
 .footer-area { margin-top:14px; }
 .footer-line { display:flex; justify-content:flex-end; gap:14px; color:#6B7280; font-size:9px; }
 .footer-line span { min-width:230px; text-align:right; }
@@ -78,19 +81,19 @@ body { background:#fff; margin:0; padding:0; color:#111827; }
 
     <table class="teacher-meta">
         <tr>
-            <td class="label">Teacher's Name / Nom de l'enseignant</td>
+            <td class="label">Nom de l'enseignant / Teacher's Name</td>
             <td class="value">{{ $selectedStaff->full_name }}</td>
-            <td class="label">School Year / Année Scolaire</td>
+            <td class="label">Année Scolaire / School Year</td>
             <td class="value">{{ $activeYear?->label ?? '' }}</td>
         </tr>
         <tr>
-            <td class="label">Subject(s) Taught / Discipline(s) Enseignée(s)</td>
+            <td class="label">Discipline(s) Enseignée(s) / Subject(s) Taught</td>
             <td class="value">{{ $teacherSubjects->join(' / ') ?: '' }}</td>
-            <td class="label">Classes Taught / Classes Tenues</td>
+            <td class="label">Classes Tenues / Classes Taught</td>
             <td class="value">{{ $teacherClasses->join(' / ') ?: '' }}</td>
         </tr>
         <tr>
-            <td class="label">Hours Done / Nombre d'Heures</td>
+            <td class="label">Nombre d'Heures / Hours Done</td>
             <td class="value" colspan="3">{{ number_format($totalHours, 1, ',', ' ') }} h</td>
         </tr>
     </table>

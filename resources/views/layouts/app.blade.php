@@ -50,7 +50,7 @@
             @endif
 
             {{-- Contenu de la page --}}
-            <main class="flex-1 px-4 lg:px-6 py-4 lg:py-6 overflow-y-auto overflow-x-hidden">
+            <main @class(['flex-1 py-4 lg:py-6 overflow-y-auto overflow-x-hidden', 'px-1 lg:px-2' => request()->routeIs('infirmary.*'), 'px-4 lg:px-6' => ! request()->routeIs('infirmary.*')])>
                 {{-- Messages flash --}}
                 @if(session('success'))
                 <div class="mb-4 p-4 bg-green-50 border border-green-200

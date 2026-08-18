@@ -346,6 +346,16 @@
                                style="color:#1A3A6B;">
                                 #{{ $p->receipt_number }}
                             </a>
+                            @can('manage-finances')
+                            <form method="POST" action="{{ route('finances.payment.delete', $p) }}"
+                                  onsubmit="return confirm('Confirmer la suppression de ce paiement ? Cette action recalculera les soldes financiers et ne peut pas être annulée.');">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="mt-1 text-xs font-semibold text-red-600 hover:text-red-800 hover:underline">
+                                    Supprimer
+                                </button>
+                            </form>
+                            @endcan
                         </div>
                     </div>
                 </div>

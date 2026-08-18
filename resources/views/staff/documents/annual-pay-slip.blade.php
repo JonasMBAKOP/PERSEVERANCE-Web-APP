@@ -77,7 +77,7 @@
         <tr>
             <th>Salaire convenu</th>
             <td>
-                @if($staff->contract_type === 'permanent')
+                @if(in_array($staff->contract_type, ['permanent', 'semi_permanent'], true))
                     {{ $staff->monthly_salary ? number_format($staff->monthly_salary) . ' FCFA / mois' : 'À renseigner' }}
                 @else
                     {{ $staff->hourly_rate ? number_format($staff->hourly_rate) . ' FCFA / h' : 'À renseigner' }}

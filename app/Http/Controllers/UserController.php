@@ -19,7 +19,7 @@ class UserController extends Controller
         $authUser    = Auth::user();
         $isSuperAdmin = $authUser->hasRole('super-admin');
 
-        $query = User::with('roles')->orderBy('name');
+        $query = User::with(['roles', 'staff:id,user_id,photo'])->orderBy('name');
 
         // Masquer le super-admin pour les non-super-admins
         if (!$isSuperAdmin) {

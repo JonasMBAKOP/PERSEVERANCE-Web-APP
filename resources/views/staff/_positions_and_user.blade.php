@@ -1,5 +1,5 @@
 @php
-    $positionsList = [
+    $positionsList = $positionLabels ?? [
         'enseignant'             => 'Enseignant(e)',
         'directeur'              => 'Directeur',
         'prefet_des_etudes'      => 'Préfet des études',
@@ -9,6 +9,7 @@
         'vigile'                 => 'Vigile',
         'agent_d_entretien'      => 'Agent d\'entretien',
         'secretaire'             => 'Secrétaire',
+        'infirmier'              => 'Infirmier(ère)',
         'autre'                  => 'Autre',
     ];
 
@@ -38,6 +39,7 @@
         'surveillant-general'    => 'Surveillant général',
         'surveillant-de-secteur' => 'Surveillant de secteur',
         'secretaire'             => 'Secrétaire',
+        'infirmier'              => 'Infirmier(ère)',
         'enseignant'             => 'Enseignant(e)',
     ];
 
@@ -90,6 +92,8 @@
             {{-- Grille 2 colonnes des postes --}}
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                 @foreach($positionsList as $val => $lbl)
+                @if(auth()->user()->hasRole('censeur') && in_array($val, ['directeur', 'prefet_des_etudes'], true)) @continue @endif
+                @if(! auth()->user()->hasRole('super-admin') && $val === 'directeur') @continue @endif
                 @php $isChecked = in_array($val, $currentPositions); @endphp
                 <div class="group flex items-center justify-between px-3.5 py-2.5 border rounded-xl
                             cursor-pointer transition-all duration-150 select-none
@@ -226,7 +230,6 @@
      x-data="{
          mode: '{{ old('user_option', isset($staff) && $staff->user_id ? 'existing' : 'none') }}'
      }">
-    
     <input type="hidden" name="user_option" :value="mode">
 
     <div class="flex items-center justify-between mb-5 pb-3 border-b border-gray-100">
@@ -495,4 +498,4 @@ document.addEventListener('DOMContentLoaded', function () {
     checkCenseurVisibility();
 });
 </script>
-
+

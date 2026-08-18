@@ -73,7 +73,7 @@
                 <div class="rounded-3xl border border-slate-100 bg-slate-50 p-4">
                     <p class="font-semibold text-slate-800">Conseil</p>
                     <p class="mt-2 text-slate-600">
-                        {{ $staff->contract_type === 'permanent' ? 'Utilisez uniquement le champ Salaire mensuel.' : 'Utilisez uniquement le champ Tarif horaire.' }}
+                        {{ in_array($staff->contract_type, ['permanent', 'semi_permanent'], true) ? 'Utilisez uniquement le champ Salaire mensuel.' : 'Utilisez uniquement le champ Tarif horaire.' }}
                     </p>
                 </div>
             </div>
@@ -91,7 +91,7 @@
             </div>
 
             <div class="space-y-6 p-6">
-                @if($staff->contract_type === 'permanent')
+                @if(in_array($staff->contract_type, ['permanent', 'semi_permanent'], true))
                     <div class="space-y-3">
                         <label class="block text-sm font-medium text-slate-700">Salaire mensuel</label>
                         <input type="number" name="monthly_salary"

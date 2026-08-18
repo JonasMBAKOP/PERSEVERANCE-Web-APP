@@ -80,7 +80,7 @@ class LivretController extends Controller
         })->first()?->full_name;
         if (!$principalName) {
             $principalName = \App\Models\Staff::whereHas('positions', function ($q) {
-                $q->where('position', 'censeur');
+                $q->where('position', 'prefet_des_etudes');
             })->first()?->full_name ?? '—';
         }
 

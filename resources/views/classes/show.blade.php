@@ -417,7 +417,8 @@
                             {{ $cs->subject->name_fr }}
                         </td>
                         <td class="px-6 py-4 text-center">
-                            <span class="px-2 py-0.5 rounded text-xs font-bold bg-blue-50 text-blue-700 border border-blue-100">
+                            @php($colors = ['bg-blue-50 text-blue-700 border-blue-100', 'bg-emerald-50 text-emerald-700 border-emerald-100', 'bg-amber-50 text-amber-700 border-amber-100', 'bg-violet-50 text-violet-700 border-violet-100', 'bg-rose-50 text-rose-700 border-rose-100'])
+                            <span class="px-2 py-0.5 rounded text-xs font-bold border {{ $colors[crc32((string) $cs->subject->category->id) % count($colors)] }}">
                                 {{ $cs->subject->category->name_fr }}
                             </span>
                         </td>

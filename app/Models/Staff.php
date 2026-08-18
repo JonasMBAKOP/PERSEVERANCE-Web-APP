@@ -12,7 +12,6 @@ class Staff extends Model
 
     public const POSITIONS = [
         'enseignant',
-        'censeur',
         'prefet_des_etudes',
         'econome',
         'surveillant_general',
@@ -20,8 +19,8 @@ class Staff extends Model
         'vigile',
         'agent_d_entretien',
         'directeur',
-        'fondateur',
         'secretaire',
+        'infirmier',
         'autre',
     ];
 
@@ -32,7 +31,7 @@ class Staff extends Model
     ];
 
     public const CONTRACT_TYPES = [
-        'permanent', 'vacataire', 'stagiaire',
+        'permanent', 'vacataire', 'semi_permanent',
     ];
 
 // Fin
@@ -85,6 +84,11 @@ class Staff extends Model
         return $this->hasMany(TeacherAssignment::class);
     }
 
+    public function presences()
+    {
+        return $this->hasMany(StaffPresence::class);
+    }
+
     public function titularClasses()
     {
         return $this->hasMany(ClassGroup::class, 'titular_staff_id');
@@ -99,7 +103,17 @@ class Staff extends Model
     // Nom complet
     public function getFullNameAttribute(): string
     {
-        return "{$this->last_name} {$this->first_name}";
+        return mb_strtoupper("{$this->last_name} {$this->first_name}");
+    }
+
+    public function setFirstNameAttribute(?string $value): void
+    {
+        $this->attributes['first_name'] = mb_strtoupper(trim((string) $value));
+    }
+
+    public function setLastNameAttribute(?string $value): void
+    {
+        $this->attributes['last_name'] = mb_strtoupper(trim((string) $value));
     }
 
     // Nom complet avec civilité
@@ -132,7 +146,7 @@ class Staff extends Model
         return match ($this->contract_type) {
             'permanent' => 'Permanent',
             'vacataire' => 'Vacataire',
-            'stagiaire' => 'Stagiaire',
+            'semi_permanent' => 'Semi Permanent',
             default     => $this->contract_type,
         };
     }
@@ -144,7 +158,7 @@ class Staff extends Model
 
     public function getSalaryDisplayAttribute(): string
     {
-        if ($this->contract_type === 'permanent') {
+        if (in_array($this->contract_type, ['permanent', 'semi_permanent'], true)) {
             return $this->monthly_salary
                 ? number_format($this->monthly_salary) . ' FCFA / mois'
                 : 'À renseigner';
@@ -170,7 +184,12 @@ class Staff extends Model
     public function isTeacher(): bool
     {
         return $this->positions()
-            ->where('position', 'enseignant')
+            ->whereIn('position', [
+                'enseignant',
+                'prefet_des_etudes',
+                'censeur',
+                'surveillant_general',
+            ])
             ->exists();
     }
 
@@ -182,7 +201,12 @@ class Staff extends Model
     public function scopeTeachers($query)
     {
         return $query->active()->whereHas('positions', fn ($q) =>
-            $q->where('position', 'enseignant')
+            $q->whereIn('position', [
+                'enseignant',
+                'prefet_des_etudes',
+                'censeur',
+                'surveillant_general',
+            ])
         );
     }
 
@@ -197,7 +221,6 @@ class Staff extends Model
     {
         return [
             'enseignant'             => 'Enseignant(e)',
-            'censeur'                => 'Préfet des études / Dean',
             'prefet_des_etudes'      => 'Préfet des études / Dean',
             'econome'                => 'Économe',
             'surveillant_general'    => 'Surveillant(e) Général(e)',
@@ -205,8 +228,8 @@ class Staff extends Model
             'vigile'                 => 'Vigile',
             'agent_d_entretien'      => 'Agent d\'entretien',
             'directeur'              => 'Directeur / Principal',
-            'fondateur'              => 'Fondateur / Fondatrice',
             'secretaire'             => 'Secrétaire',
+            'infirmier'              => 'Infirmier(ère)',
             'autre'                  => 'Autre',
         ];
     }
@@ -216,7 +239,7 @@ class Staff extends Model
         return [
             'permanent' => 'Permanent',
             'vacataire' => 'Vacataire',
-            'stagiaire' => 'Stagiaire',
+            'semi_permanent' => 'Semi Permanent',
         ];
     }
 

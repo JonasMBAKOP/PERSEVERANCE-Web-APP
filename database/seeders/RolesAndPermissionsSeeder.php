@@ -24,6 +24,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'view-users', 'manage-users',
             // Personnel
             'view-staff', 'manage-staff',
+            'view-health', 'manage-health',
             // Élèves
             'view-students', 'manage-students',
             // Inscriptions
@@ -87,7 +88,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'view-announcements', 'manage-announcements', 'manage-parent-communication',
             'view-messages', 'send-messages',
             'view-reports', 'export-reports',
-            'view-academic-years', 'manage-academic-years',
+            // 'view-academic-years', 'manage-academic-years',
         ]);
 
         // 4. ÉCONOME
@@ -156,6 +157,14 @@ class RolesAndPermissionsSeeder extends Seeder
             'view-grades', 'enter-grades',
             'view-bulletins', 'manage-bulletins',
             'view-timetable',
+            'view-announcements',
+            'view-messages', 'send-messages',
+        ]);
+
+        $infirmier = Role::firstOrCreate(['name' => 'infirmier']);
+        $infirmier->syncPermissions([
+            'view-students',
+            'view-health', 'manage-health',
             'view-announcements',
             'view-messages', 'send-messages',
         ]);

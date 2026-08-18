@@ -32,6 +32,121 @@ class StaffController extends Controller
         5 => 'Vendredi',
     ];
 
+    public function passagePlanning(Request $request)
+    {
+        $context = $this->buildPassagePlanningContext($request);
+
+        return view('staff.passage-planning', [
+            'days' => self::DAYS,
+            'selectedDay' => $context['selectedDay'],
+            'activeYear' => $context['activeYear'],
+            'scheduleItems' => $context['scheduleItems'],
+            'contract' => $context['contractFilter'],
+            'contracts' => Staff::contractLabels(),
+            'totalSlots' => $context['totalSlots'],
+        ]);
+    }
+
+    public function previewPassagePlanning(Request $request)
+    {
+        $context = $this->buildPassagePlanningContext($request);
+
+        return view('staff.passage-planning-print', [
+            'days' => self::DAYS,
+            'selectedDay' => $context['selectedDay'],
+            'activeYear' => $context['activeYear'],
+            'scheduleItems' => $context['scheduleItems'],
+            'contract' => $context['contractFilter'],
+            'contracts' => Staff::contractLabels(),
+            'docTitle' => 'Planning de passage',
+            'school' => \App\Models\SchoolSetting::instance(),
+            'phones' => \App\Models\SchoolPhone::orderByDesc('is_primary')->get(),
+            'agreements' => \App\Models\SchoolAgreement::orderBy('id')->get(),
+        ]);
+    }
+
+    private function buildPassagePlanningContext(Request $request): array
+    {
+        $activeYear = AcademicYear::active();
+        $selectedDay = $request->integer('day', 1);
+
+        if (! array_key_exists($selectedDay, self::DAYS)) {
+            $selectedDay = 1;
+        }
+
+        $contractFilter = $request->input('contract');
+        $contractFilter = $contractFilter === '' ? null : $contractFilter;
+
+        if ($contractFilter !== null && ! array_key_exists($contractFilter, Staff::contractLabels())) {
+            $contractFilter = null;
+        }
+
+        $baseQuery = Staff::query()->active()->orderBy('last_name')->orderBy('first_name');
+
+        if ($contractFilter === null) {
+            // Les permanents sont presents tous les jours. Les autres contrats
+            // seront filtres ci-dessous selon les creneaux reels du jour.
+            $baseQuery->where(function ($query) {
+                $query->where('contract_type', 'permanent')
+                    ->orWhereHas('teacherAssignments');
+            });
+        } else {
+            $baseQuery->where('contract_type', $contractFilter);
+        }
+
+        $scheduleItems = collect();
+
+        foreach ($baseQuery->with('positions')->get() as $staff) {
+            $classSubjectIds = $activeYear
+                ? TeacherAssignment::query()
+                    ->where('staff_id', $staff->id)
+                    ->where('academic_year_id', $activeYear->id)
+                    ->pluck('class_subject_id')
+                    ->filter()
+                : collect();
+
+            $slots = $classSubjectIds->isEmpty()
+                ? collect()
+                : TimetableSlot::query()
+                    ->whereIn('class_subject_id', $classSubjectIds)
+                    ->where('academic_year_id', $activeYear->id)
+                    ->where('day_of_week', $selectedDay)
+                    ->with(['classGroup.level.section', 'classSubject.subject'])
+                    ->orderBy('start_time')
+                    ->orderBy('period_index')
+                    ->get();
+
+            $isPermanent = $staff->contract_type === 'permanent';
+            $mustBeListed = $isPermanent || $slots->isNotEmpty();
+
+            if ($mustBeListed) {
+                $scheduleItems->push([
+                    'staff' => $staff,
+                    'slots' => $slots,
+                    'presence_type' => $isPermanent ? 'continuous' : 'timetable',
+                ]);
+            }
+        }
+
+        $perPage = 20;
+        $page = max(1, $request->integer('page', 1));
+        $paginator = new \Illuminate\Pagination\LengthAwarePaginator(
+            $scheduleItems->forPage($page, $perPage)->values(),
+            $scheduleItems->count(),
+            $perPage,
+            $page,
+            ['path' => url()->current(), 'query' => $request->query()]
+        );
+
+        return [
+            'activeYear' => $activeYear,
+            'selectedDay' => $selectedDay,
+            'contractFilter' => $contractFilter,
+            'scheduleItems' => $paginator,
+            'totalSlots' => $scheduleItems->sum(fn ($item) => $item['slots']->count()),
+        ];
+    }
+
     // ── LISTE ─────────────────────────────────────────────────────────────
     public function index(Request $request)
     {
@@ -143,11 +258,7 @@ class StaffController extends Controller
 
                 $userToSync = $createdUser ?? ($staff->user_id ? User::find($staff->user_id) : null);
                 if ($userToSync) {
-                    $sharedPhotoPath = $staff->photo ?: $userToSync->photo;
-                    if ($sharedPhotoPath && $staff->photo !== $sharedPhotoPath) {
-                        $staff->update(['photo' => $sharedPhotoPath]);
-                    }
-                    $this->syncUserPhoto($userToSync, $sharedPhotoPath);
+                    $userToSync->update(['name' => $staff->full_name]);
                 }
 
                 // Créer les postes
@@ -542,11 +653,11 @@ class StaffController extends Controller
             'period_rate'    => ['nullable', 'numeric', 'min:0'],
         ]);
 
-        if ($staff->contract_type === 'permanent') {
+        if (in_array($staff->contract_type, ['permanent', 'semi_permanent'], true)) {
             $request->validate([
                 'monthly_salary' => ['required'],
             ]);
-        } elseif (in_array($staff->contract_type, ['vacataire', 'stagiaire'], true)) {
+        } elseif ($staff->contract_type === 'vacataire') {
             $request->validate([
                 'hourly_rate' => ['required'],
             ]);
@@ -621,11 +732,7 @@ class StaffController extends Controller
 
                 $userToSync = $createdUser ?? ($staff->user_id ? User::find($staff->user_id) : null);
                 if ($userToSync) {
-                    $sharedPhotoPath = $staff->photo ?: $userToSync->photo;
-                    if ($sharedPhotoPath && $staff->photo !== $sharedPhotoPath) {
-                        $staff->update(['photo' => $sharedPhotoPath]);
-                    }
-                    $this->syncUserPhoto($userToSync, $sharedPhotoPath);
+                    $userToSync->update(['name' => $staff->full_name]);
                 }
 
                 $positions = $request->input('positions', []);
@@ -649,7 +756,8 @@ class StaffController extends Controller
                 ->with('error', 'Erreur lors de la mise à jour : ' . $e->getMessage());
         }
 
-        if ($newPhotoPath && $oldStaffPhotoPath && $oldStaffPhotoPath !== $newPhotoPath) {
+        if ($newPhotoPath && $oldStaffPhotoPath && $oldStaffPhotoPath !== $newPhotoPath
+            && ! User::query()->where('photo', $oldStaffPhotoPath)->exists()) {
             Storage::disk('public')->delete($oldStaffPhotoPath);
         }
 
@@ -661,21 +769,6 @@ class StaffController extends Controller
             ->with('success', "Dossier de {$staff->full_name} mis à jour.");
     }
 
-    /** Keep the linked login account on the same physical photo as the staff record. */
-    private function syncUserPhoto(User $user, ?string $sharedPhotoPath): void
-    {
-        if (! $sharedPhotoPath || $user->photo === $sharedPhotoPath) {
-            return;
-        }
-
-        $previousPhotoPath = $user->photo;
-        $user->update(['photo' => $sharedPhotoPath]);
-
-        if ($previousPhotoPath && Storage::disk('public')->exists($previousPhotoPath)) {
-            Storage::disk('public')->delete($previousPhotoPath);
-        }
-    }
-     
     // public function update(UpdateStaffRequest $request, Staff $staff)
     // {
     //     $oldValues = $staff->toArray();
@@ -807,7 +900,7 @@ class StaffController extends Controller
 
         return compact('availableUsers', 'roles') + [
             'sections'       => \App\Models\Section::orderBy('name')->get(),
-            'positionLabels' => Staff::positionLabels(),
+            'positionLabels' => $this->allowedPositionLabels($authUser),
             'contractLabels' => Staff::contractLabels(),
             'diplomas'       => Staff::DIPLOMAS,
         ];
@@ -850,11 +943,31 @@ class StaffController extends Controller
             || $authUser->getRoleLevel() > $authUser->getRoleLevelByName($roleName);
     }
 
+    private function allowedPositionLabels(User $user): array
+    {
+        return array_filter(Staff::positionLabels(), fn (string $position) => $this->canAssignPosition($user, $position), ARRAY_FILTER_USE_KEY);
+    }
+
+    private function canAssignPosition(?User $user, string $position): bool
+    {
+        if (! $user) return false;
+        if ($user->hasRole('super-admin')) return true;
+        if ($user->hasRole('directeur')) return $position !== 'directeur';
+        if ($user->hasRole('censeur')) return ! in_array($position, ['directeur', 'prefet_des_etudes'], true);
+        return $position !== 'directeur';
+    }
+
     private function syncPositions(
         Staff $staff,
         array $positions,
         ?string $primaryPosition = null
     ): void {
+        foreach ($positions as $position) {
+            if (! $this->canAssignPosition(Auth::user(), $position)) {
+                throw new \Exception('Vous ne pouvez pas attribuer ce poste.');
+            }
+        }
+
         $staff->positions()->delete();
 
         // $hasPrimary = false;
@@ -885,7 +998,7 @@ class StaffController extends Controller
         array $positions,
         array $assignmentsData
     ): void {
-        $isCenseur = in_array('censeur', $positions, true) || in_array('prefet_des_etudes', $positions, true);
+        $isCenseur = in_array('prefet_des_etudes', $positions, true);
         
         $staff->censeurAssignments()->delete();
 
@@ -921,13 +1034,10 @@ class StaffController extends Controller
     // ── SUPPRESSION PHOTO ─────────────────────────────────────────────────
     public function deletePhoto(Staff $staff)
     {
-        $user = $staff->user;
-        $photosToDelete = array_filter([$staff->photo, $user?->photo]);
+        $photoPath = $staff->photo;
         $staff->update(['photo' => null]);
-        if ($user) {
-            $user->update(['photo' => null]);
-        }
-        foreach (array_unique($photosToDelete) as $photoPath) {
+
+        if ($photoPath && ! User::query()->where('photo', $photoPath)->exists()) {
             Storage::disk('public')->delete($photoPath);
         }
 

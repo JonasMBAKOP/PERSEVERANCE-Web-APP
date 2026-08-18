@@ -25,20 +25,20 @@ body { background: #fff; margin:0; padding: 0; color: #111827; }
 .cert-official-header__logo-placeholder { width: 25mm; height: 25mm; }
 .cert-official-header__agreements { display: none; }
 .report-title { border-top: 2px solid #1A3A6B; border-bottom: 1px solid #D1D5DB; margin: 3px 0 4px; padding: 3px 0; text-align: center; }
-.report-title h1 { color: #1A3A6B; font-size: 16px; font-weight: 900; letter-spacing: .2px; text-transform: uppercase; }
-.report-title p { color: #4B5563; font-size: 10.5px; margin-top: 2px; }
-.timetable-print { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 10px; }
+.report-title h1 { color: #1A3A6B; font-size: 18px; font-weight: 900; letter-spacing: .2px; text-transform: uppercase; }
+.report-title p { color: #4B5563; font-size: 11.5px; margin-top: 2px; }
+.timetable-print { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 12.5px; }
 .timetable-print th,
-.timetable-print td { border: 1px solid #CBD5E1; padding: 6px 7px; vertical-align: middle; text-align: center; }
-.timetable-print th { background: #EEF2F7; color: #1A3A6B; font-size: 10.5px; font-weight: 900; text-transform: uppercase; }
-.timetable-print .period { width: 22mm; color: #4B5563; font-size: 9.5px; font-weight: 800; text-align: center; vertical-align: middle; }
-.timetable-print td { min-height: 11mm; text-align: center; vertical-align: middle; }
-.break-row td { background: #FFF7ED; color: #9A3412; font-size: 10px; font-weight: 800; text-align: center; }
-.slot { border-left: 3px solid #1A3A6B; background: #F8FAFC; padding: 6px 6px; min-height: 12mm; text-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100%; }
-.slot strong { color: #0F2748; display: block; font-size: 10px; line-height: 1.15; }
-.slot span { color: #374151; display: block; font-size: 8.5px; line-height: 1.15; }
-.slot small { color: #6B7280; display: block; font-size: 8.5px; line-height: 1.1; margin-top: 1px; }
-.empty-half { color: #CBD5E1; font-size: 8.5px; text-align: center; }
+.timetable-print td { border: 1px solid #CBD5E1; padding: 10px 10px; vertical-align: middle; text-align: center; }
+.timetable-print th { background: #EEF2F7; color: #1A3A6B; font-size: 12.5px; font-weight: 900; text-transform: uppercase; }
+.timetable-print .period { width: 28mm; color: #4B5563; font-size: 11.5px; font-weight: 800; text-align: center; vertical-align: middle; white-space: nowrap; }
+.timetable-print td { min-height: 13mm; text-align: center; vertical-align: middle; }
+.break-row td { background: #FFF7ED; color: #9A3412; font-size: 11.5px; font-weight: 800; text-align: center; }
+.slot { border-left: 3px solid #1A3A6B; background: #F8FAFC; padding: 9px 8px; min-height: 14mm; text-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100%; }
+.slot strong { color: #0F2748; display: block; font-size: 12.5px; line-height: 1.25; }
+.slot span { color: #374151; display: block; font-size: 10.5px; line-height: 1.3; }
+.slot small { color: #6B7280; display: block; font-size: 10.5px; line-height: 1.2; margin-top: 1px; }
+.empty-half { color: #CBD5E1; font-size: 9px; text-align: center; }
 .footer-line { margin-top: 8px; display: flex; justify-content: flex-end; gap: 14px; color: #6B7280; font-size: 9px; }
 .footer-line span { min-width: 220px; text-align: right; }
 .signatures { margin-top: 12px; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
