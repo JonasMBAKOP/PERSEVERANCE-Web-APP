@@ -240,8 +240,25 @@ class StudentPayment extends Model
     // Génère un numéro de reçu unique
     public static function generateReceiptNumber(): string
     {
-        $year  = date('Y');
-        $count = static::count() + 1;
-        return 'RCP-' . $year . '-' . str_pad($count, 5, '0', STR_PAD_LEFT);
+        $year = date('Y');
+        $prefix = 'RCP-' . $year . '-';
+
+        // count() can reuse an existing number after a payment deletion.
+        $lastNumber = static::query()
+            ->where('receipt_number', 'like', $prefix . '%')
+            ->pluck('receipt_number')
+            ->map(function ($receiptNumber): int {
+                return preg_match('/(\d+)$/', (string) $receiptNumber, $matches)
+                    ? (int) $matches[1]
+                    : 0;
+            })
+            ->max() ?? 0;
+
+        do {
+            $lastNumber++;
+            $receiptNumber = $prefix . str_pad((string) $lastNumber, 5, '0', STR_PAD_LEFT);
+        } while (static::where('receipt_number', $receiptNumber)->exists());
+
+        return $receiptNumber;
     }
 }
