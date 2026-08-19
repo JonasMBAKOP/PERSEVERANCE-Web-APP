@@ -50,6 +50,38 @@ class InfirmaryController extends Controller
         ]);
     }
 
+    public function dashboard(): View
+    {
+        $activeYear = $this->currentAcademicYear();
+        $today = now()->toDateString();
+        $monthStart = now()->startOfMonth()->toDateString();
+
+        $baseQuery = InfirmaryVisit::query()
+            ->when($activeYear, fn ($query) => $query->where('academic_year_id', $activeYear->id));
+
+        $todayVisits = (clone $baseQuery)->whereDate('visit_date', $today)->count();
+        $monthVisits = (clone $baseQuery)->whereBetween('visit_date', [$monthStart, $today])->count();
+        $yearVisits = (clone $baseQuery)->count();
+        $studentsSeen = (clone $baseQuery)->distinct('student_id')->count('student_id');
+
+        $recentVisits = (clone $baseQuery)
+            ->with(['student', 'classGroup'])
+            ->orderByDesc('visit_date')
+            ->orderByDesc('visit_time')
+            ->limit(8)
+            ->get();
+
+        return view('dashboards.infirmary', [
+            'activeYear' => $activeYear,
+            'academicYearLabel' => $this->academicYearLabel($activeYear),
+            'todayVisits' => $todayVisits,
+            'monthVisits' => $monthVisits,
+            'yearVisits' => $yearVisits,
+            'studentsSeen' => $studentsSeen,
+            'recentVisits' => $recentVisits,
+        ]);
+    }
+
     public function create(): View
     {
         $activeYear = $this->currentAcademicYear();

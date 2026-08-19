@@ -7,6 +7,8 @@ use App\Models\StaffPresence;
 use App\Models\TimetableSlot;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class PresenceController extends Controller
 {
@@ -72,25 +74,70 @@ class PresenceController extends Controller
         $date = Carbon::parse($request->input('date'))->toDateString();
         $payload = $request->input('presences', []);
 
-        $saved = [];
-        foreach ($payload as $staffId => $data) {
-            $status = $data['status'] ?? 'absent';
-            $presence = StaffPresence::updateOrCreate([
+        $staffIds = collect(array_keys($payload))
+            ->map(fn ($id) => (int) $id)
+            ->filter()
+            ->values();
+
+        if ($staffIds->isEmpty()) {
+            return response()->json(['ok' => true, 'saved' => []]);
+        }
+
+        $validStaffIds = Staff::query()
+            ->whereIn('id', $staffIds)
+            ->pluck('id');
+        $now = now();
+        $rows = [];
+
+        foreach ($validStaffIds as $staffId) {
+            $data = $payload[$staffId] ?? $payload[(string) $staffId] ?? [];
+            $rows[] = [
                 'staff_id' => $staffId,
                 'date' => $date,
-            ], [
-                'status' => $status,
+                'status' => $data['status'] ?? 'absent',
                 'arrival_time' => $data['arrival_time'] ?? null,
                 'departure_time' => $data['departure_time'] ?? null,
                 'note' => $data['note'] ?? null,
-            ]);
-            $saved[$staffId] = $presence;
+                'created_at' => $now,
+                'updated_at' => $now,
+            ];
         }
+
+        try {
+            // Atomic on the unique(staff_id, date) key: safe for autosave and
+            // the global submit running at the same time.
+            StaffPresence::upsert(
+                $rows,
+                ['staff_id', 'date'],
+                ['status', 'arrival_time', 'departure_time', 'note', 'updated_at']
+            );
+        } catch (Throwable $exception) {
+            Log::error('Staff presence save failed', [
+                'date' => $date,
+                'staff_ids' => $validStaffIds->all(),
+                'exception' => $exception->getMessage(),
+            ]);
+
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'ok' => false,
+                    'message' => 'Les présences n’ont pas pu être enregistrées. Consultez les journaux du serveur.',
+                ], 500);
+            }
+
+            return back()->withInput()->with('error', 'Les présences n’ont pas pu être enregistrées.');
+        }
+
+        $saved = StaffPresence::query()
+            ->whereIn('staff_id', $validStaffIds)
+            ->whereDate('date', $date)
+            ->get()
+            ->keyBy('staff_id');
 
         if ($request->expectsJson() || $request->ajax()) {
             return response()->json([
                 'ok' => true,
-                'saved' => array_map(fn($p) => [
+                'saved' => $saved->map(fn($p) => [
                     'id' => $p->id,
                     'staff_id' => $p->staff_id,
                     'date' => $p->date->toDateString(),
@@ -98,11 +145,53 @@ class PresenceController extends Controller
                     'arrival_time' => $p->arrival_time,
                     'departure_time' => $p->departure_time,
                     'note' => $p->note,
-                ], $saved),
+                ])->values()->all(),
             ]);
         }
 
         return back()->with('success', 'Présences sauvegardées.');
+    }
+
+    public function print(Request $request)
+    {
+        $date = $request->query('date') ? Carbon::parse($request->query('date')) : Carbon::today();
+        $contractType = $request->query('contract_type', 'all');
+        $dayNumber = (int) $date->isoWeekday();
+
+        $slots = TimetableSlot::with('classSubject.teacherAssignments.staff')
+            ->where('day_of_week', $dayNumber)
+            ->get();
+        $scheduledStaffIds = $slots->flatMap(fn ($slot) =>
+            $slot->classSubject?->teacherAssignments?->pluck('staff_id') ?? []
+        )->unique()->values()->all();
+        $permanentStaffIds = Staff::active()->where('contract_type', 'permanent')->pluck('id')->all();
+        $expectedIds = collect(array_merge($scheduledStaffIds, $permanentStaffIds))->unique()->values();
+
+        $staffQuery = Staff::whereIn('id', $expectedIds)
+            ->with('positions')
+            ->orderBy('last_name')
+            ->orderBy('first_name');
+        if ($contractType !== 'all') {
+            $contractValue = [
+                'semi' => 'semi_permanent',
+                'semi_permanent' => 'semi_permanent',
+            ][$contractType] ?? $contractType;
+            $staffQuery->where('contract_type', $contractValue);
+        }
+
+        $staff = $staffQuery->get();
+        $presences = StaffPresence::whereIn('staff_id', $staff->pluck('id'))
+            ->whereDate('date', $date->toDateString())
+            ->get()
+            ->keyBy('staff_id');
+        $school = \App\Models\SchoolSetting::instance();
+        $phones = \App\Models\SchoolPhone::orderByDesc('is_primary')->orderBy('id')->get();
+        $activeYear = \App\Models\AcademicYear::active();
+        $classGroup = (object) ['academicYear' => $activeYear];
+
+        return view('staff.presences.print', compact(
+            'date', 'contractType', 'staff', 'presences', 'school', 'phones', 'classGroup'
+        ));
     }
 
     public function mark(Request $request)

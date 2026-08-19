@@ -14,7 +14,7 @@
     <div class="flex items-center gap-3 px-4 py-4
                 border-b border-white/10">
         <img src="{{ asset('images/logo.jpg') }}"
-             alt="PERSEVERANCE PLUS"
+             alt="COPTAN"
              class="w-10 h-10 flex-shrink-0">
         {{-- <img src="{{ asset('images/logo.jpg') }}"
              alt="COPTAN"
@@ -22,7 +22,7 @@
                     ring-2 ring-white/30 flex-shrink-0"> --}}
         <div class="overflow-hidden">
             <p class="text-white font-bold text-base leading-tight truncate">
-                GESPER
+                GESCOP
             </p>
             <p class="text-white/60 text-sm truncate">
                 Gestion Scolaire
@@ -144,20 +144,20 @@
                 {{-- label="Personnel" --}}
                 label="Enseignants & Staff"
                 href="{{ route('staff.index') }}"
-                :active="request()->routeIs('staff.*') && !request()->routeIs('staff.presences.*') && !request()->routeIs('staff.salaries') && !request()->routeIs('staff.salary.edit') && !request()->routeIs('staff.passage-planning*')" />
+                :active="request()->routeIs('staff.*') && !request()->routeIs('staff.presences.*') && !request()->routeIs('staff.passage-planning') && !request()->routeIs('staff.salaries') && !request()->routeIs('staff.salary.edit')" />
 
             <x-sidebar-item
                 icon="calendar"
                 label="Planning de passage"
                 href="{{ route('staff.passage-planning') }}"
-                :active="request()->routeIs('staff.passage-planning*')" />
+                :active="request()->routeIs('staff.passage-planning')" />
 
             <x-sidebar-item
                 icon="clipboard"
                 label="Présences"
                 href="{{ route('staff.presences.index') }}"
                 :active="request()->routeIs('staff.presences.*')" />
-             
+
             <x-sidebar-item
                 icon="bank"
                 label="Salaires"
@@ -238,12 +238,30 @@
                 :active="request()->routeIs('absences.*')" />
         @endcan
 
+        {{-- ── INFIRMERIE ──────────────────────────────────────────── --}}
         @can('view-health')
-            <div class="mx-1 mt-4 mb-1 rounded-lg px-3 py-2 text-[11px] font-bold uppercase tracking-[0.24em] text-white shadow-sm" style="background-color: #0f766e;">Infirmerie</div>
-            <x-sidebar-item icon="clipboard" label="Consultations" href="{{ route('infirmary.index') }}" :active="request()->routeIs('infirmary.index') || request()->routeIs('infirmary.edit') || request()->routeIs('infirmary.print')" />
-            <x-sidebar-item icon="folder-open" label="Dossiers Patients" href="{{ route('infirmary.patients') }}" :active="request()->routeIs('infirmary.patients') || request()->routeIs('infirmary.patients.show')" />
+            <div class="mx-1 mt-4 mb-1 rounded-lg px-3 py-2 text-[11px] font-bold uppercase tracking-[0.24em] shadow-sm"
+                style="background-color: #0F766E; color: #ffffff;">
+                Infirmerie
+            </div>
+            <x-sidebar-item
+                icon="clipboard"
+                label="Consultations"
+                href="{{ route('infirmary.index') }}"
+                :active="request()->routeIs('infirmary.index') || request()->routeIs('infirmary.edit') || request()->routeIs('infirmary.print')" />
+
+            <x-sidebar-item
+                icon="folder-open"
+                label="Dossiers Patients"
+                href="{{ route('infirmary.patients') }}"
+                :active="request()->routeIs('infirmary.patients') || request()->routeIs('infirmary.patients.show')" />
+
             @can('manage-health')
-                <x-sidebar-item icon="heart" label="Nouvelle consultation" href="{{ route('infirmary.create') }}" :active="request()->routeIs('infirmary.create')" />
+                <x-sidebar-item
+                    icon="heart"
+                    label="Nouvelle Consultation"
+                    href="{{ route('infirmary.create') }}"
+                    :active="request()->routeIs('infirmary.create')" />
             @endcan
         @endcan
 

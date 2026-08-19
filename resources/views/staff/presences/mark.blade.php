@@ -61,23 +61,24 @@
                     @foreach($staff as $member)
                         @php
                             $p = $presences->get($member->id);
+                            $isPresent = !$p || $p->status === 'present';
                         @endphp
                         <tr>
                             <td class="px-4 py-3">{{ $member->full_name }}</td>
                             <td class="px-4 py-3 text-center">{{ ucfirst(str_replace('_', ' ', $member->contract_type)) }}</td>
                             <td class="px-4 py-3 text-center">
-                                <input type="time" name="presences[{{ $member->id }}][arrival_time]" value="{{ $p?->arrival_time ?? '' }}" class="border rounded px-2 py-1">
+                                <input type="time" name="presences[{{ $member->id }}][arrival_time]" value="{{ $p?->arrival_time ?? ($isPresent ? '07:20' : '') }}" class="border rounded px-2 py-1" @disabled(!$isPresent)>
                             </td>
                             <td class="px-4 py-3 text-center">
-                                <input type="time" name="presences[{{ $member->id }}][departure_time]" value="{{ $p?->departure_time ?? '' }}" class="border rounded px-2 py-1">
+                                <input type="time" name="presences[{{ $member->id }}][departure_time]" value="{{ $p?->departure_time ?? '' }}" class="border rounded px-2 py-1" @disabled(!$isPresent)>
                             </td>
                             <td class="px-4 py-3">
                                 <input type="text" name="presences[{{ $member->id }}][note]" value="{{ $p?->note ?? '' }}" placeholder="Ex: Permissionné" class="w-full border rounded px-2 py-1">
                             </td>
                             <td class="px-4 py-3 text-center">
                                 <select name="presences[{{ $member->id }}][status]" class="border rounded px-2 py-1">
-                                    <option value="present" {{ $p && $p->status === 'present' ? 'selected' : '' }}>Présent</option>
-                                    <option value="absent" {{ !$p || $p->status === 'absent' ? 'selected' : '' }}>Absent</option>
+                                    <option value="present" {{ $isPresent ? 'selected' : '' }}>Présent</option>
+                                    <option value="absent" {{ $p?->status === 'absent' ? 'selected' : '' }}>Absent</option>
                                 </select>
                                 <span class="ml-2 inline-block autosave-indicator" data-staff-id="{{ $member->id }}" aria-hidden="true"></span>
                             </td>
@@ -130,7 +131,7 @@
         const arrival = document.querySelector('[name="' + rowPrefix + '[arrival_time]"]').value;
         const departure = document.querySelector('[name="' + rowPrefix + '[departure_time]"]').value;
         const note = document.querySelector('[name="' + rowPrefix + '[note]"]').value;
-        return { status, arrival_time: arrival || null, departure_time: departure || null, note: note || null };
+        return { status, arrival_time: status === 'absent' ? null : (arrival || null), departure_time: status === 'absent' ? null : (departure || null), note: note || null };
     }
 
     function saveRow(staffId){
@@ -171,6 +172,13 @@
         inputs.forEach(inp => {
             const eventName = inp.tagName.toLowerCase() === 'select' ? 'change' : 'input';
             inp.addEventListener(eventName, () => {
+                if (inp.name.endsWith('[status]')) {
+                    const disabled = inp.value === 'absent';
+                    tr.querySelectorAll('input[type="time"]').forEach(time => {
+                        time.disabled = disabled;
+                        if (disabled) time.value = '';
+                    });
+                }
                 if(timers[staffId]) clearTimeout(timers[staffId]);
                 timers[staffId] = setTimeout(() => saveRow(staffId), debounceMs);
             });
