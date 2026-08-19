@@ -12,7 +12,7 @@
             {{-- Title and pill inside content area --}}
             <div class="flex items-center mb-1">
                 <h2 class="text-2xl font-bold text-gray-900">Enseignants & Personnel</h2>
-                {{-- <a href="{{ route('staff.print', request()->query()) }}" target="_blank"
+                {{-- <a href="{{ route('staff.lists.print', request()->query()) }}" target="_blank"
                 class="ml-auto inline-flex items-center gap-2 rounded-xl bg-[#1A3A6B] px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-[#163450]"
                 title="Print staff list">
                     <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -50,7 +50,7 @@
             </div>
         </div>
 
-        <a href="{{ route('staff.print', request()->query()) }}" target="_blank"
+        <a href="{{ route('staff.lists.print', request()->query()) }}" target="_blank"
             class="ml-auto inline-flex items-center gap-2 rounded-xl bg-[#1A3A6B] px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-[#163450]"
             title="Print staff list">
             <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -162,7 +162,7 @@
                     </svg>
                 </button>
 
-                {{-- <a href="{{ route('staff.print', request()->query()) }}" target="_blank"
+        {{-- <a href="{{ route('staff.lists.print', request()->query()) }}" target="_blank"
                    class="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
                    title="Imprimer la liste du personnel">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
