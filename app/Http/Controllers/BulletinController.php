@@ -461,24 +461,19 @@ class BulletinController extends Controller
     private function studentPhotoPath($student, bool $forPdf = false): ?string
     {
         if ($student->photo) {
+            $storagePath = public_path('storage/' . ltrim($student->photo, '/'));
+            if (! file_exists($storagePath)) {
+                return null;
+            }
+
             if ($forPdf) {
-                $storagePath = public_path('storage/' . ltrim($student->photo, '/'));
-                if (file_exists($storagePath)) {
-                    return 'file://' . str_replace('\\', '/', $storagePath);
-                }
+                return 'file://' . str_replace('\\', '/', $storagePath);
             }
 
             return asset('storage/' . ltrim($student->photo, '/'));
         }
 
-        if ($forPdf) {
-            $default = public_path('images/default-avatar.png');
-            if (file_exists($default)) {
-                return 'file://' . str_replace('\\', '/', $default);
-            }
-        }
-
-        return asset('images/default-avatar.png');
+        return null;
     }
 
     private function buildParentContactLines($student): string

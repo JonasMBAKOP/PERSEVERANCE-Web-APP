@@ -385,13 +385,13 @@
                             <option value="">Sélectionner...</option>
                             @foreach($availableSubjects->groupBy('category.name_fr')
                                 as $catName => $subs)
-                            <optgroup label="{{ $catName }}">
+                            <optgroup label="{{ $subs->first()->category?->code ?? '—' }} - {{ $catName }}">
                                 @foreach($subs as $sub)
                                 <option value="{{ $sub->id }}"
                                         data-name="{{ $sub->name_fr }}"
-                                        {{-- data-code="{{ $sub->code }}" --}}
+                                        data-category-code="{{ $sub->category?->code }}"
                                         data-type="{{ $sub->type }}">
-                                    {{ $sub->name_fr }}
+                                    {{ $sub->category?->code ?? '—' }} - {{ $sub->name_fr }}
                                 </option>
                                 @endforeach
                             </optgroup>

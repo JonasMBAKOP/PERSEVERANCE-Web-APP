@@ -8,10 +8,10 @@
 @media print {
     .no-print { display: none !important; }
     body { background: #fff !important; padding: 0 !important; }
-    .bulletin-page { page-break-after: always; margin: 0 !important; border: none !important; box-shadow: none !important; }
+    .bulletin-page { page-break-after: always; margin: 0 !important; box-shadow: none !important; }
     .bulletin-page:last-child { page-break-after: auto; }
 }
-.bulletin-page { margin: 20px auto; border: 1px solid #ddd; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+.bulletin-page { margin: 20px auto; border: 4px solid var(--bleu); box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
 </style>
 </head>
 <body>

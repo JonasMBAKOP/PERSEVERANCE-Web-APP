@@ -10,7 +10,7 @@
 
     @page {
         size: A4 portrait;
-        margin: 6mm 8mm;
+        margin: 3mm;
     }
 
     * {
@@ -29,11 +29,13 @@
     }
 
     .bulletin-page {
-        width: 210mm;
-        min-height: 295mm;
+        width: 100%;
+        min-height: 291mm;
         margin: 0 auto;
-        padding: 0mm 2mm;
+        padding: 3mm 4mm;
         background: white;
+        border: 4px solid var(--bleu);
+        box-sizing: border-box;
         position: relative;
         overflow: hidden;
     }
@@ -270,7 +272,22 @@
     .notes-table th.col-subject,
     .notes-table td.col-subject {
         text-align: left;
-        width: 38%;
+        width: 30%;
+    }
+
+    .student-photo-fallback span { display: none; }
+
+    .notes-table th.col-group,
+    .notes-table td.col-group {
+        text-align: center;
+        width: 8%;
+    }
+
+    .notes-table tbody td,
+    .notes-table tfoot td {
+        padding-top: 2px;
+        padding-bottom: 2px;
+        line-height: 1.05;
     }
 
     .notes-table tr:nth-child(even) {

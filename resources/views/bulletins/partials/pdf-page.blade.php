@@ -31,14 +31,18 @@
         $cols[] = 'Moy.';
     }
     $conditionalColsCount = count($cols);
-    $totalColspan = 2 + $conditionalColsCount + 6; // Matiere + Coef + Conditional + (Total + Rang + %Reussite + Max + Min + Mentions)
+    $totalColspan = 3 + $conditionalColsCount + 6; // Groupe + Matiere + Coef + Conditional + (Total + Rang + %Reussite + Max + Min + Mentions)
 
     // Groupement des matières par catégorie
-    $groupedDetails = collect($details)->groupBy(function($detail) {
-        return $detail['subject']->category->name_fr ?? 'AUTRES MATIERES';
-    });
-    $categoryLetters = ['A', 'B', 'C', 'D', 'E'];
-    $catIndex = 0;
+    $groupedDetails = collect($details)
+        ->groupBy(fn ($detail) => $detail['subject']->category?->id ?? 'general')
+        ->sortBy(function ($catDetails) {
+            $code = (string) ($catDetails->first()['subject']->category?->code ?? '');
+            return $code === '' ? PHP_INT_MAX : (int) substr($code, 3);
+        });
+    $categoryCodes = $groupedDetails->map(fn ($catDetails) =>
+        trim((string) ($catDetails->first()['subject']->category?->code ?? ''))
+    )->filter()->values();
 @endphp
 
 <div class="bulletin-page">
@@ -105,8 +109,7 @@
         @endif --}}
 
         <div class="cert-official-header__title">
-            <div>{{ $documentTitle }}</div>
-            <div style="font-size: 11px; font-weight: normal; font-style: italic; margin-top: 2px; text-transform: uppercase;">{{ $documentTitleEn }}</div>
+        <div>{{ $documentTitle }} / {{ $documentTitleEn }}</div>
         </div>
     </header>
 
@@ -119,8 +122,8 @@
                 @if($studentPhoto)
                     <img src="{{ $studentPhoto }}" alt="Photo" style="width: 72px; height: 88px; object-fit: cover; border: 1px solid #CBD5E1; border-radius: 4px;">
                 @else
-                    <div style="width: 72px; height: 88px; border: 1px dashed #CBD5E1; color: #9CA3AF; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 7px; text-align: center; background: white; gap: 4px; border-radius: 4px;">
-                        <svg width="24" height="24" fill="none" stroke="#CBD5E1" stroke-width="1.5" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+                    <div class="student-photo-fallback" style="width: 72px; height: 76px; border: 1px solid #D1D5DB; color: #111827; display: flex; align-items: center; justify-content: center; background: #E5E7EB; border-radius: 4px;">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="#111827" aria-label="Avatar eleve"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7H4z"/></svg>
                         <span>Photo élève</span>
                     </div>
                 @endif
@@ -245,6 +248,7 @@
     <table class="notes-table">
         <thead>
             <tr>
+                <th class="col-group">GROUPES / GROUPS</th>
                 <th class="col-subject">MATIERES / SUBJECTS</th>
                 @foreach($cols as $colName)
                     <th style="text-align: center;">{{ $colName }}</th>
@@ -261,16 +265,23 @@
         <tbody>
             @php $sumPoints = 0; $sumCoef = 0; @endphp
 
-            @foreach($groupedDetails as $categoryName => $catDetails)
+            @foreach($groupedDetails as $catDetails)
                 @php
-                    $letter = $categoryLetters[$catIndex++] ?? 'X';
+                    $category = $catDetails->first()['subject']->category;
+                    $categoryCode = trim((string) ($category?->code ?? ''));
+                    $categoryName = $category?->name_fr ?? 'AUTRES MATIERES';
                 @endphp
                 {{-- Ligne En-tête Catégorie --}}
+                @if(false)
                 <tr class="category-row" style="background: rgba(26,58,107,0.05); font-weight: bold;">
-                    <td colspan="{{ $totalColspan }}" style="padding: 6px 8px; font-weight: 900; text-transform: uppercase; color: #1A3A6B;">
-                        {{ $letter }} - {{ $categoryName }}
+                    <td rowspan="{{ $catDetails->count() + 2 }}" style="width: 8%; text-align: center; vertical-align: middle; padding: 6px 4px; font-weight: 900; color: #1A3A6B;">
+                        {{ $categoryCode ?: '—' }}
+                    </td>
+                    <td colspan="{{ $totalColspan - 1 }}" style="padding: 6px 8px; font-weight: 900; text-transform: uppercase; color: #1A3A6B;">
+                        {{ $categoryCode ? $categoryCode . ' - ' : '' }}{{ $categoryName }}
                     </td>
                 </tr>
+                @endif
 
                 @foreach($catDetails as $detail)
                     @php
@@ -292,6 +303,11 @@
                         ));
                     @endphp
                     <tr>
+                        @if($loop->first)
+                            <td rowspan="{{ $catDetails->count() + 1 }}" class="col-group" style="text-align: center; vertical-align: middle; padding: 6px 4px; font-weight: 900; color: #1A3A6B;">
+                                {{ $categoryCode ? $categoryCode . ' - ' : '' }}{{ $categoryName }}
+                            </td>
+                        @endif
                         <td class="col-subject">
                             <div style="display: flex; justify-content: space-between; align-items: baseline;">
                                 <span style="font-weight: bold; color: #111827;">{{ $detail['subject']->name_fr }}</span>
@@ -407,8 +423,8 @@
             @endforeach
         </tbody>
         <tfoot>
-            <tr style="background: #F1F5F9; color: #1F2937; font-weight: bold; font-size: 9px; border: 1px solid #9CA3AF;">
-                <td style="font-weight: 900; text-transform: uppercase; padding: 5px 8px;">TOTAL A+B+C</td>
+                <tr style="background: #F1F5F9; color: #1F2937; font-weight: bold; font-size: 9px; border: 1px solid #9CA3AF;">
+                <td colspan="2" style="font-weight: 900; text-transform: uppercase; padding: 5px 8px;">TOTAL {{ $categoryCodes->join(' + ') ?: 'GENERAL' }}</td>
                 @foreach($periodAverages as $pAvg)
                     <td style="text-align: center; font-weight: 900; color: #1F2937;">
                         {{ $pAvg !== null ? number_format($pAvg, 2) : '—' }}
