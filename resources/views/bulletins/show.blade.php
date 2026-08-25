@@ -8,10 +8,18 @@
 @media print {
     .no-print { display: none !important; }
     body { background: #fff !important; padding: 0 !important; }
-    .bulletin-page { box-shadow: none !important; margin: 0 !important; }
+    .bulletin-page { box-shadow: none !important; margin: 0 auto !important; }
 }
 body { background: #E5E7EB; }
-.bulletin-page { width: 210mm; min-height: 297mm; max-width: calc(100vw - 32px); margin: 20px auto; border: 4px solid var(--bleu); box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+.bulletin-page {
+    width: 208mm;
+    max-width: calc(100vw - 32px);
+    min-height: 291mm;
+    margin: 20px auto;
+    border: 4px solid var(--bleu);
+    box-sizing: border-box;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+}
 </style>
 </head>
 <body>

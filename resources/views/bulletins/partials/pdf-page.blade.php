@@ -77,6 +77,11 @@
         min-width: 0;
         padding: 2px 2px;
     }
+    .bulletin-page .conduct-table tbody td {
+        padding-top: 2px;
+        padding-bottom: 2px;
+        line-height: 1.05;
+    }
     /* Ajustements propres aux bulletins, sans modifier les autres documents. */
     .bulletin-page .cert-official-header {
         margin-bottom: 6px;

@@ -10,7 +10,7 @@
 
     @page {
         size: A4 portrait;
-        margin: 3mm;
+        margin: 1mm;
     }
 
     * {
@@ -29,9 +29,11 @@
     }
 
     .bulletin-page {
-        width: 100%;
+        width: 208mm;
+        max-width: 100%;
         min-height: 291mm;
-        margin: 0 auto;
+        margin-left: auto;
+        margin-right: auto;
         padding: 3mm 4mm;
         background: white;
         border: 4px solid var(--bleu);
