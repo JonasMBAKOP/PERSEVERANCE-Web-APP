@@ -91,7 +91,7 @@
 
     <div class="signature-block signature-block--tight">
         <div class="signature-box">
-            <div>Le/La Professeur principal(e)</div>
+            <div>La Direction / The Direction</div>
             <div class="signature-line">Signature</div>
         </div>
         <div class="signature-box">

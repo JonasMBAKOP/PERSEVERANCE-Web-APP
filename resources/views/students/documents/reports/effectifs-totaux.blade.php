@@ -216,7 +216,7 @@
     @endforeach
 
     <div class="footer-signature-right">
-        <div>Le Principal</div>
+        <div>La Direction</div>
         @if($school->signature_seal)
             <img src="{{ asset('storage/' . $school->signature_seal) }}" alt="Cachet du Principal" class="footer-principal-seal">
         @endif

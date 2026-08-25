@@ -396,7 +396,7 @@
                 Fait à {{ $school->city ?? 'Douala' }} le : _________________
             </div>
             <div style="font-size: 10px; font-weight: 900; color: #1A3A6B; text-transform: uppercase; margin-top: 20px">
-                Le Principal
+                La Direction
             </div>
             @if($school->signature_seal)
                 <img

@@ -3,9 +3,9 @@
 .fiche-page { color: #111827; }
 .page.fiche-page {
     max-width: 204mm;
-    padding: 2mm 3mm;
+    padding: 0 3mm 2mm;
 }
-.fiche-page .cert-official-header { margin-bottom: 8px; }
+.fiche-page .cert-official-header { margin-bottom: 4px; }
 .fiche-document-title {
     background: #d9d9d9;
     border-top: 1px solid #9CA3AF;
@@ -52,7 +52,7 @@
 .fiche-field {
     display: grid;
     grid-template-columns: 34mm 1fr;
-    min-height: 10mm;
+    min-height: 9mm;
     border-bottom: 1px solid #E5E7EB;
     border-right: 1px solid #E5E7EB;
 }
@@ -69,7 +69,7 @@
     flex-direction: column;
     justify-content: center;
     gap: 1px;
-    padding: 5px 7px;
+    padding: 4px 6px;
     color: #111827;
     font-size: 10px;
     font-weight: 400;
@@ -78,7 +78,7 @@
 .fiche-value {
     display: flex;
     align-items: center;
-    padding: 5px 7px;
+    padding: 4px 6px;
     color: #111827;
     font-size: 10.5px;
     font-weight: 900;
@@ -95,8 +95,8 @@
     font-weight: 900;
 }
 .fiche-principal-signature--tight {
-    margin-top: 0;
-    margin-bottom: 6mm;
+    margin-top: 2mm;
+    margin-bottom: 2mm;
 }
 .fiche-principal-signature__en {
     margin-top: 1px;
@@ -105,14 +105,14 @@
     font-weight: 700;
 }
 .fiche-principal-signature__seal {
-    margin-top: 4px;
+    margin-top: 8px;
 }
 .fiche-principal-signature__seal img {
-    max-width: 65px;
-    max-height: 65px;
+    max-width: 84px;
+    max-height: 84px;
     display: block;
     margin: 6px auto 0;
-    margin-top: -4px;
+    margin-top: 0;
 }
 @media print {
     .fiche-print-page { page-break-after: always; }

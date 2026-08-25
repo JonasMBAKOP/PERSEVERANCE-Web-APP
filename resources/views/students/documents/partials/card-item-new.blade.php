@@ -129,7 +129,7 @@
                 <img src="{{ asset('storage/' . $school->principal_signature_image) }}" alt="Signature">
             @endif
         </div>
-        <div class="card-signature-label">Le Proviseur</div>
+        <div class="card-signature-label">La Direction</div>
     </div>
 
     <!-- Bande Colorée (Drapeau) -->

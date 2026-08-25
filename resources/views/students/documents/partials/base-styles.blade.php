@@ -512,7 +512,8 @@ body {
 }
 .cert-signature__date strong {
     margin-left: 8px;
-    font-size: 15px;
+    font-size: 17px;
+    font-weight: 900;
 }
 .cert-signature__principal {
     margin-top: 80px;
@@ -527,13 +528,13 @@ body {
     margin-top: 8px;
 }
 .cert-signature__seal img {
-    max-width: 50px;
-    max-height: 50px;
+    max-width: 110px;
+    max-height: 110px;
     display: block;
     margin: 6px auto 0;
 }
 .cert-note {
-    margin-top: 100px;
+    margin-top: 30px;
     text-align: center;
     font-size: 12px;
     font-weight: 700;

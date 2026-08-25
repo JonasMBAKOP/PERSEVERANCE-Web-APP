@@ -121,7 +121,7 @@ body { background:#fff; margin:0; padding:0; color:#111827; }
                 @endif
             </div>
             <div class="signatures__box">
-                <span class="signatures__label">Le Principal / The Principal</span>
+                <span class="signatures__label">La Direction / The Direction</span>
                 @if($principalSeal)
                     <img src="{{ asset('storage/' . $principalSeal) }}" alt="Cachet du principal" class="signatures__seal">
                 @else

@@ -5,7 +5,8 @@
 <title>Certificat de scolarité — {{ $student->full_name }}</title>
 @include('students.documents.partials.base-styles')
 <style>
-@page { size: A4 portrait; margin: 6mm 7mm; }
+@page { size: A4 portrait; margin: 2mm 3mm; }
+.page.cert-page { max-width: none; padding: 1mm 2mm; }
 </style>
 </head>
 <body>

@@ -182,7 +182,7 @@
                             <text font-size="4" fill="#1A3A6B" text-anchor="middle" x="50" y="65" opacity="0.4">Bafoussam</text>
                         </svg>
                     @endif
-                    <div class="id-card__seal-label">Le Proviseur</div>
+                    <div class="id-card__seal-label">La Direction</div>
                 </div>
             </div>
         </div>

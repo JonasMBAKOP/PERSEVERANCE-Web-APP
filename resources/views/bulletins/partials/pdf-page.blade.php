@@ -63,11 +63,26 @@
 @endphp
 
 <style>
+    .bulletin-page .bilan-bottom {
+        grid-template-columns: 1.55fr .75fr !important;
+        gap: 5px !important;
+        margin-top: 3px !important;
+    }
+    .bulletin-page .bilan-bottom .work-badges {
+        flex-wrap: nowrap;
+        gap: 2px;
+        padding: 3px 4px;
+    }
+    .bulletin-page .bilan-bottom .work-badge {
+        min-width: 0;
+        padding: 2px 2px;
+    }
     /* Ajustements propres aux bulletins, sans modifier les autres documents. */
     .bulletin-page .cert-official-header {
         margin-bottom: 6px;
         padding-bottom: 4px;
     }
+    .bulletin-page .bulletin-academic-year { display: none !important; }
 
     .bulletin-page .cert-official-header__columns {
         grid-template-columns: 1fr 34mm 1fr;
@@ -214,7 +229,7 @@
                 @if($school->email)
                     <div class="cert-official-header__email"><span>E-mail :</span> {{ $school->email }}</div>
                 @endif
-                <div class="cert-official-header__meta" style="font-weight: 800; color: #111827; margin-top: 2px;">Année Scolaire : {{ $academicYear->label ?? '—' }}</div>
+                <div class="cert-official-header__meta bulletin-academic-year" style="font-weight: 800; color: #111827; margin-top: 2px;">Année Scolaire : {{ $academicYear->label ?? '—' }}</div>
             </div>
 
             <div class="cert-official-header__logo">
@@ -244,7 +259,7 @@
                 @if($school->email)
                     <div class="cert-official-header__email"><span>Email :</span> {{ $school->email }}</div>
                 @endif
-                <div class="cert-official-header__meta" style="font-weight: 800; color: #111827; margin-top: 2px;">School Year: {{ $academicYear->label ?? '—' }}</div>
+                <div class="cert-official-header__meta bulletin-academic-year" style="font-weight: 800; color: #111827; margin-top: 2px;">School Year: {{ $academicYear->label ?? '—' }}</div>
             </div>
         </div>
 
@@ -305,7 +320,7 @@
                                 <span class="info-sublabel" style="font-size: 5.5px; font-style: italic; color: #6B7280;">Born on / At</span>
                             </div>
                             <span class="info-value" style="font-weight: 800; font-size: 9px; vertical-align: middle;">: {{ $enrollment->student->date_of_birth?->format('d/m/Y') ?? '—' }} à {{ strtoupper($enrollment->student->place_of_birth ?? '—') }}</span> --}}
-                            <div style="display: flex; gap: 70px;">
+                            <div style="display: flex; gap: 34px; align-items: center;">
                                 <div style="display: inline-flex; align-items: center;">
                                     <div style="display: inline-block; vertical-align: middle; margin-right: 4px; line-height: 1.1;">
                                         <span class="info-label" style="font-weight: 800; font-size: 7.5px;">Né(e) le </span><br>
@@ -354,6 +369,13 @@
                                         <span class="info-sublabel" style="font-size: 5.5px; font-style: italic; color: #6B7280;">Repeater</span>
                                     </div>
                                     <span class="info-value" style="font-weight: 800; font-size: 9px;">: {{ $isRepeating ? 'Oui' : 'Non' }}</span>
+                                </div>
+                                <div style="display: inline-flex; align-items: center;">
+                                    <div style="display: inline-block; margin-right: 4px; line-height: 1.1;">
+                                        <span class="info-label" style="font-weight: 800; font-size: 7.5px;">Année scolaire</span><br>
+                                        <span class="info-sublabel" style="font-size: 5.5px; font-style: italic; color: #6B7280;">School year</span>
+                                    </div>
+                                    <span class="info-value" style="font-weight: 800; font-size: 9px;">: {{ $academicYear->label ?? '—' }}</span>
                                 </div>
                             </div>
                         </td>
@@ -740,8 +762,8 @@
                 <thead>
                     <tr>
                         <th>Type</th>
-                        <th>Justifiées / Exec<br><em>Justified or Exec</em></th>
-                        <th>Non Just/Exécutées<br><em>Unjustified/Executed</em></th>
+                        <th>JUSTIFIÉES / JUSTIFIED</th>
+                        <th>NON JUSTIFIED / UNJUSTIFIED</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -752,7 +774,7 @@
                     </tr>
                 </tbody>
             </table>
-            @if($appreciation || $distinction)
+            {{-- @if($appreciation || $distinction)
             <div style="margin-top: 5px; padding: 3px 6px; background: #F0F4FA; border-radius: 3px; font-size: 7.5px; font-weight: 600; color: #374151;">
                 @if($appreciation)
                     <span style="font-weight:900; color:#1A3A6B;">Appréciation :</span> {{ $appreciation->label_fr }}
@@ -761,12 +783,12 @@
                     <span style="font-weight:800; color: var(--vert); margin-left:4px;">— Distinction : {{ $distinction->label_fr }}</span>
                 @endif
             </div>
-            @endif
+            @endif --}}
         </div>
     </div>
 
     {{-- ── SIGNATURES ── --}}
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; border-top: 1px dashed #D1D5DB; padding-top: 8px; margin-top: 6px;">
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; border-top: 1px dashed #D1D5DB; padding-top: 3px; margin-top: 2px;">
         <div style="text-align: center; font-size: 7.5px;">
             <div style="font-size: 7px; font-weight: 700; color: #6B7280; margin-bottom: 4px;">Date : ...............</div>
             <div style="font-size: 7.5px; font-weight: 900; text-transform: uppercase; color: #1A3A6B; margin-bottom: 18px;">
@@ -777,7 +799,7 @@
         <div style="text-align: center; font-size: 7.5px;">
             <div style="font-size: 7px; font-weight: 700; color: #6B7280; margin-bottom: 4px;">Date : ...............</div>
             <div class="signature-authority" style="font-size: 7.5px; font-weight: 900; text-transform: uppercase; color: #1A3A6B; margin-bottom: 18px;">
-                La Direction<br><span style="font-style:italic; font-weight:600; font-size:6.5px; color:#9CA3AF;">The management</span>
+                La Direction<br><span style="font-style:italic; font-weight:600; font-size:6.5px; color:#9CA3AF;">The Direction</span>
             </div>
             <div class="authority-seal" style="height: 18mm; display: flex; align-items: center; justify-content: center; margin-top: 1mm;">
                 @if($sealSrc)
