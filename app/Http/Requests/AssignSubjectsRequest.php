@@ -29,6 +29,10 @@ class AssignSubjectsRequest extends FormRequest
                     $subjects[$key]['coefficient'] = str_replace(',', '.', (string) $subject['coefficient']);
                 }
 
+                if (array_key_exists('grading_scale', $subject)) {
+                    $subjects[$key]['grading_scale'] = str_replace(',', '.', (string) $subject['grading_scale']);
+                }
+
                 if (array_key_exists('hours_per_week', $subject) && $subject['hours_per_week'] !== null) {
                     $subjects[$key]['hours_per_week'] = str_replace(',', '.', (string) $subject['hours_per_week']);
                 }
@@ -48,6 +52,7 @@ class AssignSubjectsRequest extends FormRequest
         return [
             'subjects'                    => ['nullable', 'array'],
             'subjects.*.subject_id'       => ['required', 'exists:subjects,id'],
+            'subjects.*.grading_scale'    => ['required', 'numeric', 'gt:0', 'max:1000'],
             'subjects.*.coefficient'      => ['required', 'numeric',
                                               'min:0.5', 'max:9'],
             'subjects.*.hours_per_week'   => ['nullable', 'numeric',

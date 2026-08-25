@@ -53,17 +53,29 @@
 
 {{-- ── LISTE ─────────────────────────────────────────────────────────────── --}}
 <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-    <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+    <div class="px-5 py-4 border-b border-gray-100 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <h3 class="font-black text-sm" style="color:#1A3A6B;">
             Historique des absences ({{ $enrollment->absences->count() }})
         </h3>
-        @can('manage-absences')
-        <a href="{{ route('absences.create',
-                         ['class_id' => $enrollment->class_group_id]) }}"
-           class="text-xs font-bold hover:underline" style="color:#E87722;">
-            + Ajouter
-        </a>
-        @endcan
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-end lg:ml-auto">
+            <form method="GET" action="{{ route('absences.student', $enrollment) }}" class="flex flex-wrap items-end gap-2">
+                <div>
+                    <label for="start_date" class="mb-1 block text-[11px] font-bold uppercase tracking-wide text-gray-400">Du</label>
+                    <input id="start_date" type="date" name="start_date" value="{{ $startDate }}" class="rounded-lg border border-gray-200 px-2.5 py-2 text-xs text-gray-700 focus:border-[#1A3A6B] focus:outline-none">
+                </div>
+                <div>
+                    <label for="end_date" class="mb-1 block text-[11px] font-bold uppercase tracking-wide text-gray-400">Au</label>
+                    <input id="end_date" type="date" name="end_date" value="{{ $endDate }}" class="rounded-lg border border-gray-200 px-2.5 py-2 text-xs text-gray-700 focus:border-[#1A3A6B] focus:outline-none">
+                </div>
+                <button type="submit" class="rounded-lg bg-[#1A3A6B] px-3 py-2 text-xs font-bold text-white hover:bg-[#143052]">Filtrer</button>
+                @if($startDate || $endDate)
+                    <a href="{{ route('absences.student', $enrollment) }}" class="rounded-lg border border-gray-200 px-3 py-2 text-xs font-bold text-gray-600 hover:bg-gray-50">Réinitialiser</a>
+                @endif
+            </form>
+            @can('manage-absences')
+            <a href="{{ route('absences.create', ['class_id' => $enrollment->class_group_id]) }}" class="text-xs font-bold hover:underline sm:pb-2" style="color:#E87722;">+ Ajouter</a>
+            @endcan
+        </div>
     </div>
 
     @if($enrollment->absences->isEmpty())
@@ -105,7 +117,15 @@
                     {{ $ab->classSubject?->subject?->name_fr ?? 'Absence générale' }}
                 </td>
                 <td class="px-4 py-3.5 text-sm text-gray-600 hidden sm:table-cell">
-                    {{ ucfirst($ab->period ?? '—') }}
+                    @if($ab->timetableSlot)
+                        {{ $ab->period ?? 'Période' }}
+                        @php $periodOffset = max(0, (int) $ab->timetable_period_index - (int) $ab->timetableSlot->period_index); @endphp
+                        <span class="block text-xs text-gray-400">
+                            {{ $ab->timetableSlot->start_time?->copy()->addHours($periodOffset)->format('H:i') }}-{{ $ab->timetableSlot->start_time?->copy()->addHours($periodOffset + 1)->format('H:i') }}
+                        </span>
+                    @else
+                        {{ ucfirst($ab->period ?? '—') }}
+                    @endif
                 </td>
                 <td class="px-4 py-3.5 text-center">
                     <span class="text-base font-black"

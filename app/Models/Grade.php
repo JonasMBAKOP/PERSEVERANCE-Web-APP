@@ -11,6 +11,7 @@ class Grade extends Model
         'class_subject_id',
         'sequence_id',
         'grade',
+        'raw_grade',
         'is_absent',
         'entered_by',
         'entered_at',
@@ -21,6 +22,7 @@ class Grade extends Model
     {
         return [
             'grade'      => 'decimal:2',
+            'raw_grade'  => 'decimal:2',
             'is_absent'  => 'boolean',
             'entered_at' => 'datetime',
         ];

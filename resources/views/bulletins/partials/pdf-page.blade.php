@@ -19,6 +19,13 @@
     if (! $logoSrc && file_exists(public_path('images/logo.jpg'))) {
         $logoSrc = $forPdf ?? false ? public_path('images/logo.jpg') : asset('images/logo.jpg');
     }
+    $sealSrc = null;
+    if ($school->signature_seal) {
+        $sealPath = public_path('storage/' . $school->signature_seal);
+        if (file_exists($sealPath)) {
+            $sealSrc = $forPdf ?? false ? $sealPath : asset('storage/' . $school->signature_seal);
+        }
+    }
 
     // Définition des colonnes de notes conditionnelles
     $cols = [];
@@ -43,7 +50,148 @@
     $categoryCodes = $groupedDetails->map(fn ($catDetails) =>
         trim((string) ($catDetails->first()['subject']->category?->code ?? ''))
     )->filter()->values();
+    $activeAppreciationCode = $average !== null
+        ? \App\Models\AppreciationScale::forGrade((float) $average)?->code
+        : null;
+    $appreciationStyles = [
+        'CNA' => 'background:#FEE2E2;color:#991B1B;border-color:#FCA5A5;',
+        'CMA' => 'background:#FEF3C7;color:#92400E;border-color:#FCD34D;',
+        'CA' => 'background:#EDE9FE;color:#6D28D9;border-color:#C4B5FD;',
+        'CBA' => 'background:#DBEAFE;color:#1D4ED8;border-color:#93C5FD;',
+        'CTBA' => 'background:#D1FAE5;color:#065F46;border-color:#6EE7B7;',
+    ];
 @endphp
+
+<style>
+    /* Ajustements propres aux bulletins, sans modifier les autres documents. */
+    .bulletin-page .cert-official-header {
+        margin-bottom: 6px;
+        padding-bottom: 4px;
+    }
+
+    .bulletin-page .cert-official-header__columns {
+        grid-template-columns: 1fr 34mm 1fr;
+        gap: 4mm;
+    }
+
+    .bulletin-page .cert-official-header__republic {
+        font-size: 9.5px;
+        line-height: 1.05;
+    }
+
+    .bulletin-page .cert-official-header__motto {
+        font-size: 8px;
+        line-height: 1.05;
+        margin: 2px 0;
+    }
+
+    .bulletin-page .cert-official-header__stars {
+        font-size: 9px;
+        line-height: 1;
+        margin: 1px 0;
+        letter-spacing: .5px;
+    }
+
+    .bulletin-page .cert-official-header__ministry {
+        font-size: 8.5px;
+        line-height: 1.05;
+    }
+
+    .bulletin-page .cert-official-header__school {
+        font-size: 9.5px;
+        line-height: 1.05;
+    }
+
+    .bulletin-page .cert-official-header__meta,
+    .bulletin-page .cert-official-header__email {
+        font-size: 7.5px;
+        line-height: 1.15;
+    }
+
+    .bulletin-page .cert-official-header__email span {
+        font-size: 8px;
+    }
+
+    .bulletin-page .cert-official-header__logo img,
+    .bulletin-page .cert-official-header__logo-placeholder {
+        width: 26mm !important;
+        height: 26mm !important;
+    }
+
+    .bulletin-page .cert-official-header__logo-placeholder {
+        font-size: 20px;
+    }
+
+    .bulletin-page .cert-official-header__title {
+        margin-top: 4px;
+        padding: 4px 6px;
+        font-size: 14px;
+        line-height: 1.05;
+    }
+
+    .bulletin-page .perseverance-appreciations > div:first-child {
+        font-size: 6.5px !important;
+        line-height: 1.05;
+        margin-bottom: 3px !important;
+        padding-top: 0 !important;
+        border-top: none !important;
+    }
+
+    .bulletin-page .perseverance-appreciations .appr-codes-row {
+        display: grid;
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+        margin-bottom: 0;
+        width: 100%;
+    }
+
+    .bulletin-page .perseverance-appreciations .appr-code-cell {
+        padding: 3px 2px;
+        min-width: 0;
+    }
+
+    .bulletin-page .perseverance-appreciations .appr-code-cell:nth-child(-n+3) {
+        grid-column: span 2;
+        border-bottom: 1px solid #CBD5E1;
+    }
+
+    .bulletin-page .perseverance-appreciations .appr-code-cell:nth-child(n+4) {
+        grid-column: span 3;
+    }
+
+    .bulletin-page .perseverance-appreciations .appr-code-cell .code {
+        font-size: 7.5px;
+    }
+
+    .bulletin-page .perseverance-appreciations .appr-code-cell .meaning {
+        font-size: 5.2px;
+        line-height: 1.05;
+    }
+
+    .bulletin-page .perseverance-stats-primary .stat-metric {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+    }
+    .bulletin-page .perseverance-stats-primary .stat-metric > span:last-child {
+        border: 1px solid var(--bleu);
+        padding: 1px 4px;
+        border-radius: 2px;
+        white-space: nowrap;
+    }
+    .bulletin-page { min-height: 0; padding-bottom: 4mm; }
+    .bulletin-page .signature-authority { margin-bottom: 2px !important; }
+    .bulletin-page .authority-seal { height: 17mm !important; margin-top: 0 !important; }
+    .bulletin-page .authority-seal img { max-width: 34mm !important; max-height: 17mm !important; }
+    .bulletin-page .authority-seal svg { width: 92px; height: 48px; }
+
+    .bulletin-page .perseverance-bottom-grid {
+        grid-template-columns: 1.05fr 1.4fr 1.05fr !important;
+    }
+
+    .bulletin-page .perseverance-stats-primary { grid-column: 1; grid-row: 1; }
+    .bulletin-page .perseverance-appreciations { grid-column: 2; grid-row: 1; }
+    .bulletin-page .perseverance-stats-secondary { grid-column: 3; grid-row: 1; }
+</style>
 
 <div class="bulletin-page">
     {{-- ── EN-TÊTE BILINGUE OFFICIEL ── --}}
@@ -210,9 +358,9 @@
                             </div>
                         </td>
                     </tr>
-                    <tr>
+                    {{-- <tr> --}}
                         {{-- Ligne 4 : Prof. Titulaire | Chef d'établissement --}}
-                        <td style="border: none; padding: 2px 0; vertical-align: middle; width: 62%;">
+                        {{-- <td style="border: none; padding: 2px 0; vertical-align: middle; width: 62%;">
                             <div style="display: inline-block; vertical-align: middle; margin-right: 4px; line-height: 1.1;">
                                 <span class="info-label" style="font-weight: 800; font-size: 7.5px;">Prof. Titulaire</span><br>
                                 <span class="info-sublabel" style="font-size: 5.5px; font-style: italic; color: #6B7280;">Class Master/Mistress</span>
@@ -226,7 +374,7 @@
                             </div>
                             <span class="info-value" style="font-weight: 800; font-size: 9px; vertical-align: middle;">: {{ $principalName }}</span>
                         </td>
-                    </tr>
+                    </tr> --}}
                     {{-- <tr> --}}
                         {{-- Ligne 5 : Contact Parent --}}
                         {{-- <td style="border: none; padding: 2px 0; vertical-align: middle;" colspan="2">
@@ -254,7 +402,7 @@
                     <th style="text-align: center;">{{ $colName }}</th>
                 @endforeach
                 <th class="col-coef" style="text-align: center;">COEF.</th>
-                <th style="text-align: center;">TOTAL</th>
+                <th style="text-align: center;">TOTAL /20</th>
                 <th style="text-align: center;">RANG</th>
                 <th style="text-align: center;">%REUSSITE</th>
                 <th style="text-align: center;">MAX</th>
@@ -317,13 +465,13 @@
 
                         @if($type === 'sequentiel')
                             {{-- Note séquence unique --}}
-                            <td class="grade-cell {{ $gradeClass }}">
+                            <td class="grade-cell" style="color: #111827;">
                                 @if($isAbsent)
                                     ABS
                                 @elseif($grade === null)
                                     —
                                 @else
-                                    {{ number_format($grade, 2) }}
+                                    {{ number_format($detail['raw_grade'] ?? $grade, 2) }}/{{ rtrim(rtrim(number_format((float) ($detail['grading_scale'] ?? 20), 2, '.', ''), '0'), '.') }}
                                 @endif
                             </td>
                         @else
@@ -333,12 +481,15 @@
                                     $value = $type === 'trimestriel'
                                         ? ($detail['seq_grades'][$index] ?? null)
                                         : ($detail['trimester_averages'][$index] ?? null);
+                                    $rawValue = $type === 'trimestriel'
+                                        ? ($detail['seq_raw_grades'][$index] ?? null)
+                                        : ($detail['trimester_raw_averages'][$index] ?? null);
                                 @endphp
-                                <td class="grade-cell {{ is_numeric($value) ? ($value >= 12 ? 'grade-good' : ($value >= 10 ? 'grade-avg' : 'grade-bad')) : '' }}">
+                                <td class="grade-cell" style="color: #111827;">
                                     @if($value === 'ABS')
                                         ABS
                                     @elseif($value !== null)
-                                        {{ number_format($value, 2) }}
+                                        {{ number_format($rawValue ?? ($value * (float) ($detail['grading_scale'] ?? 20) / 20), 2) }}/{{ rtrim(rtrim(number_format((float) ($detail['grading_scale'] ?? 20), 2, '.', ''), '0'), '.') }}
                                     @else
                                         —
                                     @endif
@@ -346,13 +497,13 @@
                             @endforeach
 
                             {{-- Moyenne générale de la matière --}}
-                            <td class="grade-cell {{ $gradeClass }}">
+                            <td class="grade-cell" style="color: #111827;">
                                 @if($isAbsent)
                                     ABS
                                 @elseif($grade === null)
                                     —
                                 @else
-                                    {{ number_format($grade, 2) }}
+                                    {{ number_format($detail['raw_grade'] ?? ($grade * (float) ($detail['grading_scale'] ?? 20) / 20), 2) }}/{{ rtrim(rtrim(number_format((float) ($detail['grading_scale'] ?? 20), 2, '.', ''), '0'), '.') }}
                                 @endif
                             </td>
                         @endif
@@ -361,7 +512,7 @@
                         <td class="col-coef" style="text-align: center;">{{ $coef }}</td>
 
                         {{-- Total Points --}}
-                        <td class="col-total" style="text-align: center; font-weight: bold;">
+                        <td class="col-total grade-cell {{ $gradeClass }}" style="text-align: center; font-weight: bold;">
                             {{ $pointTotal !== null ? number_format($pointTotal, 2) : '—' }}
                         </td>
 
@@ -410,10 +561,7 @@
                     $catAvg = $catTotalCoef > 0 ? round($catTotalPoints / $catTotalCoef, 2) : null;
                 @endphp
                 <tr style="background: #F0F4FA; font-weight: bold; border: 1px solid #9CA3AF; font-size: 8px;">
-                    <td style="text-align: right; font-weight: 900; text-transform: uppercase; padding: 4px 8px;">TOTAL SOUS-GROUPE</td>
-                    @for ($i = 0; $i < $conditionalColsCount; $i++)
-                        <td></td>
-                    @endfor
+                    <td colspan="{{ 1 + $conditionalColsCount }}" style="text-align: right; font-weight: 900; text-transform: uppercase; padding: 4px 8px;">TOTAL SOUS-GROUPE</td>
                     <td style="text-align: center; font-weight: 900;">{{ $catTotalCoef }}</td>
                     <td style="text-align: center; font-weight: 900;">{{ number_format($catTotalPoints, 2) }}</td>
                     <td colspan="5" style="text-align: right; padding-right: 12px; font-weight: 900;">
@@ -424,51 +572,70 @@
         </tbody>
         <tfoot>
                 <tr style="background: #F1F5F9; color: #1F2937; font-weight: bold; font-size: 9px; border: 1px solid #9CA3AF;">
-                <td colspan="2" style="font-weight: 900; text-transform: uppercase; padding: 5px 8px;">TOTAL {{ $categoryCodes->join(' + ') ?: 'GENERAL' }}</td>
+                <td colspan="{{ $type === 'sequentiel' ? 3 : 3 + count($periodHeaders) }}" style="text-align: center; font-weight: 900; text-transform: uppercase; padding: 2px 6px; line-height: 1.05;">TOTAL {{ $categoryCodes->join(' + ') ?: 'GENERAL' }}</td>
+                @if(false)
                 @foreach($periodAverages as $pAvg)
                     <td style="text-align: center; font-weight: 900; color: #1F2937;">
                         {{ $pAvg !== null ? number_format($pAvg, 2) : '—' }}
                     </td>
                 @endforeach
-                @if($type !== 'sequentiel')
+                @endif
+                @if(false && $type !== 'sequentiel')
                     <td style="text-align: center; font-weight: 900; color: #1F2937;">
                         {{ $average !== null ? number_format($average, 2) : '—' }}
                     </td>
                 @endif
                 <td style="text-align: center; font-weight: 900;">{{ $sumCoef }}</td>
                 <td style="text-align: center; font-weight: 900;">{{ number_format($sumPoints, 2) }}</td>
+                @if($type !== 'sequentiel')
+                <td colspan="5" style="padding: 0; color: #1F2937;">
+                    <div style="display: grid; grid-template-columns: repeat({{ max(1, count($periodAverages)) }}, minmax(0, 1fr)); width: 100%;">
+                    @foreach($periodAverages as $index => $pAvg)
+                        <div style="text-align: center; font-weight: 900; color: #1F2937; padding: 2px; line-height: 1.05; {{ $loop->first ? '' : 'border-left: 1px solid #CBD5E1;' }}">
+                            <span style="font-size: 7px;">{{ $periodHeaders[$index] ?? 'Moy.' }}</span><br>
+                            {{ $pAvg !== null ? number_format($pAvg, 2) . '/20' : '-' }}
+                        </div>
+                    @endforeach
+                    </div>
+                </td>
+                @endif
+                @if(false && $type === 'sequentiel')
                 <td colspan="5" style="text-align: right; padding-right: 12px; font-weight: 900; color: #1F2937;">
-                    @if($type === 'sequentiel')
+                    @if(false)
                         MOYENNE : 
-                    @else
+                    @elseif(false)
                         MOYENNE GENERALE / AVERAGE : 
                     @endif
+                    @if(false)
                     <span style="font-size: 10px; color: #1A3A6B; font-weight: 900;">{{ $average !== null ? number_format($average, 2) . '/20' : '—' }}</span>
                 </td>
+                @endif
+                @endif
             </tr>
         </tfoot>
     </table>
 
     {{-- ── STATISTIQUES ET MOYENNES (DEUX BLOCS) ── --}}
-    <div class="stats-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 6px; margin-bottom: 8px;">
+    <div class="perseverance-bottom-grid" style="display: grid; grid-template-columns: 1.05fr 1.05fr 1.4fr; gap: 6px; margin-top: 3px; margin-bottom: 6px; align-items: stretch;">
+    <div class="stats-row perseverance-stats" style="display: contents;">
         {{-- Bloc 1: Moyenne, Rang, Moy. de Classe --}}
-        <div style="border: 1px solid #CBD5E1; border-radius: 4px; padding: 6px 10px; background: #F8FAFC; display: flex; flex-direction: column; gap: 5px; font-size: 8px;">
-            <div style="display: flex; justify-content: space-between; align-items: baseline;">
+        <div class="perseverance-stats-primary" style="border: 1px solid #CBD5E1; border-radius: 4px; padding: 5px 7px; background: #F8FAFC; display: flex; flex-direction: column; gap: 3px; font-size: 7.5px;">
+            <div class="stat-metric" style="display: flex; justify-content: space-between; align-items: baseline;">
                 <span style="font-weight: 700; color: #374151;">Moyenne <span style="font-size: 6px; color: #9CA3AF; font-style: italic; font-weight: normal; margin-left: 2px;">/ Average</span></span>
                 <span style="font-weight: 900; font-size: 10px; color: #1A3A6B;">{{ $average !== null ? number_format($average, 2) : '—' }}<span style="font-size: 7px; font-weight: normal; color: #9CA3AF;">/20</span></span>
             </div>
-            <div style="display: flex; justify-content: space-between; align-items: baseline;">
+            <div class="stat-metric" style="display: flex; justify-content: space-between; align-items: baseline;">
                 <span style="font-weight: 700; color: #374151;">Rang <span style="font-size: 6px; color: #9CA3AF; font-style: italic; font-weight: normal; margin-left: 2px;">/ Position</span></span>
-                <span style="font-weight: 900; font-size: 10px; color: #1A3A6B;">{{ $rankInfo['rank'] ?? '—' }}</span>
+                <span style="font-weight: 900; font-size: 10px; color: #1A3A6B;">{{ isset($rankInfo['rank']) ? ((int) $rankInfo['rank'] === 1 ? '1er' : $rankInfo['rank'] . 'e') : '—' }}<span style="font-size: 7px; font-weight: normal; color: #9CA3AF;">/{{ $rankInfo['class_size'] ?? '—' }}</span></span>
             </div>
-            <div style="display: flex; justify-content: space-between; align-items: baseline;">
+            <div class="stat-metric" style="display: flex; justify-content: space-between; align-items: baseline;">
                 <span style="font-weight: 700; color: #374151;">Moyenne de classe <span style="font-size: 6px; color: #9CA3AF; font-style: italic; font-weight: normal; margin-left: 2px;">/ Class average</span></span>
                 <span style="font-weight: 900; font-size: 10px; color: #1A3A6B;">{{ isset($rankInfo['class_average']) ? number_format($rankInfo['class_average'], 2) : '—' }}<span style="font-size: 7px; font-weight: normal; color: #9CA3AF;">/20</span></span>
             </div>
         </div>
 
         {{-- Bloc 2: Moy. premier, Moy. dernier, Nbre moyennes, Taux réussite --}}
-        <div style="border: 1px solid #CBD5E1; border-radius: 4px; padding: 6px 10px; background: #F8FAFC; display: flex; flex-direction: column; gap: 5px; font-size: 8px;">
+        <div class="perseverance-stats-secondary" style="border: 1px solid #CBD5E1; border-radius: 4px; padding: 5px 7px; background: #F8FAFC; display: flex; flex-direction: column; gap: 3px; font-size: 7.5px;">
             <div style="display: flex; justify-content: space-between; align-items: baseline;">
                 <span style="font-weight: 700; color: #374151;">Moyenne du premier <span style="font-size: 6px; color: #9CA3AF; font-style: italic; font-weight: normal; margin-left: 2px;">/ Highest average</span></span>
                 <span style="font-weight: 900; font-size: 10px; color: #1A3A6B;">{{ isset($rankInfo['highest']) ? number_format($rankInfo['highest'], 2) : '—' }}<span style="font-size: 7px; font-weight: normal; color: #9CA3AF;">/20</span></span>
@@ -489,7 +656,7 @@
     </div>
 
     {{-- ── BLOC DE RAPPEL DES MOYENNES TRIMESTRIELLES (TRIMESTRES 2, 3 ET ANNUEL) ── --}}
-    @if(isset($previousAverages) && count($previousAverages) > 0)
+    {{-- @if(isset($previousAverages) && count($previousAverages) > 0)
     <div style="margin-top: 6px; margin-bottom: 8px;">
         <div style="text-align:center; font-size:7.5px; font-weight:900; text-transform:uppercase; letter-spacing:.06em; color:#1A3A6B; margin-bottom:4px; border-top: 1px solid #CBD5E1; padding-top:4px;">
             RAPPEL DES MOYENNES TRIMESTRIELLES / <span style="font-style:italic; font-weight:600; color:#6B7280;">TRIMESTER AVERAGES RECALL</span>
@@ -503,31 +670,31 @@
             @endforeach
         </div>
     </div>
-    @endif
+    @endif --}}
 
     {{-- ── APPRÉCIATIONS / APPRECIATIONS ── --}}
-    <div style="margin-top: 6px;">
+    <div class="perseverance-appreciations" style="margin-top: 0; min-width: 0; align-self: stretch;">
         <div style="text-align:center; font-size:7.5px; font-weight:900; text-transform:uppercase; letter-spacing:.06em; color:#1A3A6B; margin-bottom:4px; border-top: 1px solid #CBD5E1; padding-top:4px;">
             APPRÉCIATIONS / <span style="font-style:italic; font-weight:600; color:#6B7280;">APPRECIATIONS</span>
         </div>
         <div class="appr-codes-row">
-            <div class="appr-code-cell">
+            <div class="appr-code-cell" style="{{ $activeAppreciationCode === 'CNA' ? $appreciationStyles['CNA'] : '' }}">
                 <div class="code">CNA</div>
                 <div class="meaning">Compt. Non Acq.<br><em>Compt. Not Acq.</em></div>
             </div>
-            <div class="appr-code-cell">
+            <div class="appr-code-cell" style="{{ $activeAppreciationCode === 'CMA' ? $appreciationStyles['CMA'] : '' }}">
                 <div class="code">CMA</div>
                 <div class="meaning">Compt. Moy. Acq.<br><em>Compt. Avg. Acq.</em></div>
             </div>
-            <div class="appr-code-cell">
+            <div class="appr-code-cell" style="{{ $activeAppreciationCode === 'CA' ? $appreciationStyles['CA'] : '' }}">
                 <div class="code">CA</div>
                 <div class="meaning">Compétences Acquises<br><em>Competences Acquired</em></div>
             </div>
-            <div class="appr-code-cell">
+            <div class="appr-code-cell" style="{{ $activeAppreciationCode === 'CBA' ? $appreciationStyles['CBA'] : '' }}">
                 <div class="code">CBA</div>
                 <div class="meaning">Compt. Bien Acq.<br><em>Compt. Well Acq.</em></div>
             </div>
-            <div class="appr-code-cell">
+            <div class="appr-code-cell" style="{{ $activeAppreciationCode === 'CTBA' ? $appreciationStyles['CTBA'] : '' }}">
                 <div class="code">CTBA</div>
                 <div class="meaning">Compt. Très Bien Acq.<br><em>Compt. Very Well Acq.</em></div>
             </div>
@@ -535,6 +702,8 @@
     </div>
 
     {{-- ── TRAVAIL & CONDUITE ── --}}
+    </div>
+
     <div class="bilan-bottom">
         <div>
             <div style="text-align:center; font-size:7px; font-weight:900; text-transform:uppercase; letter-spacing:.06em; color:#1A3A6B; margin-bottom:3px; border-bottom:1px solid #E5E7EB; padding-bottom:2px;">
@@ -607,8 +776,19 @@
         </div>
         <div style="text-align: center; font-size: 7.5px;">
             <div style="font-size: 7px; font-weight: 700; color: #6B7280; margin-bottom: 4px;">Date : ...............</div>
-            <div style="font-size: 7.5px; font-weight: 900; text-transform: uppercase; color: #1A3A6B; margin-bottom: 18px;">
-                Le Principal<br><span style="font-style:italic; font-weight:600; font-size:6.5px; color:#9CA3AF;">The principal</span>
+            <div class="signature-authority" style="font-size: 7.5px; font-weight: 900; text-transform: uppercase; color: #1A3A6B; margin-bottom: 18px;">
+                La Direction<br><span style="font-style:italic; font-weight:600; font-size:6.5px; color:#9CA3AF;">The management</span>
+            </div>
+            <div class="authority-seal" style="height: 18mm; display: flex; align-items: center; justify-content: center; margin-top: 1mm;">
+                @if($sealSrc)
+                    <img src="{{ $sealSrc }}" alt="Cachet de la direction" style="max-width: 30mm; max-height: 16mm; object-fit: contain;">
+                @else
+                    <svg width="82" height="42" viewBox="0 0 82 42" role="img" aria-label="Emplacement du cachet de la direction">
+                        <circle cx="41" cy="21" r="18" fill="#F3F4F6" stroke="#9CA3AF" stroke-width="1.5"/>
+                        <circle cx="41" cy="21" r="13" fill="none" stroke="#CBD5E1" stroke-width="1"/>
+                        <text x="41" y="24" text-anchor="middle" font-size="7" font-weight="700" fill="#6B7280">CACHET</text>
+                    </svg>
+                @endif
             </div>
             {{-- <div style="border-top: 1px solid #D1D5DB; padding-top: 4px; color: #9CA3AF; font-size: 6.5px;">Signature &amp; Cachet / <em>Stamp</em></div> --}}
         </div>

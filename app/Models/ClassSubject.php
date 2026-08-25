@@ -9,6 +9,7 @@ class ClassSubject extends Model
     protected $fillable = [
         'class_group_id',
         'subject_id',
+        'grading_scale',
         'coefficient',
         'hours_per_week',
         'is_active',
@@ -17,6 +18,7 @@ class ClassSubject extends Model
     protected function casts(): array
     {
         return [
+            'grading_scale' => 'decimal:2',
             'coefficient'    => 'decimal:1',
             'hours_per_week' => 'decimal:1',
             'is_active'      => 'boolean',

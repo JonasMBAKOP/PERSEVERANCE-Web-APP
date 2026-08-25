@@ -287,12 +287,21 @@ class AbsenceController extends Controller
     // ── ABSENCES D'UN ÉLÈVE ───────────────────────────────────────────────
     public function student(StudentEnrollment $enrollment)
     {
+        $filters = request()->validate([
+            'start_date' => ['nullable', 'date'],
+            'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
+        ]);
+        $startDate = $filters['start_date'] ?? null;
+        $endDate = $filters['end_date'] ?? null;
+
         $enrollment->load([
             'student',
             'classGroup.level.section',
             'academicYear',
             'absences' => fn($q) =>
-                $q->with(['classSubject.subject', 'recordedBy'])
+                $q->with(['classSubject.subject', 'recordedBy', 'timetableSlot'])
+                  ->when($startDate, fn($query) => $query->whereDate('absence_date', '>=', $startDate))
+                  ->when($endDate, fn($query) => $query->whereDate('absence_date', '<=', $endDate))
                   ->orderByDesc('absence_date'),
         ]);
 
@@ -301,7 +310,7 @@ class AbsenceController extends Controller
         $unjustifiedH  = $enrollment->absences->where('is_justified', false)->sum('hours');
 
         return view('absences.student', compact(
-            'enrollment', 'totalH', 'justifiedH', 'unjustifiedH'
+            'enrollment', 'totalH', 'justifiedH', 'unjustifiedH', 'startDate', 'endDate'
         ));
     }
 

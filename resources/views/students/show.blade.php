@@ -964,6 +964,12 @@
                             </div>
                             <div class="text-sm text-gray-500">
                                 {{ $absence->period ?? 'Journée' }}
+                                @if($absence->timetableSlot)
+                                    @php $periodOffset = max(0, (int) $absence->timetable_period_index - (int) $absence->timetableSlot->period_index); @endphp
+                                    <span class="block text-xs text-gray-400">
+                                        {{ $absence->timetableSlot->start_time?->copy()->addHours($periodOffset)->format('H:i') }}-{{ $absence->timetableSlot->start_time?->copy()->addHours($periodOffset + 1)->format('H:i') }}
+                                    </span>
+                                @endif
                             </div>
                         </div>
                     @endforeach

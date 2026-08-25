@@ -297,6 +297,7 @@ class SubjectController extends Controller
                     'subject_id'     => $item['subject_id'],
                 ],
                 [
+                    'grading_scale' => $item['grading_scale'],
                     'coefficient'    => $item['coefficient'],
                     'hours_per_week' => $item['hours_per_week'] ?: null,
                     'is_active'      => true,
@@ -369,6 +370,7 @@ class SubjectController extends Controller
                 $newCs = ClassSubject::create([
                     'class_group_id' => $classGroup->id,
                     'subject_id'     => $cs->subject_id,
+                    'grading_scale'  => $cs->grading_scale,
                     'coefficient'    => $cs->coefficient,
                     'hours_per_week' => $cs->hours_per_week,
                     'is_active'      => true,

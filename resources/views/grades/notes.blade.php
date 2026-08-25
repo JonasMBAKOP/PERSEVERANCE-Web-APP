@@ -176,12 +176,17 @@
 </div>
 
 <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+    @php $gradingScale = (float) ($classSubject->grading_scale ?: 20); @endphp
     <table class="w-full">
         <thead>
             <tr style="background:#F8FAFC; border-bottom:2px solid #E5E7EB;">
                 <th class="text-left px-5 py-3.5 text-xs font-bold
                            text-gray-500 uppercase tracking-wider">
                     Élève
+                </th>
+                <th class="text-center px-5 py-3.5 text-xs font-bold
+                           text-gray-500 uppercase tracking-wider">
+                    Note /{{ rtrim(rtrim(number_format($gradingScale, 2, '.', ''), '0'), '.') }}
                 </th>
                 <th class="text-center px-5 py-3.5 text-xs font-bold
                            text-gray-500 uppercase tracking-wider">
@@ -199,6 +204,7 @@
             @php
                 $g      = $grades->get($enr->id);
                 $grade  = $g?->grade;
+                $rawGrade = $g?->raw_grade ?? ($gradingScale == 20 ? $grade : null);
                 $absent = $g?->is_absent ?? false;
                 if ($absent) $absCount++;
                 elseif ($grade !== null) { $sum += $grade; $cnt++; }
@@ -221,6 +227,17 @@
                             </p>
                         </div>
                     </div>
+                </td>
+                <td class="px-5 py-3.5 text-center">
+                    @if($absent)
+                    <span class="text-red-500 font-black text-sm">ABS</span>
+                    @elseif($rawGrade !== null)
+                    <span class="text-lg font-black" style="color:#1A3A6B;">
+                        {{ number_format((float)$rawGrade, 2) }}
+                    </span>
+                    @else
+                    <span class="text-gray-300 text-sm">—</span>
+                    @endif
                 </td>
                 <td class="px-5 py-3.5 text-center">
                     @if($absent)
@@ -253,6 +270,7 @@
                 <td class="px-5 py-3 text-xs font-bold text-gray-500 uppercase">
                     Moyenne de la classe
                 </td>
+                <td class="px-5 py-3"></td>
                 <td class="px-5 py-3 text-center">
                     @if($cnt > 0)
                     @php $avg = $sum / $cnt; @endphp

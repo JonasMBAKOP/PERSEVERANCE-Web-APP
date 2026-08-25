@@ -1,4 +1,4 @@
-@extends('layouts.app')
+﻿@extends('layouts.app')
 
 @section('title', 'Saisie des Notes')
 @section('page-title', 'Saisie des Notes')
@@ -264,6 +264,8 @@
     @endcan
 </div>
 
+@php $gradingScale = (float) ($classSubject->grading_scale ?: 20); @endphp
+
 {{-- FORMULAIRE DE SAISIE --}}
 @if(!$isLocked)
 <form method="POST" action="{{ route('grades.save') }}"
@@ -289,6 +291,11 @@
                     <th class="text-center px-5 py-3.5 text-xs font-bold
                                text-gray-500 uppercase tracking-wider"
                         style="width:45%;">
+                        Note /{{ rtrim(rtrim(number_format($gradingScale, 2, '.', ''), '0'), '.') }}
+                    </th>
+                    <th class="text-center px-5 py-3.5 text-xs font-bold
+                               text-gray-500 uppercase tracking-wider"
+                        style="width:20%;">
                         Note /20
                     </th>
                     <th class="text-center px-5 py-3.5 text-xs font-bold
@@ -303,6 +310,7 @@
                 @php
                     $g      = $grades->get($enr->id);
                     $grade  = $g?->grade;
+                    $rawGrade = $g?->raw_grade ?? ($gradingScale == 20 ? $grade : null);
                 @endphp
                 <tr class="hover:bg-blue-50/20 transition-colors"
                     data-row="{{ $enr->id }}">
@@ -329,19 +337,25 @@
                         <input type="number"
                                name="grades[{{ $enr->id }}]"
                                id="grade-{{ $enr->id }}"
-                               value="{{ $grade !== null
-                                   ? number_format((float)$grade, 2, '.', '')
+                               value="{{ $rawGrade !== null
+                                   ? number_format((float)$rawGrade, 2, '.', '')
                                    : '' }}"
-                               min="0" max="20" step="0.25"
+                               min="0" max="{{ $gradingScale }}" step="0.01"
                                placeholder="—"
-                               oninput="updateApprec({{ $enr->id }}, this.value)"
+                               oninput="updateGradeRow({{ $enr->id }}, this.value)"
                                onchange="roundGrade(this)"
                                class="grade-input text-center font-black
                                       text-base rounded-xl border-2 px-3 py-2
                                       focus:outline-none transition-all"
                                style="width:80px; color:#1A3A6B;
-                                      border-color:{{ $grade !== null ? '#1A3A6B' : '#E5E7EB' }};
+                                      border-color:{{ $rawGrade !== null ? '#1A3A6B' : '#E5E7EB' }};
                                       background:white;">
+                    </td>
+                    <td class="px-5 py-3.5 text-center">
+                        <span id="normalized-{{ $enr->id }}"
+                              class="text-base font-black" style="color:#1A3A6B;">
+                            {{ $grade !== null ? number_format((float)$grade, 2) : '—' }}
+                        </span>
                     </td>
                     <td class="px-5 py-3.5 text-center">
                         <span id="apprec-{{ $enr->id }}"
@@ -361,6 +375,7 @@
                     <td class="px-5 py-3 text-xs font-bold text-gray-500 uppercase">
                         Moyenne de la classe
                     </td>
+                    <td class="px-5 py-3"></td>
                     <td class="px-5 py-3 text-center">
                         <span id="class-avg" class="text-sm font-black"
                               style="color:#1A3A6B;">—</span>
@@ -416,7 +431,9 @@
                 <th class="text-left px-5 py-3.5 text-xs font-bold
                            text-gray-500 uppercase tracking-wider">Élève</th>
                 <th class="text-center px-5 py-3.5 text-xs font-bold
-                           text-gray-500 uppercase tracking-wider">Note</th>
+                           text-gray-500 uppercase tracking-wider">Note /{{ rtrim(rtrim(number_format($gradingScale, 2, '.', ''), '0'), '.') }}</th>
+                <th class="text-center px-5 py-3.5 text-xs font-bold
+                           text-gray-500 uppercase tracking-wider">Note /20</th>
                 <th class="text-center px-5 py-3.5 text-xs font-bold
                            text-gray-500 uppercase tracking-wider">Appréciation</th>
             </tr>
@@ -426,12 +443,22 @@
             @php
                 $g      = $grades->get($enr->id);
                 $grade  = $g?->grade;
+                $rawGrade = $g?->raw_grade ?? ($gradingScale == 20 ? $grade : null);
             @endphp
             <tr class="hover:bg-gray-50/50">
                 <td class="px-5 py-3.5">
                     <p class="text-sm font-bold text-gray-800">
                         {{ $enr->student->full_name }}
                     </p>
+                </td>
+                <td class="px-5 py-3.5 text-center">
+                    @if($rawGrade !== null)
+                    <span class="text-lg font-black" style="color:#1A3A6B;">
+                        {{ number_format((float)$rawGrade, 2) }}
+                    </span>
+                    @else
+                    <span class="text-gray-300">—</span>
+                    @endif
                 </td>
                 <td class="px-5 py-3.5 text-center">
                     @if($grade !== null)
@@ -679,35 +706,41 @@ function entryFilters(sections, sequences, initSection, initSubject, initClass, 
 
 /* ── Fonctions interactives du tableau de saisie ────────────────────── */
 const APPREC = {!! json_encode($appreciationJs ?? []) !!};
+const GRADING_SCALE = {{ $gradingScale }};
 
 function getApprec(v) {
     return APPREC.find(a => v >= a.min && v <= a.max) || APPREC[APPREC.length - 1];
 }
 
-function updateApprec(eid, val) {
+function updateGradeRow(eid, val) {
     const span  = document.getElementById(`apprec-${eid}`);
+    const normalized = document.getElementById(`normalized-${eid}`);
     const input = document.getElementById(`grade-${eid}`);
     const v     = parseFloat(val);
 
-    if (!span) return;
+    if (!span || !normalized) return;
 
     // Validation couleur
-    if (val !== '' && (isNaN(v) || v < 0 || v > 20)) {
+    if (val !== '' && (isNaN(v) || v < 0 || v > GRADING_SCALE)) {
         input.style.borderColor = '#EF4444';
         input.style.background  = '#FEF2F2';
         span.textContent = '!';
         span.style.cssText = 'background:#FEE2E2;color:#991B1B;';
+        normalized.textContent = '—';
     } else if (val === '') {
         input.style.borderColor = '#E5E7EB';
         input.style.background  = 'white';
         span.textContent = '—';
         span.style.cssText = 'background:#F3F4F6;color:#9CA3AF;';
+        normalized.textContent = '—';
     } else {
+        const x = v * 20 / GRADING_SCALE;
         input.style.borderColor = '#1A3A6B';
         input.style.background  = '#EBF3FB';
-        const a = getApprec(v);
+        const a = getApprec(x);
         span.textContent = a.label;
         span.style.cssText = `background:${a.bg};color:${a.color};`;
+        normalized.textContent = x.toFixed(2);
     }
 
     updateStats();
@@ -716,11 +749,10 @@ function updateApprec(eid, val) {
 
 function roundGrade(input) {
     const v = parseFloat(input.value);
-    if (!isNaN(v)) input.value = Math.round(v * 4) / 4;
+    if (!isNaN(v)) input.value = Math.round(v * 100) / 100;
 }
 
 function updateStats() {
-    const inputs = document.querySelectorAll('input.grade-input:not(:disabled)');
     let sum = 0, cnt = 0, filled = 0;
 
     document.querySelectorAll('[data-row]').forEach(row => {
@@ -729,7 +761,8 @@ function updateStats() {
         if (!inp) return;
 
         if (inp.value !== '') {
-            const v = parseFloat(inp.value);
+            const normalized = document.getElementById(`normalized-${eid}`);
+            const v = parseFloat(normalized?.textContent);
             if (!isNaN(v) && v >= 0 && v <= 20) {
                 sum += v; cnt++; filled++;
             }

@@ -10,6 +10,8 @@ class Absence extends Model
         'student_enrollment_id',
         'absence_date',
         'period',
+        'timetable_slot_id',
+        'timetable_period_index',
         'class_subject_id',
         'hours',
         'is_justified',
@@ -40,5 +42,10 @@ class Absence extends Model
     public function recordedBy()
     {
         return $this->belongsTo(User::class, 'recorded_by');
+    }
+
+    public function timetableSlot()
+    {
+        return $this->belongsTo(TimetableSlot::class);
     }
 }

@@ -397,6 +397,12 @@ class GradeController extends Controller
                 'Ces notes sont verrouillées. Modification impossible.');
         }
 
+        $classSubject = ClassSubject::findOrFail($request->class_subject_id);
+        if ((int) $classSubject->class_group_id !== (int) $request->class_group_id) {
+            abort(422, 'La matière ne correspond pas à la classe sélectionnée.');
+        }
+        $gradingScale = (float) ($classSubject->grading_scale ?: 20);
+
         // Vérifier permission enseignant
         $user = $this->currentUser();
         if (!$this->isAdmin()) {
@@ -423,11 +429,13 @@ class GradeController extends Controller
 
             $isAbsent = array_key_exists($enrollmentId, $absentInput);
             $gradeVal = null;
+            $rawGrade = null;
 
             if (!$isAbsent && $grade !== '' && $grade !== null) {
                 $v = (float)$grade;
-                if ($v < 0 || $v > 20) { $errors++; continue; }
-                $gradeVal = round($v * 4) / 4; // arrondi 0.25
+                if ($v < 0 || $v > $gradingScale) { $errors++; continue; }
+                $rawGrade = round($v, 2);
+                $gradeVal = round(($v * 20) / $gradingScale, 2);
             }
 
             Grade::updateOrCreate(
@@ -438,6 +446,7 @@ class GradeController extends Controller
                 ],
                 [
                     'grade'      => $gradeVal,
+                    'raw_grade'  => $rawGrade,
                     'is_absent'  => $isAbsent,
                     'entered_by' => $user->id,
                     'entered_at' => now(),

@@ -373,8 +373,13 @@ class BulletinController extends Controller
                 'subject'      => $cs->subject,
                 'coefficient'  => $cs->coefficient,
                 'teacher'      => $teacherMap[$cs->id] ?? null,
+                'grading_scale'=> (float) ($cs->grading_scale ?: 20),
                 'seq_grades'   => $seqGrades->map(fn($g) => $g && !$g->is_absent ? $g->grade : ($g && $g->is_absent ? 'ABS' : null))->values()->toArray(),
+                'seq_raw_grades' => $seqGrades->map(fn($g) => $g && !$g->is_absent
+                    ? ($g->raw_grade ?? (($cs->grading_scale ?: 20) == 20 ? $g->grade : null))
+                    : ($g && $g->is_absent ? 'ABS' : null))->values()->toArray(),
                 'grade'        => $avg,
+                'raw_grade'    => $avg !== null ? round($avg * (float) ($cs->grading_scale ?: 20) / 20, 2) : null,
                 'total'        => $avg !== null ? round($avg * $cs->coefficient, 2) : null,
                 'is_absent'    => false,
                 'rank'         => $rank,
@@ -443,8 +448,13 @@ class BulletinController extends Controller
                 'subject'             => $cs->subject,
                 'coefficient'         => $cs->coefficient,
                 'teacher'             => $teacherMap[$cs->id] ?? null,
+                'grading_scale'       => (float) ($cs->grading_scale ?: 20),
                 'trimester_averages'  => $trimesterAverages->values()->toArray(),
+                'trimester_raw_averages' => $trimesterAverages->map(fn($value) =>
+                    $value !== null ? round($value * (float) ($cs->grading_scale ?: 20) / 20, 2) : null
+                )->values()->toArray(),
                 'grade'               => $avg,
+                'raw_grade'           => $avg !== null ? round($avg * (float) ($cs->grading_scale ?: 20) / 20, 2) : null,
                 'total'               => $avg !== null ? round($avg * $cs->coefficient, 2) : null,
                 'is_absent'           => false,
                 'rank'                => $rank,

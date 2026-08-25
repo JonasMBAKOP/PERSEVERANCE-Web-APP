@@ -327,7 +327,7 @@ class StudentController extends Controller
                     'classGroup.level.section',
                     'academicYear',
                     'absences' => fn($absenceQuery) => $absenceQuery
-                        ->with(['classSubject.subject', 'recordedBy'])
+                        ->with(['classSubject.subject', 'recordedBy', 'timetableSlot'])
                         ->orderByDesc('absence_date'),
                 ])
                 ->orderByDesc('created_at'),

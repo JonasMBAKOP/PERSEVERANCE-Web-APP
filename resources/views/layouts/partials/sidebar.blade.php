@@ -227,7 +227,7 @@
                 <x-sidebar-item
                     icon="clipboard"
                     label="Appel du jour"
-                    href="#"
+                    href="{{ route('attendance.index') }}"
                     :active="request()->routeIs('attendance.*')" />
             @endcan
 

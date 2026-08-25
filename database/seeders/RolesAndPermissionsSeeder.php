@@ -101,6 +101,8 @@ class RolesAndPermissionsSeeder extends Seeder
             'view-messages', 'send-messages',
             'view-reports', 'export-reports',
             'view-staff', 'manage-staff',
+            'view-grades', 'enter-grades',
+            'view-bulletins', 'manage-bulletins',
         ]);
 
         // 5. ENSEIGNANT

@@ -206,6 +206,8 @@ class GradeCalculationService
                 'coefficient'  => $cs->coefficient,
                 'teacher'      => $teacherFormatted,
                 'grade'        => $grade?->grade,
+                'raw_grade'    => $grade?->raw_grade ?? (($cs->grading_scale ?: 20) == 20 ? $grade?->grade : null),
+                'grading_scale'=> (float) ($cs->grading_scale ?: 20),
                 'is_absent'    => $grade?->is_absent ?? false,
                 'rank'         => $rank,
                 'class_size'   => $classGrades->count(),

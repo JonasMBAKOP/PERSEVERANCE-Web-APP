@@ -116,11 +116,12 @@
                 overflow-hidden mb-24">
 
         {{-- En-tête colonnes (desktop uniquement, visuel) --}}
-        <div class="hidden sm:grid sm:grid-cols-10 gap-2 px-5 py-3
+        <div class="hidden sm:grid sm:grid-cols-11 gap-2 px-5 py-3
                     border-b border-gray-100 text-xs font-semibold
                     text-gray-400 uppercase tracking-wider"
             style="background-color:#F8FAFC;">
             <div class="col-span-3">Matière</div>
+            <div class="col-span-1 text-center">Barème</div>
             {{-- <div class="col-span-2">Type</div> --}}
             <div class="col-span-1 text-center">Coef.</div>
             <div class="col-span-3">Enseignant assigné</div>
@@ -209,7 +210,7 @@
                     </div>
 
                     {{-- Layout unifié : grille responsive --}}
-                    <div class="grid grid-cols-2 sm:grid-cols-10 gap-3 items-center">
+                    <div class="grid grid-cols-2 sm:grid-cols-11 gap-3 items-center">
 
                         {{-- Matière (desktop seulement — mobile = voir au-dessus) --}}
                         <div class="hidden sm:flex sm:col-span-3 items-center gap-2
@@ -240,6 +241,21 @@
                                 {{ $tc['label'] }}
                             </span>
                         </div> --}}
+
+                        {{-- Barème --}}
+                        <div class="col-span-1 sm:col-span-1">
+                            <label class="block text-xs text-gray-400 mb-1 sm:hidden">
+                                Barème
+                            </label>
+                            <input type="number" inputmode="decimal"
+                                name="subjects[{{ $cs->subject_id }}][grading_scale]"
+                                value="{{ $cs->grading_scale ?? 20 }}"
+                                min="0.01" max="1000" step="0.01"
+                                class="w-full px-2 py-2 border border-gray-200
+                                        rounded-lg text-sm text-center font-semibold
+                                        focus:outline-none focus:ring-2 focus:ring-blue-100"
+                                style="color:#1A3A6B;">
+                        </div>
 
                         {{-- Coefficient --}}
                         <div class="col-span-1 sm:col-span-1">
@@ -400,9 +416,18 @@
                     </div>
                     <div class="w-20">
                         <label class="block text-xs font-medium text-gray-600 mb-1">
+                            Barème
+                        </label>
+                        <input type="number" inputmode="decimal" id="newScale" value="20"
+                            min="0.01" max="1000" step="0.01"
+                            class="w-full px-3 py-2.5 border border-gray-200
+                                    rounded-lg text-sm text-center focus:outline-none">
+                    </div>
+                    <div class="w-20">
+                        <label class="block text-xs font-medium text-gray-600 mb-1">
                             Coef.
                         </label>
-                        <input type="text" inputmode="decimal" id="newCoef" value="2" pattern="[0-9]+([.,][0-9]+)?"
+                        <input type="text" inputmode="decimal" id="newCoef" value="1" pattern="[0-9]+([.,][0-9]+)?"
                             class="w-full px-3 py-2.5 border border-gray-200
                                     rounded-lg text-sm text-center focus:outline-none">
                     </div>
@@ -761,7 +786,8 @@ function getTeacherOptions() {
 
 function confirmAddSubject() {
     const sel   = document.getElementById('newSubjectSelect');
-    const coef  = String(document.getElementById('newCoef').value || 2).replace(',', '.');
+    const scale = String(document.getElementById('newScale').value || 20).replace(',', '.');
+    const coef  = String(document.getElementById('newCoef').value || 1).replace(',', '.');
     const hours = document.getElementById('newHours').value || '';
 
     if (!sel.value) { alert('Sélectionnez une matière.'); return; }
@@ -781,7 +807,7 @@ function confirmAddSubject() {
                 <div class="flex-1 min-w-0">
                     <div class="flex items-center gap-2 flex-wrap">
                         <span class="font-bold text-sm text-gray-800">${name}</span>
-                        <span class="px-2 py-0.5 rounded-full text-xs font-bold"
+                        <span class="hidden px-2 py-0.5 rounded-full text-xs font-bold"
                               style="background:${tc.bg};color:${tc.text}">
                             ${tc.label}
                         </span>
@@ -815,19 +841,31 @@ function confirmAddSubject() {
             </div>
 
             {{-- Grille responsive --}}
-            <div class="grid grid-cols-2 sm:grid-cols-12 gap-3 items-center">
+            <div class="grid grid-cols-2 sm:grid-cols-11 gap-3 items-center">
 
                 {{-- Matière desktop --}}
                 <div class="hidden sm:flex sm:col-span-3 items-center gap-2">
                     <span class="font-bold text-sm text-gray-800">${name}</span>
                 </div>
 
-                {{-- Type desktop --}}
-                <div class="hidden sm:flex sm:col-span-2">
+                {{-- Type removed: the class grading scale is configured below. --}}
+                <div class="hidden">
                     <span class="px-2.5 py-1 rounded-full text-xs font-bold"
                           style="background:${tc.bg};color:${tc.text}">
                         ${tc.label}
                     </span>
+                </div>
+
+                {{-- Barème --}}
+                <div class="col-span-1 sm:col-span-1">
+                    <label class="block text-xs text-gray-400 mb-1 sm:hidden">
+                        Barème
+                    </label>
+                    <input type="number" inputmode="decimal" name="subjects[${id}][grading_scale]"
+                           value="${scale}" min="0.01" max="1000" step="0.01"
+                           class="w-full px-2 py-2 border border-gray-200
+                                  rounded-lg text-sm text-center font-semibold
+                                  focus:outline-none" style="color:#1A3A6B;">
                 </div>
 
                 {{-- Coefficient --}}
@@ -925,7 +963,8 @@ function confirmAddSubject() {
     }
 
     sel.value = '';
-    document.getElementById('newCoef').value  = 2;
+    document.getElementById('newScale').value = 20;
+    document.getElementById('newCoef').value  = 1;
     document.getElementById('newHours').value = '';
 }
 // function addNewSubjectRow() {
