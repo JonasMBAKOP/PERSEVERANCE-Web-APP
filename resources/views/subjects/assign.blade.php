@@ -21,7 +21,7 @@
     ];
 @endphp
 
-<div x-data="assignManager({{ $totalCoef }}, {{ $totalHrs ?? 0 }})">
+<div x-data="assignManager({{ $totalCoef }}, {{ $totalHrs ?? 0 }})" class="subject-assignment-page -mx-2 -mt-2 -mb-2 lg:-mx-4 lg:-mt-4 lg:-mb-4">
 
 {{-- ══════════════════════════════════════════════════════════════════════ --}}
 {{-- BARRE FILTRES + COPIER                                                  --}}
@@ -464,10 +464,10 @@
     {{-- ── BARRE STICKY DU BAS ───────────────────────────────────────────── --}}
     <div class="fixed bottom-0 left-0 md:left-64 right-0 z-30
                 bg-white border-t border-gray-200 shadow-lg
-                px-5 py-3.5 flex flex-col sm:flex-row
+                px-3 py-2 sm:px-5 sm:py-3.5 flex flex-col sm:flex-row
                 sm:items-center justify-between gap-3">
 
-        <div class="text-sm font-medium text-gray-600">
+        <div class="hidden sm:block text-sm font-medium text-gray-600">
             <span class="font-bold" style="color:#1A3A6B;">
                 Résumé de la configuration
             </span>
@@ -485,23 +485,23 @@
             </span>
         </div>
 
-        <div class="flex items-center gap-2 flex-shrink-0">
+        <div class="flex items-center justify-end gap-1.5 sm:gap-2 flex-shrink-0">
             <a href="{{ route('classes.show', $classGroup) }}"
-               class="px-4 py-2 rounded-lg border border-gray-200 text-sm
+               class="px-2.5 py-1.5 sm:px-4 sm:py-2 rounded-lg border border-gray-200 text-xs sm:text-sm
                       font-medium text-gray-600 hover:bg-gray-50">
                 Annuler
             </a>
             <button type="button"
                     onclick="if(confirm('Réinitialiser ?')) location.reload()"
-                    class="px-4 py-2 rounded-lg border text-sm font-medium"
+                    class="px-2.5 py-1.5 sm:px-4 sm:py-2 rounded-lg border text-xs sm:text-sm font-medium"
                     style="border-color:#1A3A6B; color:#1A3A6B;">
                 Réinitialiser
             </button>
             <button type="submit"
-                    class="px-5 py-2 rounded-lg text-white text-sm font-bold
+                    class="px-3 py-1.5 sm:px-5 sm:py-2 rounded-lg text-xs sm:text-sm font-bold
                            transition-all hover:shadow-md"
-                    style="background-color:#E87722;">
-                Enregistrer les modifications
+                    style="background-color:#E87722; color:#fff">
+                Enregistrer
             </button>
         </div>
     </div>
@@ -766,8 +766,8 @@ function removeRow(btn) {
 const typeConfig = {
     general:   { label: 'GÉNÉRALE',  bg: '#DBEAFE', text: '#1D4ED8' },
     technical: { label: 'TECHNIQUE', bg: '#EDE9FE', text: '#6D28D9' },
-    language:  { label: 'LANGUE',    bg: '#D1FAE5', text: '#065F46' },
-    sport:     { label: 'SPORT',     bg: '#FEF3C7', text: '#92400E' },
+    // language:  { label: 'LANGUE',    bg: '#D1FAE5', text: '#065F46' },
+    // sport:     { label: 'SPORT',     bg: '#FEF3C7', text: '#92400E' },
     other:     { label: 'AUTRE',     bg: '#F3F4F6', text: '#374151' },
 };
 

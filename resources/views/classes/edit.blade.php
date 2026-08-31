@@ -89,7 +89,7 @@
                                 style="color: #1A3A6B;">
                             <option value="" x-text="selectedSection ? 'Sélectionner le niveau...' : 'Choisir une section d\'abord'"></option>
                             <template x-for="level in filteredLevels" :key="level.id">
-                                <option :value="level.id" x-text="level.name"></option>
+                                <option :value="level.id" :selected="String(level.id) === String(selectedLevel)" x-text="level.name"></option>
                             </template>
                         </select>
                         @error('level_id')

@@ -8,6 +8,7 @@ use App\Http\Requests\UpdateStudentRequest;
 use App\Models\AcademicYear;
 use App\Models\AuditLog;
 use App\Models\ClassGroup;
+use App\Models\InfirmaryVisit;
 use App\Models\Section;
 use App\Models\Student;
 use App\Models\StudentEnrollment;
@@ -638,7 +639,78 @@ class StudentController extends Controller
                 return back()->with('error', 'La classe de destination doit être différente de la classe actuelle.');
             }
 
+            if ($enrollment->status !== StudentEnrollment::STATUS_ACTIVE) {
+                return back()->with('error', 'Seule une inscription active peut être transférée.');
+            }
+
             DB::transaction(function () use ($request, $enrollment, $newClass) {
+                $activeYear = AcademicYear::active();
+                if (! $activeYear || (int) $enrollment->academic_year_id !== (int) $activeYear->id
+                    || (int) $newClass->academic_year_id !== (int) $activeYear->id) {
+                    throw new \InvalidArgumentException('Le transfert est limité à l\'année scolaire active.');
+                }
+
+                if (StudentEnrollment::where('student_id', $enrollment->student_id)
+                    ->where('academic_year_id', $activeYear->id)
+                    ->where('id', '!=', $enrollment->id)
+                    ->exists()) {
+                    throw new \InvalidArgumentException('Cet élève possède déjà une autre inscription pour l\'année active.');
+                }
+
+                $this->enrollments->assertClassHasCapacity($newClass);
+
+                InfirmaryVisit::where('student_id', $enrollment->student_id)
+                    ->where('academic_year_id', $activeYear->id)
+                    ->update([
+                        'class_group_id' => $newClass->id,
+                        'class_name'     => $newClass->full_name,
+                    ]);
+
+                $student = $enrollment->student;
+                $oldEnrollmentData = $enrollment->toArray();
+                $oldClass = $enrollment->classGroup;
+                $oldPayments = StudentPayment::query()
+                    ->where('student_enrollment_id', $enrollment->id)
+                    ->whereNull('parent_payment_id')
+                    ->get();
+                $amountToTransfer = (int) $oldPayments->sum('amount_paid');
+                $scholarshipToTransfer = (int) $oldPayments->sum('scholarship_amount');
+
+                // Snapshot all enrollment-owned records before the cascade delete.
+                $relatedRows = $this->snapshotTransferRows($enrollment->id);
+                $enrollment->delete();
+
+                $newEnrollment = StudentEnrollment::create([
+                    'student_id'              => $student->id,
+                    'academic_year_id'        => $activeYear->id,
+                    'class_group_id'          => $newClass->id,
+                    'enrollment_date'         => $enrollment->enrollment_date?->toDateString() ?? now()->toDateString(),
+                    'is_repeating'            => $enrollment->is_repeating,
+                    'previous_class_group_id' => $oldClass?->id,
+                    'previous_class_label'    => $oldClass?->full_name,
+                    'origin_school'           => $enrollment->origin_school,
+                    'status'                  => StudentEnrollment::STATUS_ACTIVE,
+                    'transfer_date'           => now()->toDateString(),
+                    'transfer_destination'   => $newClass->full_name,
+                ]);
+
+                $this->restoreTransferRows($newEnrollment, $newClass, $relatedRows);
+
+                if ($amountToTransfer > 0 || $scholarshipToTransfer > 0) {
+                    $this->createTransferBulkPayment(
+                        $newEnrollment,
+                        $newClass,
+                        $amountToTransfer,
+                        $scholarshipToTransfer,
+                        $oldPayments->sortByDesc('payment_date')->first()?->payment_method ?? 'cash',
+                        $request->user()?->id ?? auth()->id()
+                    );
+                }
+
+                AuditLog::log('transferred', $newEnrollment, $oldEnrollmentData, $newEnrollment->toArray());
+                return;
+
+                /* Legacy destructive transfer implementation kept out of the execution path.
                 $this->enrollments->assertClassHasCapacity($newClass);
 
                 $student = $enrollment->student;
@@ -695,7 +767,7 @@ class StudentController extends Controller
                     ...$enrollmentData,
                 ]);
 
-                AuditLog::log('transferred', $enrollment);
+                AuditLog::log('transferred', $enrollment); */
             });
         } catch (\InvalidArgumentException $e) {
             return back()->with('error', $e->getMessage());
@@ -708,6 +780,131 @@ class StudentController extends Controller
     }
 
     // ── CHANGEMENT DE STATUT ──────────────────────────────────────────────
+    /**
+     * Capture and restore every active-year record owned by an enrollment.
+     * Payments are intentionally excluded because they are rebuilt as one new bulk receipt.
+     */
+    private function snapshotTransferRows(int $enrollmentId): array
+    {
+        $tables = [
+            'discipline_incidents', 'discipline_records',
+        ];
+
+        $rows = [];
+        foreach ($tables as $table) {
+            if (!\Illuminate\Support\Facades\Schema::hasTable($table)
+                || !\Illuminate\Support\Facades\Schema::hasColumn($table, 'student_enrollment_id')) {
+                continue;
+            }
+
+            $rows[$table] = DB::table($table)
+                ->where('student_enrollment_id', $enrollmentId)
+                ->get()->map(fn ($row) => (array) $row)->all();
+        }
+
+        return $rows;
+    }
+
+    private function restoreTransferRows(
+        StudentEnrollment $newEnrollment,
+        ClassGroup $newClass,
+        array $rows
+    ): void {
+        foreach ($rows as $table => $tableRows) {
+            if (!in_array($table, ['discipline_incidents', 'discipline_records'], true)) {
+                continue;
+            }
+
+            foreach ($tableRows as $row) {
+                unset($row['id']);
+                $row['student_enrollment_id'] = $newEnrollment->id;
+                if (array_key_exists('class_group_id', $row)) {
+                    $row['class_group_id'] = $newClass->id;
+                }
+                DB::table($table)->insert($row);
+            }
+        }
+
+    }
+
+    private function createTransferBulkPayment(
+        StudentEnrollment $enrollment,
+        ClassGroup $class,
+        int $amountPaid,
+        int $scholarshipAmount,
+        string $paymentMethod,
+        ?int $recordedBy
+    ): StudentPayment {
+        $feeStructure = $class->feeStructures()->with('installments')->first();
+        if (! $feeStructure) {
+            throw new \InvalidArgumentException('Aucune structure de frais n\'est configurée pour la classe cible.');
+        }
+
+        $coverage = $amountPaid + $scholarshipAmount;
+        $totalDue = (int) $feeStructure->installments->sum('amount');
+        if ($coverage > $totalDue) {
+            throw new \InvalidArgumentException('Les montants déjà versés dépassent les frais de la classe cible.');
+        }
+
+        $paymentDate = now()->toDateString();
+        $bulkPayment = StudentPayment::create([
+            'student_enrollment_id' => $enrollment->id,
+            'fee_installment_id'    => null,
+            'amount_paid'           => $amountPaid,
+            'scholarship_amount'    => $scholarshipAmount,
+            'payment_date'          => $paymentDate,
+            'payment_method'        => $paymentMethod,
+            'reference'             => null,
+            'receipt_number'        => StudentPayment::generateReceiptNumber(),
+            'recorded_by'           => $recordedBy,
+            'notes'                 => 'Report du paiement lors d\'un transfert',
+            'is_bulk'               => true,
+        ]);
+
+        $remainingScholarship = $scholarshipAmount;
+        $allocated = 0;
+        $index = 0;
+        foreach ($feeStructure->installments->sortBy('installment_number') as $installment) {
+            if ($allocated >= $coverage) {
+                break;
+            }
+
+            $need = min((int) $installment->amount, $coverage - $allocated);
+            $useScholarship = min($need, $remainingScholarship);
+            $useCash = $need - $useScholarship;
+            $index++;
+
+            StudentPayment::create([
+                'student_enrollment_id' => $enrollment->id,
+                'parent_payment_id'     => $bulkPayment->id,
+                'fee_installment_id'    => $installment->id,
+                'amount_paid'           => $useCash,
+                'scholarship_amount'    => $useScholarship,
+                'payment_date'          => $paymentDate,
+                'payment_method'        => $paymentMethod,
+                'reference'             => null,
+                'receipt_number'        => $bulkPayment->receipt_number . '-A' . $index,
+                'recorded_by'           => $recordedBy,
+                'notes'                 => 'Report du paiement lors d\'un transfert',
+                'is_bulk'               => false,
+            ]);
+
+            $allocated += $need;
+            $remainingScholarship -= $useScholarship;
+        }
+
+        if (\Illuminate\Support\Facades\Schema::hasColumn('student_payments', 'snapshot_total_due')) {
+            $bulkPayment->forceFill([
+                'snapshot_total_due'       => $totalDue,
+                'snapshot_total_paid'      => $amountPaid,
+                'snapshot_total_remaining' => max(0, $totalDue - $coverage),
+            ])->saveQuietly();
+        }
+
+        return $bulkPayment;
+    }
+
+
     public function updateStatus(Request $request,
                                   StudentEnrollment $enrollment)
     {

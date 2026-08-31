@@ -1,10 +1,18 @@
 @extends('layouts.app')
-
 @section('title', 'Vue Globale des Notes')
 @section('page-title', 'Vue Globale des Notes')
 @section('page-subtitle', 'Progression de la saisie par classe et par séquence')
 
 @section('content')
+
+<style>
+    @media (max-width: 767px) {
+        .grades-overview-table { min-width: 620px; }
+        .grades-overview-table th:first-child,
+        .grades-overview-table td:first-child { width: 100px !important; min-width: 100px !important; }
+    }
+</style>
+<div class="grades-overview-page -mx-2 -mt-2 -mb-2 lg:-mx-4 lg:-mt-4 lg:-mb-4">
 
 @if(!$activeYear)
 <div class="bg-amber-50 border border-amber-200 rounded-xl p-6 text-center">
@@ -24,7 +32,17 @@
                            tracking-wider mb-1">
                 Section
             </label>
-            <div class="flex gap-2 flex-wrap">
+            <select name="section_id" onchange="this.form.submit()"
+                    class="md:hidden w-full min-w-[220px] px-3 py-2.5 pr-10 border border-gray-200 rounded-xl text-sm font-medium bg-white"
+                    style="color:#1A3A6B;">
+                <option value="">— Choisir une section —</option>
+                @foreach($sections as $section)
+                <option value="{{ $section->id }}" {{ $selectedSectionId == $section->id ? 'selected' : '' }}>
+                    {{ $section->name }}
+                </option>
+                @endforeach
+            </select>
+            <div class="hidden md:flex gap-2 flex-wrap">
                 @foreach($sections as $section)
                 <button type="submit" name="section_id" value="{{ $section->id }}"
                         class="px-4 py-2 rounded-xl text-sm font-bold border-2
@@ -50,16 +68,16 @@
 @else
 
 {{-- ── EN-TÊTE SÉQUENCES ───────────────────────────────────────────────── --}}
-<div class="flex items-center justify-between mb-4">
-    <div>
+<div class="flex items-center mb-4">
+    {{-- <div>
         <h3 class="font-black text-base" style="color:#1A3A6B;">
             {{ $selectedSection->name }}
         </h3>
         <p class="text-xs text-gray-500 mt-0.5">
             {{ $activeYear->label }}
         </p>
-    </div>
-    <div class="flex gap-2">
+    </div> --}}
+    {{-- <div class="flex gap-2">
         @foreach($sequences as $seq)
         <span class="px-3 py-1 rounded-full text-xs font-bold border"
               style="{{ $seq->is_grades_locked
@@ -68,6 +86,25 @@
             {{ $seq->label }}
         </span>
         @endforeach
+    </div> --}}
+    
+    {{-- Légende --}}
+    <div class="flex items-center flex-wrap gap-4 mt-3 text-xs text-gray-500">
+        @foreach([
+            ['color' => '#D1D5DB', 'label' => 'À saisir'],
+            ['color' => '#2D6FD4', 'label' => 'En cours'],
+            ['color' => '#1A5C2A', 'label' => 'Complet'],
+            ['color' => '#EF4444', 'label' => 'Verrouillé'],
+        ] as $leg)
+        <div class="flex items-center gap-1.5">
+            <div class="w-3 h-3 rounded-full"
+                style="background-color:{{ $leg['color'] }}"></div>
+            {{ $leg['label'] }}
+        </div>
+        @endforeach
+        <span class="ml-2 text-gray-400">
+            · Cliquez sur un cercle pour voir le détail de la séquence
+        </span>
     </div>
 </div>
 
@@ -84,12 +121,12 @@
 @else
 
 <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-x-auto">
-    <table class="w-full" style="border-collapse:separate;border-spacing:0;">
+    <table class="grades-overview-table w-full" style="border-collapse:separate;border-spacing:0;">
         <thead>
             <tr style="background:#F8FAFC; border-bottom:1px solid #F0F4F8;">
                 <th class="text-left px-5 py-3.5 text-xs font-bold text-gray-400
                            uppercase tracking-wider sticky left-0 z-10"
-                    style="background:#F8FAFC; min-width:180px;">
+                    style="background:#F8FAFC; min-width:140px;">
                     Classe
                 </th>
                 <th class="text-center px-4 py-3.5 text-xs font-bold text-gray-400
@@ -116,13 +153,13 @@
                 {{-- Nom classe --}}
                 <td class="px-5 py-4 sticky left-0 bg-white z-5"
                     style="border-right:1px solid #F0F4F8;">
-                    <div class="flex items-center gap-2.5">
-                        <div class="w-9 h-9 rounded-xl flex items-center
+                    {{-- <div class="flex items-center gap-2.5"> --}}
+                        {{-- <div class="w-9 h-9 rounded-xl flex items-center
                                     justify-center text-white font-bold
                                     text-xs flex-shrink-0"
                              style="background:#1A3A6B;">
                             {{ strtoupper(substr($class->name, 0, 2)) }}
-                        </div>
+                        </div> --}}
                         <div>
                             <p class="text-sm font-bold text-gray-800">
                                 {{ $class->full_name }}
@@ -131,7 +168,7 @@
                                 {{ $class->subjects_count }} matières
                             </p>
                         </div>
-                    </div>
+                    {{-- </div> --}}
                 </td>
 
                 {{-- Effectif --}}
@@ -203,7 +240,7 @@
 </div>
 
 {{-- Légende --}}
-<div class="flex items-center flex-wrap gap-4 mt-3 text-xs text-gray-500">
+{{-- <div class="flex items-center flex-wrap gap-4 mt-3 text-xs text-gray-500">
     @foreach([
         ['color' => '#D1D5DB', 'label' => 'À saisir'],
         ['color' => '#2D6FD4', 'label' => 'En cours'],
@@ -219,9 +256,10 @@
     <span class="ml-2 text-gray-400">
         · Cliquez sur un cercle pour voir le détail de la séquence
     </span>
-</div>
+</div> --}}
 @endif
 @endif
 @endif
 
+</div>
 @endsection

@@ -21,6 +21,18 @@
 
 @section('content')
 
+<style>
+    .grades-detail-page .grades-table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .grades-detail-page .grades-table-scroll table { min-width: 620px; }
+    @media (max-width: 1023px) {
+        .grades-detail-page .grades-table-scroll th:first-child,
+        .grades-detail-page .grades-table-scroll td:first-child { width: 105px !important; min-width: 105px !important; }
+        .grades-detail-page .grades-table-scroll th:last-child,
+        .grades-detail-page .grades-table-scroll td:last-child { width: 60px !important; min-width: 60px !important; }
+    }
+</style>
+<div class="grades-detail-page -mx-2 -mt-2 -mb-2 lg:-mx-4 lg:-mt-4 lg:-mb-4">
+
 {{-- ── EN-TÊTE + FILTRE MATIÈRE ────────────────────────────────────────── --}}
 <div class="flex flex-col sm:flex-row sm:items-center gap-4 mb-5">
     <div>
@@ -57,7 +69,7 @@
                     onchange="this.form.submit()"
                     class="px-3 py-2 border border-gray-200 rounded-lg text-sm
                            focus:outline-none bg-white font-medium"
-                    style="color:#1A3A6B;">
+                    style="color:#1A3A6B; min-width:240px;">
                 <option value="">Toutes les matières</option>
                 @foreach($subjects as $cs)
                 <option value="{{ $cs->subject_id }}"
@@ -121,8 +133,7 @@
 </div>
 @else
 
-<div class="bg-white rounded-2xl shadow-sm border border-gray-100
-            overflow-x-auto">
+<div class="grades-table-scroll bg-white rounded-2xl shadow-sm border border-gray-100">
     <table class="w-full"
            style="border-collapse:separate;border-spacing:0;">
         <thead>
@@ -130,7 +141,7 @@
                 <th class="text-left px-5 py-3.5 text-xs font-bold
                            text-gray-500 uppercase tracking-wider sticky
                            left-0 z-10"
-                    style="background:#F8FAFC;min-width:180px;">
+                    style="background:#F8FAFC;min-width:140px;">
                     Élève
                 </th>
                 @foreach($displaySubjects as $cs)
@@ -138,7 +149,7 @@
                            text-gray-500 uppercase tracking-wider"
                     style="min-width:100px;">
                     <div class="font-black" style="color:#1A3A6B;">
-                        {{ $cs->subject->code }}
+                        {{ $cs->subject->name_fr }}
                     </div>
                     <div class="text-gray-400 font-normal text-xs">
                         Coef. {{ $cs->coefficient }}
@@ -147,8 +158,8 @@
                 @endforeach
                 @if(!$filterSubjectId)
                 <th class="text-center px-4 py-3.5 text-xs font-bold
-                           text-gray-500 uppercase tracking-wider sticky
-                           right-0" style="background:#F8FAFC;min-width:80px;">
+                           text-gray-500 uppercase tracking-wider
+                           " style="background:#F8FAFC;min-width:70px;">
                     Moy.
                 </th>
                 @endif
@@ -215,7 +226,7 @@
                 @endforeach
 
                 @if(!$filterSubjectId)
-                <td class="px-4 py-3.5 text-center sticky right-0 bg-white"
+                <td class="px-4 py-3.5 text-center"
                     style="box-shadow:-2px 0 6px rgba(0,0,0,.04);">
                     @if($hasAny && $totalCoef > 0)
                     @php $avg = $totalPts / $totalCoef; @endphp
@@ -264,4 +275,5 @@
 @endcan
 @endif
 
+</div>
 @endsection

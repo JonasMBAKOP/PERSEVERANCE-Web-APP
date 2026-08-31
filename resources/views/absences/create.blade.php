@@ -5,7 +5,7 @@
 
 @section('content')
 
-<div x-data="absenceForm()">
+<div x-data="absenceForm()" class="-mx-2 -mt-2 pb-2">
 
     <form method="POST" action="{{ route('absences.store') }}"
           id="absenceForm">

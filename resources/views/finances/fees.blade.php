@@ -6,8 +6,8 @@
     — {{ $classGroup->academicYear->label }}@endsection
 
 @section('breadcrumb')
-    <a href="{{ route('finances.index') }}" class="hover:text-gray-700">
-        Finances
+    <a href="{{ route('finances.fees-list') }}" class="hover:text-gray-700">
+        Config. des frais
     </a>
     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round"
@@ -18,8 +18,18 @@
     </span>
 @endsection
 
+@push('styles')
+<style>
+@media (max-width: 1023px) {
+    .fees-total-actions { flex-direction: column; align-items: stretch; }
+    .fees-total-actions > button { width: 100%; justify-content: center; }
+}
+</style>
+@endpush
+
 @section('content')
 
+<div class="finance-page -mx-2 -mt-2 -mb-2 lg:-mx-4 lg:-mt-4 lg:-mb-4">
 <div class="w-full max-w-7xl"
      x-data="feesForm({{ json_encode($feeStructure?->installments ?? []) }})">
 
@@ -37,7 +47,7 @@
             </p>
             <p class="text-sm text-gray-500">
                 {{ $classGroup->level->section->name }}
-                — {{ $classGroup->academicYear->label }}
+                {{-- — {{ $classGroup->academicYear->label }} --}}
                 — {{ $classGroup->studentEnrollments()->where('status','active')
                     ->count() }} élève(s)
             </p>
@@ -148,8 +158,8 @@
             </div>
 
             {{-- Total --}}
-            <div class="mt-5 pt-4 border-t border-gray-100 flex items-center
-                        justify-between">
+            <div class="fees-total-actions mt-5 pt-4 border-t border-gray-100 flex items-center
+                        justify-between gap-4">
                 <div>
                     <p class="text-sm text-gray-500">
                         Total des frais par élève
@@ -172,6 +182,7 @@
             </div>
         </div>
     </form>
+</div>
 </div>
 
 <script>

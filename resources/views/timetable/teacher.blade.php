@@ -31,7 +31,7 @@
         <p class="mt-1 text-sm text-amber-700">L’emploi du temps enseignant sera disponible dès qu’une année sera active.</p>
     </div>
 @else
-<div class="tt-shell space-y-6">
+<div class="tt-shell timetable-page -mx-2 -mt-2 -mb-2 space-y-6 lg:-mx-4 lg:-mt-4 lg:-mb-4">
     {{-- <section class="tt-hero overflow-hidden rounded-2xl p-5 lg:p-6">
         <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
@@ -74,16 +74,27 @@
                     </select>
                 </div>
                 <div class="flex items-center gap-2">
-                    <button type="submit" class="tt-btn-primary inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-bold">Afficher</button>
+                    <button type="submit" class="tt-btn-ghost inline-flex items-center justify-center gap-2 rounded-xl border border-[#1A3A6B] px-4 py-2.5 text-sm font-bold text-[#1A3A6B] transition hover:bg-[#1A3A6B] hover:text-white">
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.036 12.322a1 1 0 010-.644C3.423 7.51 7.36 5 12 5c4.64 0 8.577 2.51 9.964 6.678a1 1 0 010 .644C20.577 16.49 16.64 19 12 19c-4.64 0-8.577-2.51-9.964-6.678z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        </svg>
+                        Afficher
+                    </button>
                     @if($selectedStaff)
-                        <a href="{{ route('timetable.teacher.print', $selectedStaff) }}" target="_blank" class="tt-btn-ghost inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold transition">Imprimer</a>
+                        <a href="{{ route('timetable.teacher.print', $selectedStaff) }}" target="_blank" class="tt-btn-ghost inline-flex items-center justify-center gap-2 rounded-xl border border-[#1A3A6B] px-4 py-2.5 text-sm font-bold text-[#1A3A6B] transition hover:bg-[#1A3A6B] hover:text-white">
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 9V3h12v6M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2m-2 0v3H8v-3m-4-5h.01M18 12h.01"/>
+                            </svg>
+                            Imprimer
+                        </a>
                     @endif
                 </div>
             </form>
         @else
             <div class="mt-5 flex flex-wrap items-center gap-2">
                 @if($selectedStaff)
-                    <a href="{{ route('timetable.teacher.print', $selectedStaff) }}" target="_blank" class="tt-btn-ghost inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold transition">Imprimer</a>
+                    <a href="{{ route('timetable.teacher.print', $selectedStaff) }}" target="_blank" class="tt-btn-ghost inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold transition"><svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 9V3h12v6M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2m-2 0v3H8v-3m-4-5h.01M18 12h.01"/></svg>Imprimer</a>
                 @endif
             </div>
         @endif
@@ -129,10 +140,11 @@
                 <h3 class="font-black text-[#1A3A6B]">Emploi du temps du professeur</h3>
                 <p class="text-xs text-gray-500">La classe est affichée en premier, la matière juste en dessous.</p>
             </div>
-            <div class="tt-grid-wrap overflow-x-auto">
+            <div class="tt-grid-wrap overflow-x-auto p-0">
                 @include('timetable.partials.grid', [
                     'mode' => 'teacher',
                     'printable' => false,
+                    'compact' => true,
                     'days' => $days,
                     'gridRows' => $gridRows,
                     'slots' => $slots,

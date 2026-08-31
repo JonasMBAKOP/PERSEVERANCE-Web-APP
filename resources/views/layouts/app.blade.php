@@ -10,6 +10,7 @@
     <link rel="apple-touch-icon" href="{{ asset('images/logo.jpg') }}">
     <link rel="mask-icon" href="{{ asset('images/logo.jpg') }}" color="#1A3A6B">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @stack('styles')
     <style>
         [x-cloak] { display: none !important; }
         /* Scrollbar sidebar */

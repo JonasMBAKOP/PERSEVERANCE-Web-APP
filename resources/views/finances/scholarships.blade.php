@@ -8,10 +8,11 @@
 @include('finances.partials.finance-ui-styles')
 <style>
 .type-btn {
-    flex: 1;
-    min-width: 90px;
+    flex: 1 1 120px;
+    min-width: 0;
     border: none;
     cursor: pointer;
+    white-space: normal;
 }
 .type-btn.active {
     background: #1A3A6B !important;
@@ -21,10 +22,12 @@
     background: #1A3A6B;
     color: #fff;
 }
+#filtersForm select { padding-right: 2.5rem; }
 </style>
 @endpush
 
 @section('content')
+<div class="finance-page -mx-2 -mt-2 -mb-2 lg:-mx-4 lg:-mt-4 lg:-mb-4">
 @php
     $months = [
         1 => 'Janvier', 2 => 'Février', 3 => 'Mars', 4 => 'Avril',
@@ -94,7 +97,7 @@
                 <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
                     Type de rapport
                 </label>
-                <div class="flex rounded-2xl overflow-hidden border border-gray-200 bg-white">
+                <div class="flex flex-wrap rounded-2xl overflow-hidden border border-gray-200 bg-white">
                     @php
                         $reportTypes = [
                             'journalier'   => 'Journalier',
@@ -107,7 +110,7 @@
                     @foreach($reportTypes as $val => $lbl)
                     <button type="button"
                             onclick="setType('{{ $val }}')"
-                            class="px-4 py-2 text-sm font-bold transition-colors type-btn {{ $type === $val ? 'active' : '' }}"
+                            class="px-3 py-2 text-center text-sm font-bold transition-colors type-btn {{ $type === $val ? 'active' : '' }}"
                             data-type="{{ $val }}"
                             style="{{ $type === $val ? 'background:#1A3A6B;color:#fff;' : 'background:white;color:#6B7280;' }}">
                         {{ $lbl }}
@@ -191,9 +194,9 @@
             </div>
         </div>
 
-        <div class="flex flex-col gap-3 justify-end">
+        <div class="flex w-full flex-col gap-3 justify-end lg:w-auto">
             <button type="submit"
-                    class="inline-flex items-center justify-center gap-2 rounded-xl bg-[#1A3A6B] px-5 py-3 text-sm font-bold text-white transition hover:shadow-md">
+                    class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#1A3A6B] px-5 py-3 text-sm font-bold text-white transition hover:shadow-md lg:w-auto">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h18M6 8h12M10 12h4M11 16h2"/>
                 </svg>
@@ -201,7 +204,7 @@
             </button>
             <a href="{{ route('finances.scholarships.print', request()->query()) }}"
                target="_blank"
-               class="inline-flex items-center justify-center gap-2 rounded-xl border border-[#E87722] px-5 py-3 text-sm font-bold text-[#E87722] transition hover:bg-[#FFFBF0]">
+               class="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[#E87722] px-5 py-3 text-sm font-bold text-[#E87722] transition hover:bg-[#FFFBF0] lg:w-auto">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                 </svg>
@@ -269,7 +272,15 @@
                                 {{ $scholarship->recordedBy?->name ?? '—' }}
                             </td>
                             <td class="px-5 py-4 text-gray-500">
-                                {{ $scholarship->reference ?: ($scholarship->receipt_number ?: '—') }}
+                                @if($scholarship->receipt_number)
+                                    <a href="{{ route('finances.receipt', $scholarship) }}"
+                                       target="_blank"
+                                       class="cursor-pointer font-semibold text-[#1A3A6B] hover:underline">
+                                        {{ $scholarship->reference ?: $scholarship->receipt_number }}
+                                    </a>
+                                @else
+                                    {{ $scholarship->reference ?: '—' }}
+                                @endif
                             </td>
                         </tr>
                     @endforeach
@@ -284,6 +295,7 @@
         </div>
     @endif
 </section>
+</div>
 @endsection
 
 @push('scripts')
@@ -307,4 +319,3 @@ function setType(val) {
 }
 </script>
 @endpush
-

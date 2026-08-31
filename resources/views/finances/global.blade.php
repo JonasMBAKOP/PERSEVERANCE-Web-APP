@@ -9,6 +9,7 @@
 @endpush
 
 @section('content')
+<div class="finance-page -mx-2 -mt-2 -mb-2 lg:-mx-4 lg:-mt-4 lg:-mb-4">
 @php
     $expected = (float) ($globalStats['expected'] ?? 0);
     $collected = (float) ($globalStats['collected'] ?? 0);
@@ -326,6 +327,7 @@
         </div>
     </div>
 @endif
+</div>
 @endsection
 
 @push('scripts')

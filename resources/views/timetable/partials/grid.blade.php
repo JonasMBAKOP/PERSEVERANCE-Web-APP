@@ -8,10 +8,10 @@
     ];
     $mode = $mode ?? 'class';
     $printable = $printable ?? false;
+    $compact = $compact ?? false;
     $conflicts = $conflicts ?? collect();
     $teacherSubjectCount = $teacherSubjectCount ?? 0;
     $renderedUntil = [];
-    $rowCount = count($gridRows);
 
     $rowInterval = function (array $row): string {
         $cell = collect($row['times'] ?? [])->first();
@@ -33,18 +33,18 @@
         });
     };
 
-    $segmentSpan = function ($slot, int $rowIndex, int $dayNumber) use ($gridRows, $rowCount): int {
-        $endPeriod = (int) $slot->period_index + (int) $slot->periods_count - 1;
+    $segmentSpan = function ($slot, int $rowIndex, int $dayNumber) use ($gridRows): int {
+        $lastPeriod = (int) $slot->period_index + (int) $slot->periods_count - 1;
         $span = 0;
 
-        for ($i = $rowIndex; $i < $rowCount; $i++) {
-            $candidate = $gridRows[$i];
-            if (($candidate['type'] ?? null) !== 'period') {
+        for ($index = $rowIndex; $index < count($gridRows); $index++) {
+            $candidate = $gridRows[$index];
+            if (($candidate['type'] ?? null) === 'break') {
                 break;
             }
 
-            $period = (int) $candidate['period_index'];
-            if ($period > $endPeriod) {
+            $period = (int) ($candidate['period_index'] ?? 0);
+            if ($period > $lastPeriod) {
                 break;
             }
 
@@ -59,33 +59,27 @@
         return max($span, 1);
     };
 
-    $cellSlots = function (int $dayNumber, int $periodIndex, bool $includeAfterBreak = true) use ($slots, $slotsStartingAt, $slotCoveringAfterBreak) {
+    $cellSlots = function (int $dayNumber, int $periodIndex) use ($slotsStartingAt, $slotCoveringAfterBreak) {
         $slotsAtStart = $slotsStartingAt($dayNumber, $periodIndex);
-
-        if ($slotsAtStart->isNotEmpty()) {
-            return $slotsAtStart;
-        }
-
-        if ($includeAfterBreak) {
-            return $slotCoveringAfterBreak($dayNumber, $periodIndex);
-        }
-
-        return collect();
+        return $slotsAtStart
+            ->merge($slotCoveringAfterBreak($dayNumber, $periodIndex))
+            ->unique('id')
+            ->values();
     };
 @endphp
 
-<table class="{{ $printable ? 'timetable-print' : 'w-full min-w-[1080px] border-separate border-spacing-0 text-[15px]' }}" style="table-layout: fixed;">
+<table class="{{ $printable ? 'timetable-print' : 'w-full ' . ($compact ? 'min-w-[760px] text-[12px]' : 'min-w-[1080px] text-[15px]') . ' border-separate border-spacing-0' }}" style="table-layout: fixed;">
     <colgroup>
-        <col style="width: 220px; min-width: 220px;">
+        <col style="width: {{ $printable ? '20mm' : ($compact ? 112 : 220) . 'px' }}; min-width: {{ $printable ? '20mm' : ($compact ? 112 : 220) . 'px' }};">
         @foreach($days as $dayNumber => $dayName)
-            <col style="width: {{ round((100 - 22) / count($days), 2) }}%;">
+        <col style="width: {{ $printable ? ($dayNumber === 3 ? 21 : 15.5) : ($compact ? ($dayNumber === 3 ? 150 : 120) : round((100 - 22) / count($days), 2)) }}{{ $printable || $compact ? ($printable ? '%' : 'px') : '%' }};">
         @endforeach
     </colgroup>
     <thead>
         <tr class="{{ $printable ? '' : 'bg-gray-50' }}">
-            <th class="{{ $printable ? 'period' : 'sticky left-0 z-10 border-b bg-[#F8FBFE] px-3 py-5 text-center text-[15px] font-black uppercase tracking-wide text-slate-600' }}" style="width: 220px; white-space: nowrap;">HORAIRES / PERIODS</th>
+            <th class="{{ $printable ? 'period' : 'sticky left-0 z-10 border-b bg-[#F8FBFE] ' . ($compact ? 'px-1 py-3 text-[11px]' : 'px-3 py-5 text-[15px]') . ' text-center font-black uppercase tracking-wide text-slate-600' }}" style="width: {{ $printable ? '20mm' : ($compact ? 112 : 220) . 'px' }}; white-space: nowrap;">HORAIRES / PERIODS</th>
             @foreach($days as $dayNumber => $dayName)
-                <th class="{{ $printable ? '' : 'border-b px-2 py-5 text-center text-[15px] font-black uppercase tracking-wide text-slate-600' }}" style="width: {{ round((100 - 22) / count($days), 2) }}%; white-space: nowrap;">{{ $bilingualDays[$dayNumber] ?? strtoupper($dayName) }}</th>
+                <th class="{{ $printable ? '' : 'border-b px-2 ' . ($compact ? 'py-3 text-[11px]' : 'py-5 text-[15px]') . ' text-center font-black uppercase tracking-wide text-slate-600' }}" style="width: {{ $printable ? ($dayNumber === 3 ? 21 : 15.5) : ($compact ? ($dayNumber === 3 ? 150 : 120) : round((100 - 22) / count($days), 2)) }}{{ $printable || $compact ? ($printable ? '%' : 'px') : '%' }}; white-space: nowrap;">{{ $bilingualDays[$dayNumber] ?? strtoupper($dayName) }}</th>
             @endforeach
         </tr>
     </thead>
@@ -93,12 +87,12 @@
         @foreach($gridRows as $rowIndex => $row)
             @if($row['type'] === 'break')
                 <tr class="{{ $printable ? 'break-row' : 'bg-amber-50/60' }}">
-                    <td class="{{ $printable ? 'period' : 'sticky left-0 z-10 border-b border-amber-100 bg-amber-50 px-5 py-4 text-[15px] font-black text-amber-700' }}">{{ $rowInterval($row) }}</td>
-                    <td colspan="{{ count($days) }}" class="{{ $printable ? '' : 'border-b border-amber-100 px-4 py-4 text-center text-[15px] font-black uppercase tracking-wide text-amber-700' }}">PAUSE / BREAK TIME</td>
+                    <td class="{{ $printable ? 'period' : 'sticky left-0 z-10 border-b border-amber-100 bg-amber-50 ' . ($compact ? 'px-1 py-3 text-[11px]' : 'px-5 py-4 text-[15px]') . ' text-center font-black text-amber-700' }}">{{ $rowInterval($row) }}</td>
+                    <td colspan="{{ count($days) }}" class="{{ $printable ? '' : 'border-b border-amber-100 ' . ($compact ? 'px-1 py-3 text-[11px]' : 'px-4 py-4 text-[15px]') . ' text-center font-black uppercase tracking-wide text-amber-700' }}">PAUSE / BREAK TIME</td>
                 </tr>
             @else
                 <tr>
-                    <td class="{{ $printable ? 'period' : 'sticky left-0 z-10 border-b bg-white px-5 py-4 text-center align-middle text-[15px] font-black text-slate-700' }}">{{ $rowInterval($row) }}</td>
+                    <td class="{{ $printable ? 'period' : 'sticky left-0 z-10 border-b bg-white ' . ($compact ? 'px-1 py-3 text-[11px]' : 'px-5 py-4 text-[15px]') . ' text-center align-middle font-black text-slate-700' }}">{{ $rowInterval($row) }}</td>
                     @foreach($days as $dayNumber => $dayName)
                         @php
                             $periodIndex = (int) $row['period_index'];
@@ -108,10 +102,11 @@
 
                         @php
                             $cell = $row['times'][$dayNumber] ?? null;
-                            $slotsForCell = $cellSlots($dayNumber, $periodIndex, true);
+                            $slotsForCell = $cellSlots($dayNumber, $periodIndex);
                             $slot = $slotsForCell->first();
-                            $rowspan = $slot ? max($slotsForCell->max(fn ($item) => (int) $item->periods_count) ?: 1, $segmentSpan($slot, $rowIndex, $dayNumber)) : 1;
-
+                            $rowspan = $slot
+                                ? $slotsForCell->map(fn ($item) => $segmentSpan($item, $rowIndex, $dayNumber))->max()
+                                : 1;
                             if ($slot) {
                                 $renderedUntil[$dayNumber] = $periodIndex + $rowspan - 1;
                             }

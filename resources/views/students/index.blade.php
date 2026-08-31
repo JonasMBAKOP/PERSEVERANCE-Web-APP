@@ -220,10 +220,14 @@
                             ? $student->enrollments
                                 ->sortByDesc(fn ($e) => $e->academicYear->start_date)
                                 ->first()
-                            : $student->enrollments->first();
+                            : ($student->enrollments->where('status', 'active')->sortByDesc(
+                                fn ($e) => $e->academicYear?->start_date
+                            )->first() ?? $student->enrollments->sortByDesc(
+                                fn ($e) => $e->academicYear?->start_date
+                            )->first());
                         $status = !empty($renewalFilter)
                             ? 'pending_renewal'
-                            : ($enrollment ? $enrollment->status : 'inactive');
+                            : ($enrollment?->status === 'active' ? 'active' : 'inactive');
 
                         $statusLabels = [
                             'active' => 'Actif',

@@ -4,9 +4,54 @@
 @section('page-title', 'Tous les Paiements')
 @section('page-subtitle', 'Du plus récent au plus ancien')
 
+@push('styles')
+<style>
+.payments-table { table-layout: fixed; }
+.payments-table .payment-receipt-column {
+    width: 8rem !important;
+    max-width: 8rem !important;
+    overflow: hidden;
+    padding-left: .5rem !important;
+    padding-right: .5rem !important;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.payments-table .payment-actions-column {
+    width: 3rem !important;
+    max-width: 3rem !important;
+    padding-left: .25rem !important;
+    padding-right: .25rem !important;
+    white-space: nowrap;
+}
+.payments-table .payment-installment-column {
+    width: 8.5rem !important;
+    max-width: 8.5rem !important;
+}
+.payments-table .payment-date-column {
+    width: 6.5rem !important;
+    max-width: 6.5rem !important;
+}
+.payments-table .payment-amount-column {
+    width: 8rem !important;
+    max-width: 8rem !important;
+}
+.payments-table .payment-method-column {
+    width: 7rem !important;
+    max-width: 7rem !important;
+}
+.payments-table .payment-student-column {
+    width: 12rem !important;
+    max-width: 12rem !important;
+}
+@media (min-width: 1024px) {
+    .payments-table { width: 100% !important; min-width: 0 !important; }
+}
+</style>
+@endpush
+
 @section('content')
 
-<div x-data="paymentsManager()">
+<div x-data="paymentsManager()" class="-mx-2 -mt-2 pb-2">
 
 {{-- ── BARRE ACTION FLOTTANTE ──────────────────────────────────────────── --}}
 <div x-show="selected.size > 0" x-transition
@@ -47,10 +92,12 @@
 {{-- ── FILTRES ───────────────────────────────────────────────────────────── --}}
 <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-5">
     <form method="GET" action="{{ route('finances.payments') }}"
-          class="flex flex-wrap gap-3">
+          class="flex flex-col gap-3 overflow-x-auto pb-1">
+
+        <div class="flex min-w-max flex-nowrap gap-3">
 
         <select name="year_id" onchange="this.form.submit()"
-                class="px-3 py-2 border border-gray-200 rounded-lg text-sm
+                class="w-[15rem] min-w-[15rem] shrink-0 px-3 py-2 pr-10 border border-gray-200 rounded-lg text-sm
                        focus:outline-none bg-white">
             <option value="">Toutes les années</option>
             @foreach(\App\Models\AcademicYear::orderByDesc('start_date')
@@ -63,7 +110,7 @@
         </select>
 
         <select name="class_id" onchange="this.form.submit()"
-                class="px-3 py-2 border border-gray-200 rounded-lg text-sm
+                class="w-[17rem] min-w-[17rem] shrink-0 px-3 py-2 pr-10 border border-gray-200 rounded-lg text-sm
                        focus:outline-none bg-white">
             <option value="">Toutes les classes</option>
             @foreach($classes as $cls)
@@ -75,7 +122,7 @@
         </select>
 
         <select name="method" onchange="this.form.submit()"
-                class="px-3 py-2 border border-gray-200 rounded-lg text-sm
+                class="w-[13rem] min-w-[13rem] shrink-0 px-3 py-2 pr-10 border border-gray-200 rounded-lg text-sm
                        focus:outline-none bg-white">
             <option value="">Tous les modes</option>
             @foreach([
@@ -91,8 +138,12 @@
             @endforeach
         </select>
 
+        </div>
+
+        <div class="flex min-w-max flex-nowrap gap-3">
+
         <select name="responsible" onchange="this.form.submit()"
-                class="px-3 py-2 border border-gray-200 rounded-lg text-sm
+                class="w-[19rem] min-w-[19rem] shrink-0 px-3 py-2 pr-10 border border-gray-200 rounded-lg text-sm
                        focus:outline-none bg-white">
             @if($isAdmin)
                 <option value="global" {{ $selectedResponsible === 'global' ? 'selected' : '' }}>
@@ -114,7 +165,7 @@
             @endif
         </select>
 
-        <div class="relative flex-1 min-w-40">
+        <div class="relative w-[18rem] min-w-[18rem] shrink-0">
             <input type="text" name="search"
                    value="{{ request('search') }}"
                    placeholder="Nom, matricule, n° reçu..."
@@ -133,9 +184,10 @@
 
         @if(request()->hasAny(['year_id','class_id','method','search','responsible']))
         <a href="{{ route('finances.payments') }}"
-           class="px-3 py-2 border border-gray-200 rounded-lg text-sm
+           class="w-10 min-w-10 shrink-0 px-3 py-2 border border-gray-200 rounded-lg text-sm
                   text-gray-500 hover:bg-gray-50"><svg class="inline h-4 w-4 align-[-2px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></a>
         @endif
+        </div>
     </form>
 </div>
 
@@ -171,7 +223,7 @@
 </div>
 
 {{-- ── TABLE ────────────────────────────────────────────────────────────── --}}
-<div class="bg-white rounded-2xl shadow-sm border border-gray-100
+<div class="-mx-2 bg-white rounded-2xl shadow-sm border border-gray-100
             overflow-hidden">
     @if($payments->isEmpty())
     <div class="p-12 text-center text-gray-400">
@@ -179,7 +231,17 @@
     </div>
     @else
     <div class="overflow-x-auto">
-        <table class="w-full">
+        <table class="payments-table w-full min-w-[1100px]">
+            <colgroup>
+                <col>
+                <col class="payment-student-column">
+                <col class="payment-installment-column">
+                <col class="payment-amount-column">
+                <col class="payment-method-column">
+                <col class="payment-date-column">
+                <col class="payment-receipt-column">
+                <col class="payment-actions-column">
+            </colgroup>
             <thead>
                 <tr style="background-color:#F8FAFC;"
                     class="border-b border-gray-100">
@@ -197,7 +259,7 @@
                     </th>
                     <th class="text-left px-4 py-3.5 text-xs font-semibold
                                text-gray-400 uppercase tracking-wider
-                               hidden sm:table-cell">
+                               ">
                         Tranche
                     </th>
                     <th class="text-right px-4 py-3.5 text-xs font-semibold
@@ -206,20 +268,20 @@
                     </th>
                     <th class="text-left px-4 py-3.5 text-xs font-semibold
                                text-gray-400 uppercase tracking-wider
-                               hidden md:table-cell">
+                               ">
                         Mode
                     </th>
                     <th class="text-left px-4 py-3.5 text-xs font-semibold
                                text-gray-400 uppercase tracking-wider
-                               hidden lg:table-cell">
+                               ">
                         Date
                     </th>
-                    <th class="text-left px-4 py-3.5 text-xs font-semibold
+                    <th class="payment-receipt-column text-left px-4 py-3.5 text-xs font-semibold
                                text-gray-400 uppercase tracking-wider
-                               hidden lg:table-cell">
+                               ">
                         N° Reçu
                     </th>
-                    <th class="text-right px-4 py-3.5 text-xs font-semibold
+                    <th class="payment-actions-column text-right px-4 py-3.5 text-xs font-semibold
                                text-gray-400 uppercase tracking-wider">
                         Actions
                     </th>
@@ -252,7 +314,7 @@
                         </a>
                     </td>
                     <td class="px-4 py-3.5 text-sm text-gray-700 font-medium
-                               hidden sm:table-cell">
+                               ">
                         {{ $p->is_bulk ? 'Paiement en bloc' : ($p->feeInstallment?->label ?? '—') }}
                     </td>
                     <td class="px-4 py-3.5 text-right">
@@ -261,19 +323,19 @@
                         </span>
                         <span class="text-xs text-gray-400 ml-0.5">FCFA</span>
                     </td>
-                    <td class="px-4 py-3.5 text-sm text-gray-600 hidden md:table-cell">
+                    <td class="px-4 py-3.5 text-sm text-gray-600">
                         {{ $p->payment_method_label }}
                     </td>
-                    <td class="px-4 py-3.5 text-sm text-gray-600 hidden lg:table-cell">
+                    <td class="px-4 py-3.5 text-sm text-gray-600">
                         {{ $p->payment_date->format('d/m/Y') }}
                     </td>
-                    <td class="px-4 py-3.5 hidden lg:table-cell">
+                    <td class="payment-receipt-column px-4 py-3.5">
                         <span class="font-mono text-xs font-bold"
                               style="color:#1A3A6B;">
                             {{ $p->receipt_number }}
                         </span>
                     </td>
-                    <td class="px-4 py-3.5 text-right">
+                    <td class="payment-actions-column px-4 py-3.5 text-right">
                         <a href="{{ route('finances.receipt', $p) }}"
                            target="_blank"
                            class="p-1.5 rounded-lg text-gray-400

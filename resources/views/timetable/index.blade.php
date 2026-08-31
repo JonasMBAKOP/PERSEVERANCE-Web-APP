@@ -31,7 +31,7 @@
         <p class="mt-1 text-sm text-amber-700">Activez ou créez une année scolaire avant de gérer les emplois du temps.</p>
     </div>
 @else
-<div x-data="timetableManager()" class="tt-shell space-y-6">
+<div x-data="timetableManager()" class="tt-shell timetable-page -mx-2 -mt-2 -mb-2 space-y-6 lg:-mx-4 lg:-mt-4 lg:-mb-4">
     <div class="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
         <form method="GET" action="{{ route('timetable.index') }}" class="grid gap-4 lg:grid-cols-[1fr_1.5fr_auto] lg:items-end">
             <div>
@@ -110,10 +110,11 @@
                 <h3 class="font-black text-[#1A3A6B]">Emploi du temps de la classe</h3>
                 <p class="text-xs text-gray-500">Chaque cellule correspond à une période configurée pour l'école.</p>
             </div>
-            <div class="overflow-x-auto">
+            <div class="tt-grid-wrap overflow-x-auto p-0">
                 @include('timetable.partials.grid', [
                     'mode' => 'class',
                     'printable' => false,
+                    'compact' => true,
                     'days' => $days,
                     'gridRows' => $gridRows,
                     'slots' => $slots,

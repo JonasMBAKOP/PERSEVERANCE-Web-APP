@@ -7,6 +7,15 @@
 @section('content')
 
 <style>
+    .subjects-page-fab > button { width: 48px !important; height: 48px !important; }
+    .subjects-page-fab > button svg { width: 20px; height: 20px; }
+    @media (min-width: 640px) {
+        .subjects-page-fab > button { width: 56px !important; height: 56px !important; }
+        .subjects-page-fab > button svg { width: 24px; height: 24px; }
+    }
+</style>
+
+<style>
     label[for="category-name-fr"],
     label[for="category-name-en"] { display: none; }
     form[x-show="editCategory"] div:has(input[name="name_fr"]),
@@ -28,8 +37,8 @@
             justify-between gap-4 mb-5">
 
     {{-- Onglets + filtre --}}
-    <div class="flex items-center gap-1 bg-white rounded-xl
-                shadow-sm border border-gray-100 p-1">
+    <div class="subject-tabs flex w-full items-center gap-1 bg-white rounded-xl
+                shadow-sm border border-gray-100 p-1 sm:w-auto">
         @foreach([
             ['key' => 'all',     'label' => 'Toutes les matières'],
             ['key' => 'section', 'label' => 'Par section'],
@@ -39,8 +48,9 @@
                 :class="tab === '{{ $t['key'] }}'
                     ? 'bg-gray-100 text-gray-800 font-semibold'
                     : 'text-gray-500 hover:text-gray-700'"
-                class="px-4 py-2 rounded-lg text-sm transition-colors
-                       whitespace-nowrap">
+                class="min-w-0 flex-1 px-2 py-2 rounded-lg text-sm leading-tight
+                       text-center transition-colors whitespace-normal sm:flex-none
+                       sm:px-4 sm:whitespace-nowrap">
             {{ $t['label'] }}
         </button>
         @endforeach
@@ -48,20 +58,20 @@
 
     <div class="flex items-center gap-3 flex-wrap justify-end">
         {{-- Filtre type --}}
-        <div x-show="tab === 'all'" class="flex items-center gap-2">
+        {{-- <div x-show="tab === 'all'" class="flex items-center gap-2">
             <span class="text-xs font-semibold text-gray-400 uppercase
                          tracking-wider whitespace-nowrap">
                 Filtrer par :
             </span>
             <form method="GET" action="{{ route('subjects.index') }}">
                 <select name="type" onchange="this.form.submit()"
-                        class="px-3 py-2 border border-gray-200 rounded-lg
-                               text-sm focus:outline-none bg-white">
+                        class="min-w-[170px] px-3 pr-9 py-2 border border-gray-200
+                               rounded-lg text-sm focus:outline-none bg-white">
                     <option value="">Type (Tous)</option>
                     @foreach([
                         'general'   => 'Générale',
                         'technical' => 'Technique',
-                        'language'  => 'Langue',
+                        // 'language'  => 'Langue',
                         // 'sport'     => 'Sport',
                         'other'     => 'Autre',
                     ] as $val => $lbl)
@@ -72,7 +82,7 @@
                     @endforeach
                 </select>
             </form>
-        </div>
+        </div> --}}
 
         <div x-show="tab === 'section'" class="flex items-center gap-2">
             <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap">
@@ -81,7 +91,7 @@
             <form method="GET" action="{{ route('subjects.index') }}" class="flex items-center gap-2">
                 <input type="hidden" name="tab" value="section">
                 <select name="section_id" onchange="this.form.submit()"
-                        class="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none bg-white min-w-[180px]">
+                        class="min-w-[180px] px-3 pr-9 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none bg-white">
                     <option value="">Toutes les sections</option>
                     @foreach($sections as $section)
                         <option value="{{ $section->id }}" {{ request('section_id') == $section->id ? 'selected' : '' }}>
@@ -99,7 +109,7 @@
             <form method="GET" action="{{ route('subjects.index') }}" class="flex items-center gap-2">
                 <input type="hidden" name="tab" value="assign">
                 <select name="section_id" onchange="this.form.submit()"
-                        class="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none bg-white min-w-[180px]">
+                        class="min-w-[180px] px-3 pr-9 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none bg-white">
                     <option value="">Toutes les sections</option>
                     @foreach($sections as $section)
                         <option value="{{ $section->id }}" {{ request('section_id') == $section->id ? 'selected' : '' }}>
@@ -472,6 +482,7 @@
                     </div>
                 </div>
                 @can('manage-subjects')
+                <div class="flex shrink-0 flex-col items-center gap-1">
                 <a href="{{ route('subjects.edit', $subject) }}"
                    class="p-1.5 rounded-lg text-gray-400
                           hover:text-blue-600 hover:bg-blue-50 flex-shrink-0">
@@ -484,6 +495,14 @@
                                  L16.732 3.732z"/>
                     </svg>
                 </a>
+                <form method="POST" action="{{ route('subjects.destroy', $subject) }}"
+                      onsubmit="return confirm('Supprimer « {{ $subject->name_fr }} » ?')">
+                    @csrf @method('DELETE')
+                    <button type="submit" class="rounded-lg p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600" title="Supprimer">
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                    </button>
+                </form>
+                </div>
                 @endcan
             </div>
             @endforeach
@@ -778,8 +797,8 @@
     </div>
 
     @can('manage-subjects')
-    <div class="fixed bottom-16 right-4 z-40 sm:bottom-20 sm:right-6" @click.outside="fabOpen = false">
-        <div x-show="fabOpen" x-cloak x-transition.origin.bottom.right class="absolute bottom-16 right-0 w-52 rounded-2xl border border-gray-100 bg-white p-2 shadow-xl">
+    <div class="subjects-page-fab fixed bottom-14 right-3 z-40 sm:bottom-20 sm:right-6" @click.outside="fabOpen = false">
+        <div x-show="fabOpen" x-cloak x-transition.origin.bottom.right class="absolute bottom-14 right-0 w-48 rounded-2xl border border-gray-100 bg-white p-2 shadow-xl sm:bottom-16 sm:w-52">
             <a href="{{ route('subjects.create') }}" class="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-bold text-gray-700 transition hover:bg-orange-50 hover:text-[#C2410C]"><span class="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-50 text-[#E87722]"><svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg></span>Nouvelle matière</a>
             <button type="button" @click="categoryModal = true; fabOpen = false" class="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-bold text-gray-700 transition hover:bg-blue-50 hover:text-[#1A3A6B]"><span class="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-[#1A3A6B]"><svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4M5 20h14"/></svg></span>Nouvelle catégorie</button>
         </div>
@@ -787,66 +806,66 @@
     </div>
     @endcan
 </div>{{-- end x-data --}}
-@push('fixed_footer')
-<div class="fixed bottom-0 left-0 md:left-64 right-0 z-20
-            bg-white border-t border-gray-200 shadow-md
-            px-5 py-2.5 flex flex-col sm:flex-row sm:items-center
-            justify-between gap-2 text-xs text-gray-500">
+{{-- @push('fixed_footer')
+    <div class="fixed bottom-0 left-0 md:left-64 right-0 z-20
+                bg-white border-t border-gray-200 shadow-md
+                px-5 py-2.5 flex flex-col sm:flex-row sm:items-center
+                justify-between gap-2 text-xs text-gray-500"> --}}
 
-    {{-- Stats par type --}}
-    <div class="flex items-center gap-4 flex-wrap">
-        <span class="flex items-center gap-1.5">
-            <span class="w-2 h-2 rounded-full bg-gray-400"></span>
-            <strong class="text-gray-700">{{ $stats['total'] }}</strong>
-            matières au total
-        </span>
-        <span class="hidden sm:flex items-center gap-1.5">
-            <span class="w-2 h-2 rounded-full" style="background:#1D4ED8;"></span>
-            <strong class="text-gray-700">{{ $stats['general'] }}</strong>
-            générales
-        </span>
-        <span class="hidden sm:flex items-center gap-1.5">
-            <span class="w-2 h-2 rounded-full" style="background:#6D28D9;"></span>
-            <strong class="text-gray-700">{{ $stats['technical'] }}</strong>
-            techniques
-        </span>
-        <span class="hidden sm:flex items-center gap-1.5">
-            <span class="w-2 h-2 rounded-full" style="background:#065F46;"></span>
-            <strong class="text-gray-700">{{ $stats['language'] }}</strong>
-            langue(s)
-        </span>
-        <span class="hidden md:flex items-center gap-1.5">
-            <span class="w-2 h-2 rounded-full" style="background:#92400E;"></span>
-            <strong class="text-gray-700">{{ $stats['sport'] }}</strong>
-            sport
-        </span>
-    </div>
+        {{-- Stats par type --}}
+        {{-- <div class="flex items-center gap-4 flex-wrap">
+            <span class="flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-gray-400"></span>
+                <strong class="text-gray-700">{{ $stats['total'] }}</strong>
+                matières au total
+            </span>
+            <span class="hidden sm:flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full" style="background:#1D4ED8;"></span>
+                <strong class="text-gray-700">{{ $stats['general'] }}</strong>
+                générales
+            </span>
+            <span class="hidden sm:flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full" style="background:#6D28D9;"></span>
+                <strong class="text-gray-700">{{ $stats['technical'] }}</strong>
+                techniques
+            </span>
+            <span class="hidden sm:flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full" style="background:#065F46;"></span>
+                <strong class="text-gray-700">{{ $stats['language'] }}</strong>
+                langue(s)
+            </span>
+            <span class="hidden md:flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full" style="background:#92400E;"></span>
+                <strong class="text-gray-700">{{ $stats['sport'] }}</strong>
+                sport
+            </span>
+        </div> --}}
 
-    {{-- Dernière mise à jour + auteur --}}
-    <div class="flex items-center gap-2 text-gray-400 flex-shrink-0">
-        @if($lastAudit)
-            <span>
-                Dernière Mise à jour :
-                 {{ now()->format('d/m/Y à H:i') }}
-                {{ $lastAudit->created_at->format('d/m/Y à H:i') }}
+        {{-- Dernière mise à jour + auteur --}}
+        {{-- <div class="flex items-center gap-2 text-gray-400 flex-shrink-0">
+            @if($lastAudit)
+                <span>
+                    Dernière Mise à jour :
+                    {{ now()->format('d/m/Y à H:i') }}
+                    {{ $lastAudit->created_at->format('d/m/Y à H:i') }}
+                    <span class="text-gray-300">•</span>
+                    Par
+                </span>
                 <span class="text-gray-300">•</span>
-                Par
-            </span>
-            <span class="text-gray-300">•</span>
-            <span class="flex items-center gap-1">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor"
-                    viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round"
-                        stroke-width="2"
-                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0
-                            00-7 7h14a7 7 0 00-7-7z"/>
-                </svg>
-                <span>{{ $lastAudit->user?->name ?? 'Système' }}</span>
-            </span>
-        @else
-            <span>Aucune modification enregistrée</span>
-        @endif
+                <span class="flex items-center gap-1">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor"
+                        viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0
+                                00-7 7h14a7 7 0 00-7-7z"/>
+                    </svg>
+                    <span>{{ $lastAudit->user?->name ?? 'Système' }}</span>
+                </span>
+            @else
+                <span>Aucune modification enregistrée</span>
+            @endif
+        </div>
     </div>
-</div>
-@endpush
+@endpush --}}
 @endsection

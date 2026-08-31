@@ -4,12 +4,26 @@
 @section('page-title', 'Configuration des Frais')
 @section('page-subtitle', 'Définir les frais scolaires par classe')
 
+@push('styles')
+<style>
+.fee-list-filter select {
+    min-width: 13rem;
+    padding-right: 2.75rem;
+}
+.fee-list-filter select[name="section_id"] { min-width: 16rem; }
+@media (max-width: 639px) {
+    .fee-list-filter select { min-width: 0; width: auto; }
+}
+</style>
+@endpush
+
 @section('content')
 
+<div class="finance-page -mx-2 -mt-2 -mb-2 lg:-mx-4 lg:-mt-4 lg:-mb-4">
     {{-- Sélecteurs d'année et de section --}}
     <div class="mb-6">
         <form method="GET" action="{{ route('finances.fees-list') }}"
-            class="flex flex-wrap items-center gap-3">
+            class="fee-list-filter flex flex-wrap items-center gap-3">
             <div class="flex items-center gap-2">
                 <label class="text-sm text-gray-500">Année :</label>
                 <select name="year_id" onchange="this.form.submit()"
@@ -147,4 +161,5 @@
 
     @endif
 
+</div>
 @endsection

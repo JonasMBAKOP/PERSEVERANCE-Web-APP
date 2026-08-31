@@ -14,8 +14,9 @@
 @section('content')
 
 {{-- ── EN-TÊTE ───────────────────────────────────────────────────────────── --}}
+<div class="-mx-2 -mt-2 pb-2">
 <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 mb-5">
-    <div class="flex items-center justify-between gap-4">
+    <div class="flex flex-col items-stretch gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div class="flex items-center gap-4">
             <div class="w-14 h-14 rounded-full flex items-center justify-center
                         text-white font-black text-xl"
@@ -34,7 +35,7 @@
                 </p>
             </div>
         </div>
-        <div class="grid grid-cols-3 gap-4 text-center">
+        <div class="grid w-full grid-cols-3 gap-2 text-center sm:w-auto sm:gap-4">
             <div class="px-4 py-3 rounded-xl bg-gray-50">
                 <p class="text-xl font-black text-gray-800">{{ $totalH }}h</p>
                 <p class="text-xs text-gray-500">Total</p>
@@ -83,7 +84,8 @@
         Aucune absence enregistrée.
     </div>
     @else
-    <table class="w-full">
+    <div class="overflow-x-auto">
+    <table class="w-full min-w-[700px]">
         <thead>
             <tr style="background:#F8FAFC; border-bottom:1px solid #E5E7EB;">
                 <th class="text-left px-5 py-3 text-xs font-bold text-gray-400
@@ -186,7 +188,10 @@
             @endforeach
         </tbody>
     </table>
+    </div>
     @endif
+</div>
+
 </div>
 
 @endsection

@@ -16,11 +16,21 @@ class AttendanceController extends Controller
     public function index(Request $request)
     {
         $activeYear = AcademicYear::active();
-        $date = Carbon::parse($request->input('date', now()->toDateString()));
-        $date = $date->isFuture() ? today() : $date;
+        $user = Auth::user();
+        $isUnrestricted = $this->canManageAllAttendance($user);
+        $isTeacher = $user?->hasRole('enseignant') && ! $isUnrestricted;
+        $staffId = $user?->staff?->id;
+        $date = $isTeacher
+            ? today()
+            : Carbon::parse($request->input('date', now()->toDateString()));
 
         $classes = $activeYear
             ? ClassGroup::where('academic_year_id', $activeYear->id)
+                ->when($isTeacher, fn ($query) => $query->whereHas(
+                    'classSubjects.teacherAssignments', fn ($assignment) =>
+                        $assignment->where('staff_id', $staffId)
+                            ->where('academic_year_id', $activeYear->id)
+                ))
                 ->with('level.section')
                 ->orderBy('name')
                 ->get()
@@ -35,6 +45,11 @@ class AttendanceController extends Controller
             $slots = TimetableSlot::where('academic_year_id', $activeYear->id)
                 ->where('class_group_id', $selectedClass->id)
                 ->where('day_of_week', $date->dayOfWeekIso)
+                ->when($isTeacher, fn ($query) => $query->whereHas(
+                    'classSubject.teacherAssignments', fn ($assignment) =>
+                        $assignment->where('staff_id', $staffId)
+                            ->where('academic_year_id', $activeYear->id)
+                ))
                 ->with('classSubject.subject')
                 ->orderBy('period_index')
                 ->get();
@@ -75,25 +90,38 @@ class AttendanceController extends Controller
         }
 
         return view('attendance.index', compact(
-            'activeYear', 'date', 'classes', 'selectedClass', 'periods', 'enrollments', 'existing'
+            'activeYear', 'date', 'classes', 'selectedClass', 'periods', 'enrollments', 'existing', 'isUnrestricted'
         ));
     }
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
+        $user = Auth::user();
+        $isUnrestricted = $this->canManageAllAttendance($user);
+        $rules = [
             'class_group_id' => ['required', 'integer', 'exists:class_groups,id'],
-            'absence_date' => ['required', 'date', 'before_or_equal:today'],
+            'absence_date' => ['required', 'date'],
             'periods' => ['required', 'array', 'min:1'],
             'periods.*' => ['required', 'regex:/^slot-[0-9]+-[0-9]+$/'],
             'attendance' => ['nullable', 'array'],
-        ]);
+        ];
+        if (! $isUnrestricted) $rules['absence_date'][] = 'before_or_equal:today';
+        $validated = $request->validate($rules);
 
         $activeYear = AcademicYear::active();
+        $isTeacher = $user?->hasRole('enseignant') && ! $isUnrestricted;
+        $staffId = $user?->staff?->id;
         $class = ClassGroup::where('academic_year_id', $activeYear?->id)
             ->findOrFail($validated['class_group_id']);
         $date = Carbon::parse($validated['absence_date']);
-        $periods = $this->periodDefinitions($class, $date, $validated['periods']);
+        abort_if($isTeacher && $date->toDateString() !== today()->toDateString(), 403,
+            'Un enseignant ne peut enregistrer que l’appel du jour.');
+        abort_if($isTeacher && ! $class->classSubjects()->whereHas(
+            'teacherAssignments', fn ($assignment) =>
+                $assignment->where('staff_id', $staffId)
+                    ->where('academic_year_id', $activeYear?->id)
+        )->exists(), 403, 'Cette classe ne vous est pas attribuée.');
+        $periods = $this->periodDefinitions($class, $date, $validated['periods'], $staffId, $isTeacher);
         $enrollments = StudentEnrollment::where([
             'class_group_id' => $class->id,
             'academic_year_id' => $activeYear?->id,
@@ -139,13 +167,18 @@ class AttendanceController extends Controller
         ])->with('success', "Appel enregistré : {$saved} absence(s) sur les périodes sélectionnées.");
     }
 
-    private function periodDefinitions(ClassGroup $class, Carbon $date, array $keys)
+    private function periodDefinitions(ClassGroup $class, Carbon $date, array $keys, ?int $staffId = null, bool $isTeacher = false)
     {
         $wanted = collect($keys)->values();
         $definitions = collect();
         $slots = TimetableSlot::where('academic_year_id', $class->academic_year_id)
             ->where('class_group_id', $class->id)
             ->where('day_of_week', $date->dayOfWeekIso)
+            ->when($isTeacher, fn ($query) => $query->whereHas(
+                'classSubject.teacherAssignments', fn ($assignment) =>
+                    $assignment->where('staff_id', $staffId)
+                        ->where('academic_year_id', $class->academic_year_id)
+            ))
             ->with('classSubject.subject')
             ->get();
 
@@ -167,5 +200,11 @@ class AttendanceController extends Controller
 
         abort_if($definitions->isEmpty(), 422, 'Aucune période valide n’a été trouvée pour cette classe et cette date.');
         return $definitions;
+    }
+    private function canManageAllAttendance($user): bool
+    {
+        if (! $user) return false;
+        if ($user->hasAnyRole(['super-admin', 'directeur', 'censeur', 'surveillant-general'])) return true;
+        return $user->staff?->positions?->contains(fn ($position) => in_array($position->position, ['directeur', 'censeur', 'prefet_des_etudes', 'surveillant_general'], true)) ?? false;
     }
 }

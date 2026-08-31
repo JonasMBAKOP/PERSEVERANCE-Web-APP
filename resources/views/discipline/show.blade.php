@@ -5,6 +5,19 @@
 
 @section('content')
 
+<style>
+@media (max-width: 639px) {
+    .incident-quick-actions { width: 100%; }
+    .incident-quick-actions > a,
+    .incident-quick-actions > form { width: 100%; }
+    .incident-quick-actions > a,
+    .incident-quick-actions > form > button { width: 100%; justify-content: center; }
+    .incident-secondary-actions { width: 100%; justify-content: space-between; }
+}
+</style>
+
+<div class="finance-page -mx-2 -mt-2 -mb-2 lg:-mx-4 lg:-mt-4 lg:-mb-4">
+
 @php
     $typeLabels   = \App\Models\DisciplineIncident::INCIDENT_TYPES;
     $statusLabels = \App\Models\DisciplineIncident::STATUSES;
@@ -12,10 +25,10 @@
 
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
 
-    <div class="lg:col-span-3 flex flex-wrap items-center justify-between gap-4 mb-4">
+    <div class="incident-actions lg:col-span-3 flex flex-wrap items-center justify-between gap-4 mb-4">
         <div class="space-y-2">
             <p class="text-xs uppercase tracking-[0.25em] text-gray-400 font-bold">Actions rapides</p>
-            <div class="flex flex-wrap gap-2">
+            <div class="incident-quick-actions flex flex-wrap gap-2">
                 <a href="{{ route('discipline.print', $disciplineIncident) }}" target="_blank"
                    class="inline-flex items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-2 text-xs font-semibold text-blue-700 hover:bg-blue-100 transition-all">
                     Prévisualiser fiche
@@ -48,7 +61,7 @@
             </div>
         </div>
 
-        <div class="flex flex-wrap items-center gap-3">
+        <div class="incident-secondary-actions flex flex-wrap items-center gap-3">
             @can('manage-discipline')
             <form method="POST" action="{{ route('discipline.status', $disciplineIncident) }}"
                   class="inline-flex items-center gap-2">
@@ -212,6 +225,7 @@
 
     </div>
 
+</div>
 </div>
 
 @endsection

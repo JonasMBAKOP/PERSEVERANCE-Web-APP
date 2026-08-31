@@ -19,10 +19,14 @@
 
 @section('content')
 
+<div class="student-finance-page -mx-2 -mt-2 -mb-2 lg:-mx-4 lg:-mt-4 lg:-mb-4">
+
+
 {{-- ── EN-TÊTE ÉLÈVE ────────────────────────────────────────────────────── --}}
 <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 mb-5
-            flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-    <div class="flex items-center gap-4">
+            flex w-full max-w-full flex-col overflow-hidden md:grid
+            md:grid-cols-[minmax(0,auto)_minmax(0,1fr)_auto] md:items-center md:gap-4">
+    <div class="flex min-w-0 items-center gap-4 md:col-start-1">
         @if($enrollment->student->photo)
         <img src="{{ $enrollment->student->photo_url }}"
              class="w-14 h-14 rounded-full object-cover ring-2 ring-gray-100
@@ -37,7 +41,8 @@
         @endif
         <div>
             <p class="font-black text-lg" style="color:#1A3A6B;">
-                {{ $enrollment->student->full_name }}
+                <span class="block">{{ $enrollment->student->last_name }}</span>
+                <span class="block">{{ $enrollment->student->first_name }}</span>
             </p>
             <p class="text-sm text-gray-500">
                 {{ $enrollment->student->matricule }}
@@ -47,49 +52,57 @@
         </div>
     </div>
 
-    <div class="flex items-center gap-4">
-        <div class="text-center px-4">
+    <div class="flex w-full min-w-0 flex-col gap-3 md:contents">
+        <div class="flex w-full min-w-0 items-center justify-center gap-0 md:col-start-2 md:w-auto md:justify-self-center">
+        <div class="min-w-0 flex-1 text-center px-2" style="white-space:nowrap;padding-left:2rem;padding-right:2rem;">
             <p class="text-xs text-gray-400">Total dû</p>
             <p class="font-bold" style="color:#1A3A6B;">
-                {{ number_format($totalDue) }} FCFA
+                {{ number_format($totalDue) }}
+                <span class="block text-xs font-normal text-gray-400">FCFA</span>
             </p>
         </div>
-        <div class="text-center px-4 border-l border-gray-200">
+        <div class="min-w-0 flex-1 text-center px-2 border-l border-gray-200" style="padding-left:2rem;padding-right:2rem;">
             <p class="text-xs text-gray-400">Payé</p>
             <p class="font-bold text-green-600">
-                {{ number_format($totalPaid) }} FCFA
+                {{ number_format($totalPaid) }}
+                <span class="block text-xs font-normal text-gray-400">FCFA</span>
             </p>
         </div>
-        <div class="text-center px-4 border-l border-gray-200">
+        <div class="min-w-0 flex-1 text-center px-2 border-l border-gray-200" style="padding-left:2rem;padding-right:2rem;">
             <p class="text-xs text-gray-400">Bourse</p>
             <p class="font-bold text-indigo-600">
-                {{ number_format($totalScholarship ?? 0) }} FCFA
+                {{ number_format($totalScholarship ?? 0) }}
+                <span class="block text-xs font-normal text-gray-400">FCFA</span>
             </p>
         </div>
-        <div class="text-center px-4 border-l border-gray-200">
+        <div class="min-w-0 flex-1 text-center px-2 border-l border-gray-200" style="padding-left:2rem;padding-right:2rem;">
             <p class="text-xs text-gray-400">Restant</p>
             <p class="font-bold {{ $totalRemaining > 0
                 ? 'text-red-500' : 'text-green-600' }}">
-                {{ number_format($totalRemaining) }} FCFA
+                {{ number_format($totalRemaining) }}
+                <span class="block text-xs font-normal text-gray-400">FCFA</span>
             </p>
         </div>
+        </div>
+
+        <div class="flex w-full min-w-0 flex-wrap items-center gap-2 md:col-start-3 md:w-auto md:flex-nowrap md:justify-self-end">
         @can('manage-finances')
         @if($feeStructure)
         <button type="button"
                 onclick="openBulkPaymentModal()"
                 @if($totalRemaining <= 0) disabled @endif
-                class="flex items-center gap-2 px-4 py-2 rounded-lg text-white text-sm font-bold transition-all hover:shadow-md {{ $totalRemaining <= 0 ? 'opacity-40 cursor-not-allowed' : '' }}"
+                class="flex items-center gap-2 whitespace-nowrap px-4 py-2 rounded-lg text-white text-sm font-bold transition-all hover:shadow-md {{ $totalRemaining <= 0 ? 'opacity-40 cursor-not-allowed' : '' }}"
                 style="background-color:#E87722;">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 1.343-3 3s1.343 3 3 3 3-1.343 3-3-1.343-3-3-3zm0 10c-4.418 0-8-2.239-8-5s3.582-5 8-5 8 2.239 8 5-3.582 5-8 5zm0-12V3m0 18v-3"/>
             </svg>
-            Payer en bloc
+            Payer<br class="hidden sm:block"> en bloc
         </button>
         @endif
         @endcan
         <a href="{{ route('finances.student.receipt', $enrollment) }}"
             target="_blank"
-            class="flex items-center gap-2 px-4 py-2 rounded-lg text-white
+            class="flex items-center gap-2 whitespace-nowrap px-4 py-2 rounded-lg text-white
                     text-sm font-bold transition-all hover:shadow-md"
             style="background-color:#1A3A6B;">
             <svg class="w-4 h-4" fill="none" stroke="currentColor"
@@ -98,8 +111,9 @@
                     d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1
                         0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
             </svg>
-            Reçu global
+            Reçu<br class="hidden sm:block"> global
         </a>
+        </div>
     </div>
 </div>
 
@@ -200,7 +214,7 @@
                 <input type="hidden" name="fee_installment_id"
                        value="{{ $inst->id }}">
 
-                <div class="flex-1 min-w-36">
+                <div class="w-32 min-w-32 flex-none">
                     <label class="block text-xs text-gray-500 mb-1">
                         Montant (FCFA)
                     </label>
@@ -212,10 +226,10 @@
                                   focus:ring-2 focus:ring-blue-100">
                 </div>
 
-                <div>
+                <div class="w-44 min-w-44 flex-none">
                     <label class="block text-xs text-gray-500 mb-1">Mode</label>
                     <select name="payment_method"
-                            class="px-3 py-2 border border-gray-200 rounded-lg
+                            class="w-full px-3 py-2 border border-gray-200 rounded-lg
                                    text-sm focus:outline-none bg-white">
                         <option value="cash">Espèces</option>
                         <option value="orange_money">Orange Money</option>
@@ -540,5 +554,7 @@ document.addEventListener('keydown', function (event) {
 });
 
 </script>
+
+</div>
 
 @endsection

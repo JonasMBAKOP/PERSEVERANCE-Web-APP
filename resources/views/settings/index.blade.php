@@ -6,6 +6,8 @@
 
 @section('content')
 
+<div class="finance-page -mx-2 -mt-2 -mb-2 lg:-mx-4 lg:-mt-4 lg:-mb-4">
+
 {{-- ── ONGLETS (Alpine.js) ──────────────────────────────────────────────── --}}
 <div x-data="{ tab: '{{ session('active_tab', 'general') }}' }">
 
@@ -1132,5 +1134,7 @@ function imageUpload() {
     }
 }
 </script>
+
+ </div>
 
 @endsection

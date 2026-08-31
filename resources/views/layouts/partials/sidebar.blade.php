@@ -214,56 +214,7 @@
                 :active="request()->routeIs('bulletins.*')" />
         @endcan
         {{-- @endcanany --}}
-
         
-        {{-- ── PRÉSENCES ÉLÈVES ─────────────────────────────────────────── --}}
-        @can('view-absences')
-            <div class="mx-1 mt-4 mb-1 rounded-lg px-3 py-2 text-[11px] font-bold uppercase tracking-[0.24em] shadow-sm"
-                style="background-color: #D97706; color: #ffffff;">
-                Présences élèves
-            </div>
-
-            @can('manage-absences')
-                <x-sidebar-item
-                    icon="clipboard"
-                    label="Appel du jour"
-                    href="{{ route('attendance.index') }}"
-                    :active="request()->routeIs('attendance.*')" />
-            @endcan
-
-            <x-sidebar-item
-                icon="x-circle"
-                label="Absences"
-                href="{{ route('absences.index') }}"
-                :active="request()->routeIs('absences.*')" />
-        @endcan
-
-        {{-- ── INFIRMERIE ──────────────────────────────────────────── --}}
-        @can('view-health')
-            <div class="mx-1 mt-4 mb-1 rounded-lg px-3 py-2 text-[11px] font-bold uppercase tracking-[0.24em] shadow-sm"
-                style="background-color: #0F766E; color: #ffffff;">
-                Infirmerie
-            </div>
-            <x-sidebar-item
-                icon="clipboard"
-                label="Consultations"
-                href="{{ route('infirmary.index') }}"
-                :active="request()->routeIs('infirmary.index') || request()->routeIs('infirmary.edit') || request()->routeIs('infirmary.print')" />
-
-            <x-sidebar-item
-                icon="folder-open"
-                label="Dossiers Patients"
-                href="{{ route('infirmary.patients') }}"
-                :active="request()->routeIs('infirmary.patients') || request()->routeIs('infirmary.patients.show')" />
-
-            @can('manage-health')
-                <x-sidebar-item
-                    icon="heart"
-                    label="Nouvelle Consultation"
-                    href="{{ route('infirmary.create') }}"
-                    :active="request()->routeIs('infirmary.create')" />
-            @endcan
-        @endcan
 
         {{-- ── FINANCES ──────────────────────────────────────────── --}}
         @can('view-finances')
@@ -317,6 +268,57 @@
                 :active="request()->routeIs('finances.reports*')" />
         @endcan
 
+        
+        {{-- ── PRÉSENCES ÉLÈVES ─────────────────────────────────────────── --}}
+        @can('view-absences')
+            <div class="mx-1 mt-4 mb-1 rounded-lg px-3 py-2 text-[11px] font-bold uppercase tracking-[0.24em] shadow-sm"
+                style="background-color: #D97706; color: #ffffff;">
+                Présences élèves
+            </div>
+
+            @can('manage-absences')
+                <x-sidebar-item
+                    icon="clipboard"
+                    label="Appel du jour"
+                    href="{{ route('attendance.index') }}"
+                    :active="request()->routeIs('attendance.*')" />
+            @endcan
+
+            <x-sidebar-item
+                icon="x-circle"
+                label="Absences"
+                href="{{ route('absences.index') }}"
+                :active="request()->routeIs('absences.*')" />
+        @endcan
+
+        {{-- ── INFIRMERIE ──────────────────────────────────────────── --}}
+        @can('view-health')
+            <div class="mx-1 mt-4 mb-1 rounded-lg px-3 py-2 text-[11px] font-bold uppercase tracking-[0.24em] shadow-sm"
+                style="background-color: #0F766E; color: #ffffff;">
+                Infirmerie
+            </div>
+            <x-sidebar-item
+                icon="clipboard"
+                label="Consultations"
+                href="{{ route('infirmary.index') }}"
+                :active="request()->routeIs('infirmary.index') || request()->routeIs('infirmary.edit') || request()->routeIs('infirmary.print')" />
+
+            <x-sidebar-item
+                icon="folder-open"
+                label="Dossiers Patients"
+                href="{{ route('infirmary.patients') }}"
+                :active="request()->routeIs('infirmary.patients') || request()->routeIs('infirmary.patients.show')" />
+
+            @can('manage-health')
+                <x-sidebar-item
+                    icon="heart"
+                    label="Nouvelle Consultation"
+                    href="{{ route('infirmary.create') }}"
+                    :active="request()->routeIs('infirmary.create')" />
+            @endcan
+        @endcan
+
+
         {{-- ── DISCIPLINE ────────────────────────────────────────── --}}
         @can('view-discipline')
             <div class="mx-1 mt-4 mb-1 rounded-lg px-3 py-2 text-[11px] font-bold uppercase tracking-[0.24em] shadow-sm"
@@ -328,7 +330,14 @@
                 icon="shield"
                 label="Incidents"
                 href="{{ route('discipline.index') }}"
-                :active="request()->routeIs('discipline.*')" />
+                :active="request()->routeIs('discipline.*') && !request()->routeIs('discipline.create')" />
+            @can('manage-discipline')
+            <x-sidebar-item
+                icon="clipboard"
+                label="Nouvel incident"
+                href="{{ route('discipline.create') }}"
+                :active="request()->routeIs('discipline.create')" />
+            @endcan
         @endcan
 
         {{-- ── COMMUNICATION ─────────────────────────────────────── --}}

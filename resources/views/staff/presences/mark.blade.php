@@ -61,7 +61,8 @@
                     @foreach($staff as $member)
                         @php
                             $p = $presences->get($member->id);
-                            $isPresent = !$p || $p->status === 'present';
+                            // Une ligne sans enregistrement propose Absent sans créer de présence en BD.
+                            $isPresent = $p?->status === 'present';
                         @endphp
                         <tr>
                             <td class="px-4 py-3">{{ $member->full_name }}</td>
@@ -77,8 +78,8 @@
                             </td>
                             <td class="px-4 py-3 text-center">
                                 <select name="presences[{{ $member->id }}][status]" class="border rounded px-2 py-1">
+                                    <option value="absent" {{ !$isPresent ? 'selected' : '' }}>Absent</option>
                                     <option value="present" {{ $isPresent ? 'selected' : '' }}>Présent</option>
-                                    <option value="absent" {{ $p?->status === 'absent' ? 'selected' : '' }}>Absent</option>
                                 </select>
                                 <span class="ml-2 inline-block autosave-indicator" data-staff-id="{{ $member->id }}" aria-hidden="true"></span>
                             </td>

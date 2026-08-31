@@ -11,6 +11,13 @@
 
 @section('content')
 
+<style>
+    .class-details-page .class-timetable-scroll th,
+    .class-details-page .class-timetable-scroll td { font-size: 11px; }
+    .class-details-page .class-timetable-scroll th:not(:first-child) { padding: 10px 4px; }
+    .class-details-page .class-timetable-scroll td { padding: 8px 4px; }
+</style>
+
 {{-- CALCULS STATS DYNAMIQUES --}}
 @php
     $totalStudents = $stats['students'];
@@ -19,7 +26,7 @@
     $boysPct = $totalStudents > 0 ? round(($boysCount / $totalStudents) * 100) : 0;
 @endphp
 
-<div x-data="{ activeTab: 'students', searchStudent: '' }">
+<div x-data="{ activeTab: 'students', searchStudent: '' }" class="class-details-page -mx-2 -mt-2 -mb-2 lg:-mx-4 lg:-mt-4 lg:-mb-4">
 
     {{-- ── EN-TÊTE PREMIUM GÉANTE (MOCKUP 3) ───────────────────────────────────────────── --}}
     <div class="rounded-3xl shadow-lg text-white overflow-hidden mb-6 relative" style="background-color: #1A3A6B;">
@@ -464,10 +471,11 @@
                     Grille active · {{ $timetableSetting->period_duration_minutes }} min / période
                 </div>
             </div>
-            <div class="overflow-x-auto p-4">
+            <div class="class-timetable-scroll overflow-x-auto p-0">
                 @include('timetable.partials.grid', [
                     'mode' => 'class',
                     'printable' => false,
+                    'compact' => true,
                     'days' => $timetableDays,
                     'gridRows' => $timetableGridRows,
                     'slots' => $timetableSlots,

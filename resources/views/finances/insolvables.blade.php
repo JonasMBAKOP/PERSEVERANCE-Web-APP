@@ -6,9 +6,83 @@
 
 @push('styles')
 @include('finances.partials.finance-ui-styles')
+<style>
+@media (max-width: 639px) {
+    #insolvables-filters .flex.gap-2 { flex-wrap: wrap; }
+    #insolvables-filters .flex.gap-2 > button,
+    #insolvables-filters .flex.gap-2 > a { width: 100%; }
+}
+.fin-table th:nth-child(2), .fin-table td:nth-child(2) {
+    width: 8rem;
+    max-width: 8rem;
+    padding-left: .5rem;
+    padding-right: .5rem;
+}
+.fin-table { min-width: 1000px !important; }
+@if(!$selectedInstallmentLabel)
+.fin-table th:nth-child(6), .fin-table td:nth-child(6) {
+    width: 11rem;
+    max-width: 11rem;
+    padding-left: .5rem;
+    padding-right: .5rem;
+}
+@endif
+</style>
 @endpush
 
 @section('content')
+<div class="finance-page -mx-2 -mt-2 -mb-2 lg:-mx-4 lg:-mt-4 lg:-mb-4">
+<style>
+    #insolvables-filters select {
+        box-sizing: border-box;
+        min-width: 0;
+        max-width: 100%;
+        width: 100%;
+        padding-right: 2.75rem;
+    }
+    #insolvables-filters .flex.gap-2 {
+        display: flex;
+        flex-wrap: wrap;
+    }
+    .fin-table {
+        table-layout: fixed !important;
+        min-width: 1000px !important;
+    }
+    .fin-table th:nth-child(2),
+    .fin-table td:nth-child(2) {
+        width: 8rem !important;
+        max-width: 8rem !important;
+        padding-left: .5rem !important;
+        padding-right: .5rem !important;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+    }
+    @if(!$selectedInstallmentLabel)
+    .fin-table th:nth-child(6),
+    .fin-table td:nth-child(6) {
+        width: 11rem !important;
+        max-width: 11rem !important;
+        padding-left: .5rem !important;
+        padding-right: .5rem !important;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+    }
+    @endif
+    @media (max-width: 639px) {
+        #insolvables-filters .flex.gap-2 > button,
+        #insolvables-filters .flex.gap-2 > a {
+            box-sizing: border-box;
+            width: 100%;
+            max-width: 100%;
+        }
+    }
+    @media (min-width: 768px) {
+        #insolvables-filters [class~="md:justify-start"] {
+            justify-content: center;
+            gap: 2.5rem;
+        }
+    }
+</style>
 <script>
 function manualPayment() {
     return {
@@ -66,14 +140,14 @@ function manualPayment() {
     @include('finances.partials.kpi-card', ['label' => 'Reste à recouvrer', 'value' => number_format($summary['remaining']), 'suffix' => 'FCFA', 'hint' => 'Solde cumulé des impayés', 'color' => '#C2410C', 'bg' => '#FFF7ED', 'delay' => '.1s', 'icon' => '<svg class="h-5 w-5 text-orange-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01m8-4a8 8 0 11-16 0 8 8 0 0116 0z"/></svg>'])
 </div>
 
-<form method="GET" action="{{ route('finances.insolvables') }}" class="mb-6 rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-    <div class="grid gap-4 lg:grid-cols-[1fr_1fr_1fr_1fr_auto] lg:items-end">
+<form method="GET" action="{{ route('finances.insolvables') }}" id="insolvables-filters" class="mb-6 rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+    <div class="grid gap-4 md:grid-cols-4 md:items-end">
         <div><label class="mb-1.5 block text-xs font-bold uppercase tracking-wider text-gray-500">Année scolaire</label><select name="year_id" class="w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm font-semibold text-gray-700">@foreach($years as $year)<option value="{{ $year->id }}" {{ $selectedYear?->id === $year->id ? 'selected' : '' }}>{{ $year->label }}{{ $year->is_active ? ' (Active)' : '' }}</option>@endforeach</select></div>
         <div><label class="mb-1.5 block text-xs font-bold uppercase tracking-wider text-gray-500">Par section</label><select name="section_id" class="w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm font-semibold text-gray-700"><option value="">Toutes les sections</option>@foreach($sections as $section)<option value="{{ $section->id }}" {{ $selectedSectionId === $section->id ? 'selected' : '' }}>{{ $section->name }}</option>@endforeach</select></div>
         <div><label class="mb-1.5 block text-xs font-bold uppercase tracking-wider text-gray-500">Paiement concerné</label><select name="installment_label" class="w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm font-semibold text-gray-700"><option value="">Toutes les tranches</option>@foreach($installmentLabels as $label)<option value="{{ $label }}" {{ $selectedInstallmentLabel === $label ? 'selected' : '' }}>{{ $label }}</option>@endforeach</select></div>
         <div><label class="mb-1.5 block text-xs font-bold uppercase tracking-wider text-gray-500">Par classe</label><select name="class_id" class="w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm font-semibold text-gray-700"><option value="">Toutes les classes</option>@foreach($classes as $class)<option value="{{ $class->id }}" {{ $selectedClassId === $class->id ? 'selected' : '' }}>{{ $class->full_name }}</option>@endforeach</select></div>
-        <div class="flex gap-2"><button type="submit" class="inline-flex items-center justify-center gap-2 rounded-xl bg-[#1A3A6B] px-5 py-2.5 text-sm font-bold text-white transition hover:bg-[#163450]"><svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h18M6 8h12M10 12h4M11 16h2"/></svg> Filtrer</button><a href="{{ route('finances.insolvables.print', request()->query()) }}" target="_blank" class="inline-flex items-center justify-center gap-2 rounded-xl border border-[#E87722] px-4 py-2.5 text-sm font-bold text-[#C2410C] transition hover:bg-orange-50"><svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2m-2 0H8v4h8v-4z"/></svg> Imprimer</a>
-            <a href="{{ route('finances.insolvables.create') }}" class="inline-flex items-center justify-center gap-2 rounded-xl border border-green-200 bg-green-50 px-4 py-2.5 text-sm font-bold text-green-700 transition hover:bg-green-100">Ajouter un insolvable</a>
+        <div class="flex gap-2 md:col-span-4 md:justify-start"><button type="submit" class="inline-flex items-center justify-center gap-2 rounded-xl bg-[#1A3A6B] px-5 py-2.5 text-sm font-bold text-white transition hover:bg-[#163450]"><svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h18M6 8h12M10 12h4M11 16h2"/></svg> Filtrer</button><a href="{{ route('finances.insolvables.print', request()->query()) }}" target="_blank" class="inline-flex items-center justify-center gap-2 rounded-xl border border-[#E87722] px-4 py-2.5 text-sm font-bold text-[#C2410C] transition hover:bg-orange-50"><svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2m-2 0H8v4h8v-4z"/></svg> Imprimer</a>
+            <a href="{{ route('finances.insolvables.create') }}" class="inline-flex items-center justify-center gap-2 rounded-xl border border-green-200 bg-green-50 px-4 py-2.5 text-sm font-bold text-green-700 transition hover:bg-green-100">Ajouter insolvable</a>
         </div>
     </div>
 </form>
@@ -144,6 +218,7 @@ function manualPayment() {
             </div>
         </form>
     </div>
+</div>
 </div>
 </div>
 @endsection

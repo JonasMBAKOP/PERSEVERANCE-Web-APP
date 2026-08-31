@@ -4,6 +4,33 @@
 @section('page-title', 'Comptes Utilisateurs')
 @section('page-subtitle', 'Gestion des accès à la plateforme')
 
+@push('styles')
+<style>
+.users-filter select { min-width: 11rem; padding-right: 2.75rem; }
+.users-filter .users-search { min-width: 12rem; }
+@media (min-width: 768px) {
+    .users-filter { flex-wrap: nowrap; }
+    .users-filter .users-search { flex: 1 1 auto; }
+}
+@media (min-width: 1024px) {
+    .users-filter .role-filter { min-width: 13.5rem; }
+    .users-filter .users-search { flex: 0 1 12rem; }
+}
+@media (max-width: 767px) {
+    .users-filter > * { width: 100%; min-width: 0; }
+    .users-filter select, .users-filter .users-search { width: 100%; min-width: 0; }
+    .users-mobile-actions { flex-direction: column; align-items: flex-end; gap: .25rem; }
+    .users-mobile-actions a, .users-mobile-actions button { padding: .3rem; }
+    .users-mobile-actions svg { width: 1rem; height: 1rem; }
+}
+@media (max-width: 1023px) {
+    .users-desktop-actions { flex-direction: column; align-items: flex-end; gap: .25rem; }
+    .users-desktop-actions a, .users-desktop-actions button { padding: .3rem; }
+    .users-desktop-actions svg { width: 1rem; height: 1rem; }
+}
+</style>
+@endpush
+
 @section('content')
 
 {{-- ── BARRE D'ACTIONS ─────────────────────────────────────────────────── --}}
@@ -38,27 +65,28 @@
 {{-- ── FILTRES ───────────────────────────────────────────────────────────── --}}
 <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-4">
     <form method="GET" action="{{ route('users.index') }}"
-          class="flex flex-col sm:flex-row gap-3">
+          class="users-filter flex flex-col sm:flex-row gap-3">
 
         {{-- Recherche --}}
-        <div class="relative flex-1">
-            <span class="absolute inset-y-0 left-3 flex items-center text-gray-400">
+        <div class="users-search relative flex-1">
+            <button type="submit" aria-label="Lancer la recherche"
+                    class="absolute inset-y-0 right-2 flex items-center text-gray-400 hover:text-[#1A3A6B]">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                           d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                 </svg>
-            </span>
+            </button>
             <input type="text"
                    name="search"
                    value="{{ request('search') }}"
                    placeholder="Rechercher par nom ou email..."
-                   class="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg
+                   class="w-full pl-4 pr-10 py-2 border border-gray-200 rounded-lg
                           text-sm focus:outline-none focus:border-blue-400">
         </div>
 
         {{-- Filtre rôle --}}
         <select name="role"
-                class="px-3 py-2 border border-gray-200 rounded-lg text-sm
+                class="role-filter px-3 py-2 border border-gray-200 rounded-lg text-sm
                        focus:outline-none focus:border-blue-400 bg-white">
             <option value="">Tous les rôles</option>
             @foreach($roles as $role)
@@ -224,7 +252,7 @@
 
                     {{-- Actions --}}
                     <td class="px-4 py-3 text-right">
-                        <div class="flex items-center justify-end gap-2">
+                        <div class="users-desktop-actions flex items-center justify-end gap-2">
 
                             {{-- Modifier — visible seulement si on peut gérer ce user --}}
                             @if(auth()->user()->canManage($user) || auth()->id() === $user->id)
@@ -324,7 +352,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="flex items-center gap-2 flex-shrink-0">
+                <div class="users-mobile-actions flex items-center gap-2 flex-shrink-0">
                     <span class="px-2 py-0.5 rounded-full text-xs font-medium
                                  {{ $user->is_active
                                      ? 'bg-green-100 text-green-700'
@@ -342,6 +370,17 @@
                                      113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
                         </svg>
                     </a>
+                    @if(auth()->user()->canManage($user))
+                    <form method="POST" action="{{ route('users.destroy', $user) }}"
+                          onsubmit="return confirm('Supprimer définitivement le compte de {{ $user->name }} ?\nCette action est irréversible.')">
+                        @csrf @method('DELETE')
+                        <button type="submit" title="Supprimer" class="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                            </svg>
+                        </button>
+                    </form>
+                    @endif
                 </div>
             </div>
         </div>
@@ -355,7 +394,7 @@
     {{-- Pagination --}}
     @if($users->hasPages())
     <div class="px-4 py-3 border-t border-gray-100">
-        {{ $users->links() }}
+        {{ $users->links('vendor.pagination.custom') }}
     </div>
     @endif
 

@@ -25,7 +25,7 @@
     categoryId: '{{ old('subject_category_id', $subject->subject_category_id) }}',
     categories: @js($categoryOptions),
     filteredCategories() { return this.categories.filter(category => String(category.section_id) === String(this.sectionId)); }
-}">
+}" x-init="sectionId = String(sectionId); categoryId = String(categoryId)">
     <form method="POST" action="{{ route('subjects.update', $subject) }}">
         @csrf @method('PUT')
         <div class="max-w-4xl rounded-2xl border border-gray-100 bg-white p-6 shadow-sm sm:p-8">
@@ -51,7 +51,7 @@
                     <select name="subject_category_id" x-model="categoryId" :disabled="!sectionId" class="w-full rounded-xl border px-4 py-3 text-sm outline-none focus:border-[#1A3A6B] focus:ring-2 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-gray-50 {{ $errors->has('subject_category_id') ? 'border-red-400' : 'border-gray-200' }}">
                         <option value="">Selectionner une categorie</option>
                         <template x-for="category in filteredCategories()" :key="category.id">
-                            <option :value="category.id" x-text="category.code + ' - ' + category.name"></option>
+                            <option :value="category.id" :selected="String(category.id) === String(categoryId)" x-text="category.code + ' - ' + category.name"></option>
                         </template>
                     </select>
                     @error('subject_category_id')<p class="mt-2 text-xs text-red-500">{{ $message }}</p>@enderror

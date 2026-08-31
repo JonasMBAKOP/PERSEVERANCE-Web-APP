@@ -16,7 +16,7 @@
 
         @page {
             size: A4 landscape;
-            margin: 3mm;
+            margin: 0;
         }
 
         * {
@@ -36,10 +36,11 @@
         }
 
         .document-canvas {
-            width: 297mm;
+            width: 100%;
+            max-width: none;
             min-height: 210mm;
             margin: 0 auto;
-            padding: 6mm;
+            padding: 1mm;
             background: white;
         }
 
@@ -297,8 +298,8 @@
     </style>
 </head>
 <body>
-@include('grades.partials.bordereau-header', ['forPdf' => true, 'docTitle' => 'Bordereau Effectif de Notes'])
 <div class="document-canvas">
+    @include('grades.partials.bordereau-header', ['forPdf' => true, 'docTitle' => 'Bordereau Effectif de Notes'])
     <div class="info-row">
         <div class="info-item"><span class="info-label">Classe</span><span class="info-value">{{ $classGroup->full_name }}</span></div>
         <div class="info-item"><span class="info-label">Examen</span><span class="info-value">{{ $sequence->label }}</span></div>
@@ -314,7 +315,7 @@
                     <th>N°</th>
                     <th class="name">Noms et Prénoms</th>
                     @foreach($subjects as $subject)
-                        <th class="vertical-text">{{ $subject->subject->code }} ({{ $subject->coefficient == (int) $subject->coefficient ? (int) $subject->coefficient : $subject->coefficient }})</th>
+                        <th class="vertical-text">{{ $subject->subject->name_fr }} ({{ $subject->coefficient == (int) $subject->coefficient ? (int) $subject->coefficient : $subject->coefficient }})</th>
                     @endforeach
                     <th class="vertical-text">MOYENNE</th>
                     <th class="vertical-text">RANG</th>

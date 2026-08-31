@@ -17,7 +17,33 @@
 @endsection
 
 @section('content')
-<div x-data="{ tab: 'info' }" class="space-y-6">
+<style>
+    .staff-details-page .staff-tabs {
+        overflow-x: auto;
+        scrollbar-width: thin;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .staff-details-page .staff-tabs > button {
+        flex: 0 0 auto;
+        white-space: nowrap;
+    }
+
+    .staff-details-page .staff-timetable-scroll th,
+    .staff-details-page .staff-timetable-scroll td {
+        font-size: 11px;
+    }
+
+    .staff-details-page .staff-timetable-scroll th:not(:first-child) {
+        padding: 10px 4px;
+    }
+
+    .staff-details-page .staff-timetable-scroll td {
+        padding: 8px 4px;
+    }
+</style>
+
+<div x-data="{ tab: 'info' }" class="staff-details-page space-y-6 -mx-2 -mt-2 -mb-2 lg:-mx-4 lg:-mt-4 lg:-mb-4">
 
     {{-- ── CARD D'EN-TÊTE PREMIUM (Mockup 1 Style) ───────────────────────────────────────────── --}}
     <div class="bg-gradient-to-r from-[#0C3260] to-[#0A2240] rounded-2xl shadow-sm overflow-hidden p-6 text-white relative">
@@ -144,7 +170,7 @@
 
     {{-- ── TAB BAR ───────────────────────────────────────────────────────────── --}}
     <div class="border-b border-gray-200">
-        <nav class="flex flex-wrap -mb-px gap-6" aria-label="Tabs">
+        <nav class="staff-tabs flex flex-nowrap -mb-px gap-6" aria-label="Tabs">
             <button @click="tab = 'info'"
                     :class="tab === 'info' ? 'border-[#A35200] text-[#A35200]' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
                     class="flex items-center gap-2 py-4 px-1 border-b-2 font-semibold text-sm transition-all">
@@ -341,7 +367,7 @@
                         <thead>
                             <tr class="border-b border-gray-100 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">
                                 <th class="pb-3 w-1/2">Matière</th>
-                                <th class="pb-3 text-center">Coefficient Moyen</th>
+                                {{-- <th class="pb-3 text-center">Coefficient Moyen</th> --}}
                                 <th class="pb-3 text-right">Nb de classes</th>
                             </tr>
                         </thead>
@@ -373,9 +399,9 @@
                                         <span class="font-bold text-gray-800">{{ $stats['name'] }}</span>
                                     </div>
                                 </td>
-                                <td class="py-4 text-center font-bold text-gray-700">
+                                {{-- <td class="py-4 text-center font-bold text-gray-700">
                                     {{ $stats['avg_coef'] }}
-                                </td>
+                                </td> --}}
                                 <td class="py-4 text-right">
                                     @php
                                         $badgeBg = $isMath ? 'bg-blue-50 text-blue-700' : ($isPhys ? 'bg-[#FDF2E9] text-[#A35200]' : 'bg-gray-100 text-gray-700');
@@ -487,10 +513,11 @@
                     <h3 class="font-black text-[#1A3A6B]">Emploi du temps du professeur</h3>
                     <p class="text-xs text-gray-500">Les cours sont groupés par classe et discipline.</p>
                 </div>
-                <div class="tt-grid-wrap overflow-x-auto p-4">
+                <div class="staff-timetable-scroll tt-grid-wrap overflow-x-auto p-0">
                     @include('timetable.partials.grid', [
                         'mode' => 'teacher',
                         'printable' => false,
+                        'compact' => true,
                         'days' => $days,
                         'gridRows' => $gridRows,
                         'slots' => $scheduleSlots,

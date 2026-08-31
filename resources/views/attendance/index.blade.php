@@ -5,7 +5,7 @@
 @section('page-subtitle', 'Marquage des absences par période de l’emploi du temps')
 
 @section('content')
-<div class="space-y-5" x-data>
+<div class="-mx-2 -mt-2 space-y-5 pb-2" x-data>
     <div class="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
         <form method="GET" action="{{ route('attendance.index') }}" class="grid gap-4 md:grid-cols-[1fr_220px_auto] md:items-end">
             <div>
@@ -23,7 +23,7 @@
             </div>
             <div>
                 <label class="mb-1.5 block text-xs font-black uppercase tracking-wider text-gray-500">Date de l’appel</label>
-                <input type="date" name="date" value="{{ $date->toDateString() }}" max="{{ now()->toDateString() }}" onchange="this.form.submit()" class="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm font-semibold text-[#1A3A6B] focus:border-[#1A3A6B] focus:outline-none">
+                <input type="date" name="date" value="{{ $date->toDateString() }}" @if(!$isUnrestricted) max="{{ now()->toDateString() }}" @endif onchange="this.form.submit()" @disabled(auth()->user()->hasRole('enseignant') && ! $isUnrestricted) class="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm font-semibold text-[#1A3A6B] focus:border-[#1A3A6B] focus:outline-none disabled:cursor-not-allowed disabled:bg-gray-100 disabled:opacity-70">
             </div>
             <a href="{{ route('absences.index', ['class_id' => $selectedClass?->id]) }}" class="inline-flex items-center justify-center rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-bold text-gray-600 hover:bg-gray-50">Voir les absences</a>
         </form>

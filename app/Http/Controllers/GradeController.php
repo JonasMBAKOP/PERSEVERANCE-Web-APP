@@ -362,6 +362,7 @@ class GradeController extends Controller
         }
 
         $appreciationJs = AppreciationScale::toJsArray();
+        $gradingScale = (float) ($classSubject?->grading_scale ?: 20);
 
         return view('grades.entry', compact(
             'activeYear', 'sections', 'sequences', 'subjects', 'classes',
@@ -369,7 +370,7 @@ class GradeController extends Controller
             'selectedClassId', 'selectedSequenceId',
             'enrollments', 'grades', 'classSubject',
             'selectedClass', 'sequence',
-            'readyToShow', 'isLocked', 'lock', 'appreciationJs'
+            'readyToShow', 'isLocked', 'lock', 'appreciationJs', 'gradingScale'
         ));
     }
 

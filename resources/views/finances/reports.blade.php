@@ -11,21 +11,23 @@
 @endsection
 
 @push('styles')
+@include('finances.partials.finance-ui-styles')
 <style>
 @keyframes fadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
 @keyframes barScale { from{transform:scaleX(0)} to{transform:scaleX(1)} }
 .r-card { animation: fadeUp .4s ease both; }
-.bar-h  { width:var(--w); transform:scaleX(0); transform-origin:left center; animation: barScale .8s cubic-bezier(.22,.68,0,1.12) forwards; min-width:3px; }
+.bar-h  { min-width:0; transform:none; animation:none; transition:width .85s cubic-bezier(.22,.68,0,1.12); }
 .report-track { background:#E5E7EB; box-shadow:inset 0 1px 2px rgba(15,23,42,.08); }
 .r-card:nth-child(1){animation-delay:.05s}
 .r-card:nth-child(2){animation-delay:.10s}
 .r-card:nth-child(3){animation-delay:.15s}
 .r-card:nth-child(4){animation-delay:.20s}
 .type-btn {
-    flex: 1;
-    min-width: 90px;
+    flex: 1 1 120px;
+    min-width: 0;
     border: none;
     cursor: pointer;
+    white-space: normal;
 }
 .type-btn.active {
     background: #1A3A6B !important;
@@ -35,10 +37,44 @@
     background: #1A3A6B;
     color: #fff;
 }
+#filtersForm select { padding-right: 2.5rem; }
+#filtersForm .type-btn { min-width: 0; }
+.report-payments-table { min-width: 980px; }
+.report-payments-table th,
+.report-payments-table td { display: table-cell !important; white-space: nowrap; }
+.report-payments-scroll { width: 100%; overflow-x: auto !important; }
+.report-payments-table { width: 980px; min-width: 980px !important; }
+.report-payments-pagination button { min-width: 2rem; }
+#report-payments-header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
+    align-items: center;
+}
+#report-payments-header h3 { min-width: 0; }
+@media (max-width: 639px) {
+    #filtersForm .flex.gap-2 { flex-wrap: wrap; }
+    #filtersForm .flex.gap-2 > button,
+    #filtersForm .flex.gap-2 > a { width: 100%; }
+    #report-payments-header {
+        grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.1fr) auto;
+        align-items: start;
+        column-gap: .25rem;
+    }
+    #report-payments-header h3 {
+        width: 6.5rem;
+        max-width: 100%;
+        min-width: 0 !important;
+        line-height: 1.2;
+    }
+    #report-payments-header h3 span { display: block; margin-left: 0; }
+    #report-payments-header > span { min-width: 0; line-height: 1.2; text-align: center; }
+    #report-payments-header > a { grid-column: auto !important; justify-self: end; white-space: nowrap; }
+}
 </style>
 @endpush
 
 @section('content')
+<div class="finance-page -mx-2 -mt-2 -mb-2 lg:-mx-4 lg:-mt-4 lg:-mb-4">
 
 {{-- ════════════════════════════════════════════════════════════════════ --}}
 {{-- FILTRES                                                               --}}
@@ -53,7 +89,7 @@
                 <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
                     Type de rapport
                 </label>
-                <div class="flex rounded-2xl overflow-hidden border border-gray-200 bg-white">
+                <div class="flex flex-wrap rounded-2xl overflow-hidden border border-gray-200 bg-white">
                     @php
                         $reportTypes = [
                             'journalier'   => 'Journalier',
@@ -66,7 +102,7 @@
                     @foreach($reportTypes as $val => $lbl)
                     <button type="button"
                             onclick="setType('{{ $val }}')"
-                            class="px-4 py-2 text-sm font-bold transition-colors type-btn {{ $type === $val ? 'active' : '' }}"
+                            class="px-3 py-2 text-center text-sm font-bold transition-colors type-btn {{ $type === $val ? 'active' : '' }}"
                             data-type="{{ $val }}"
                             style="{{ $type === $val ? 'background:#1A3A6B;color:#fff;' : 'background:white;color:#6B7280;' }}">
                         {{ $lbl }}
@@ -141,7 +177,7 @@
                             class="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none bg-white font-medium"
                             style="color:#1A3A6B;">
                         <option value="global"  {{ $whoFilter === 'global'  ? 'selected' : '' }}>
-                            Global (tous)
+                            Tous les responsables
                         </option>
                         <option value="me"      {{ $whoFilter === 'me'      ? 'selected' : '' }}>
                             Moi ({{ auth()->user()->name }})
@@ -157,9 +193,9 @@
             </div>
         </div>
 
-        <div class="flex flex-col gap-3 justify-end">
+        <div class="flex w-full flex-col gap-3 justify-end lg:w-auto">
             <button type="submit"
-                    class="inline-flex items-center justify-center gap-2 rounded-xl bg-[#1A3A6B] px-5 py-3 text-sm font-bold text-white transition hover:shadow-md">
+                    class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#1A3A6B] px-5 py-3 text-sm font-bold text-white transition hover:shadow-md lg:w-auto">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
                 </svg>
@@ -167,7 +203,7 @@
             </button>
             <a href="{{ route('finances.reports.export', request()->query()) }}"
                target="_blank"
-               class="inline-flex items-center justify-center gap-2 rounded-xl border border-[#E87722] px-5 py-3 text-sm font-bold text-[#E87722] transition hover:bg-[#FFFBF0]">
+               class="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[#E87722] px-5 py-3 text-sm font-bold text-[#E87722] transition hover:bg-[#FFFBF0] lg:w-auto">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                 </svg>
@@ -277,8 +313,7 @@
         @php
             $instPct = min(100, max(0, (int) ($inst['rate'] ?? 0)));
             $instExpected = (int) ($inst['expected'] ?? 0);
-            $instLabel = strtolower((string) $inst['label']);
-            $instTone = str_contains($instLabel, 'carnet') || str_contains($instLabel, 'medical') || str_contains($instLabel, 'mÃ©dical') ? '#0EA5A4' : '#1A3A6B';
+            $instTone = $instPct >= 70 ? '#1A5C2A' : ($instPct >= 40 ? '#C8A415' : '#EF4444');
         @endphp
         <div class="mb-4 last:mb-0">
             <div class="flex justify-between text-sm mb-1">
@@ -288,12 +323,12 @@
                     <span class="text-xs text-gray-400 ml-1.5">{{ $instPct }}% ({{ $inst['count'] }})</span>
                 </div>
             </div>
-            <div class="report-track h-2.5 rounded-full overflow-hidden">
-                <div class="bar-h h-full rounded-full" style="--w:{{ $instPct }}%; background:{{ $instTone }}; animation-delay:{{ $loop->index * 100 }}ms;"></div>
+            <div class="h-2 overflow-hidden rounded-full bg-gray-100 report-track" style="background:#E5E7EB; box-shadow:inset 0 1px 2px rgba(15,23,42,.08);">
+                <div class="fin-progress bar-h h-full rounded-full" style="width:{{ $instPct }}%; background:{{ $instTone }};"></div>
             </div>
         </div>
         @empty
-        <p class="text-sm text-gray-400 italic">Aucune donnÃ©e.</p>
+        <p class="text-sm text-gray-400 italic">Aucune donnée.</p>
         @endforelse
     </div>
 
@@ -309,16 +344,9 @@
         @endphp
         @forelse($byMethodWithScholarships as $i => $m)
         @php
-            $method = strtolower((string) ($m['method'] ?? ''));
-            $label = strtolower((string) ($m['label'] ?? ''));
-            $methodPct = round(($m['total'] / $methodTotal) * 100);
-            $methodColor = match (true) {
-                str_contains($method, 'cash') || str_contains($label, 'esp') => '#E87722',
-                str_contains($method, 'orange') || str_contains($label, 'orange') => '#FF7900',
-                str_contains($method, 'mtn') || str_contains($label, 'mtn') || str_contains($label, 'momo') => '#FFCC00',
-                default => '#1A3A6B',
-            };
-            $methodTextColor = $methodColor === '#FFCC00' ? '#9A741B' : $methodColor;
+            $methodPct = $methodTotal > 0 ? min(100, max(0, (int) round(($m['total'] / $methodTotal) * 100))) : 0;
+            $methodColor = $methodPct >= 70 ? '#1A5C2A' : ($methodPct >= 40 ? '#C8A415' : '#EF4444');
+            $methodTextColor = $methodColor;
         @endphp
         <div class="mb-4 last:mb-0">
             <div class="flex justify-between text-sm mb-1">
@@ -328,12 +356,12 @@
                     <span class="text-xs text-gray-400 ml-1.5">{{ $methodPct }}% ({{ $m['count'] }})</span>
                 </div>
             </div>
-            <div class="report-track h-2.5 rounded-full overflow-hidden">
-                <div class="bar-h h-full rounded-full" style="--w:{{ $methodPct }}%; background:{{ $methodColor }}; animation-delay:{{ $loop->index * 100 }}ms;"></div>
+            <div class="h-2 overflow-hidden rounded-full bg-gray-100 report-track" style="background:#E5E7EB; box-shadow:inset 0 1px 2px rgba(15,23,42,.08);">
+                <div class="fin-progress bar-h h-full rounded-full" style="width:{{ $methodPct }}%; background:{{ $methodColor }};"></div>
             </div>
         </div>
         @empty
-        <p class="text-sm text-gray-400 italic">Aucune donnÃ©e.</p>
+        <p class="text-sm text-gray-400 italic">Aucune donnée.</p>
         @endforelse
     </div>
 
@@ -406,17 +434,20 @@
 {{-- ── Tableau détaillé des paiements ─────────────────────────────────── --}}
 <div class="r-card bg-white rounded-2xl shadow-sm border border-gray-100
             overflow-hidden">
-    <div class="px-5 py-4 border-b border-gray-100 flex items-center
-                justify-between">
+    <div id="report-payments-header" class="px-5 py-4 border-b border-gray-100 grid grid-cols-2 lg:grid-cols-3 items-center gap-x-3 gap-y-1">
         <h3 class="font-black text-sm" style="color:#1A3A6B;">
             Détail des paiements
             <span class="text-gray-400 font-normal text-xs ml-1">
                 ({{ $allPayments->count() }})
             </span>
         </h3>
-        <span class="text-xs text-gray-400">
+        <span class="text-center text-xs text-gray-400 lg:text-center">
             Triés du plus récent au plus ancien
         </span>
+        <a href="{{ route('finances.payments', request()->query()) }}"
+           class="text-right text-xs font-bold text-[#1A3A6B] hover:underline lg:col-start-3">
+            Tout voir <span aria-hidden="true">&#8594;</span>
+        </a>
     </div>
 
     @if($allPayments->isEmpty())
@@ -424,8 +455,8 @@
         Aucun paiement pour la période sélectionnée.
     </div>
     @else
-    <div class="overflow-x-auto">
-        <table class="w-full">
+    <div class="report-payments-scroll">
+        <table class="report-payments-table w-full">
             <thead>
                 <tr style="background:#F8FAFC; border-bottom:1px solid #E5E7EB;">
                     <th class="text-left px-5 py-3 text-xs font-bold
@@ -465,7 +496,7 @@
             </thead>
             <tbody class="divide-y divide-gray-50">
                 @foreach($allPayments as $p)
-                <tr class="hover:bg-gray-50/50 transition-colors">
+                <tr class="report-payment-row hover:bg-gray-50/50 transition-colors">
                     <td class="px-5 py-3">
                         <p class="text-sm font-semibold text-gray-800">
                             {{ $p->studentEnrollment?->student?->full_name }}
@@ -498,10 +529,11 @@
                         {{ $p->recordedBy?->name ?? '—' }}
                     </td>
                     <td class="px-4 py-3 hidden xl:table-cell">
-                        <span class="font-mono text-xs font-bold"
-                              style="color:#1A3A6B;">
+                        <a href="{{ route('finances.receipt', $p) }}" target="_blank"
+                           class="font-mono text-xs font-bold hover:underline"
+                           style="color:#1A3A6B;">
                             {{ $p->receipt_number }}
-                        </span>
+                        </a>
                     </td>
                 </tr>
                 @endforeach
@@ -523,9 +555,12 @@
             </tfoot>
         </table>
     </div>
+    <div class="report-payments-pagination px-5 py-4 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-4"
+         id="report-payments-pagination" data-page-size="30"></div>
     @endif
 </div>
 
+</div>
 @endsection
 
 @push('scripts')
@@ -568,6 +603,64 @@ document.addEventListener('DOMContentLoaded', () => {
     }, { threshold: 0.25 });
 
     io.observe(wrap);
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+    const rows = Array.from(document.querySelectorAll('.report-payment-row'));
+    const pagination = document.getElementById('report-payments-pagination');
+    if (!pagination || !rows.length) return;
+
+    const pageSize = Number(pagination.dataset.pageSize) || 30;
+    const pageCount = Math.ceil(rows.length / pageSize);
+    let currentPage = 1;
+
+    const render = () => {
+        rows.forEach((row, index) => {
+            row.style.display = index >= (currentPage - 1) * pageSize && index < currentPage * pageSize ? '' : 'none';
+        });
+
+        pagination.replaceChildren();
+
+        const start = (currentPage - 1) * pageSize + 1;
+        const end = Math.min(currentPage * pageSize, rows.length);
+        const summary = document.createElement('span');
+        summary.textContent = `Affichage ${start}-${end} sur ${rows.length} paiements`;
+        summary.className = 'text-sm text-gray-500 font-medium';
+        pagination.appendChild(summary);
+
+        const nav = document.createElement('nav');
+        nav.setAttribute('aria-label', 'Pagination des paiements');
+        nav.className = 'flex items-center gap-1.5';
+        pagination.appendChild(nav);
+
+        const addButton = (label, page, disabled = false) => {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.disabled = disabled;
+            button.className = 'inline-flex items-center justify-center w-8 h-8 rounded-full border border-gray-200 text-gray-500 transition-colors hover:bg-gray-50 hover:text-gray-700 disabled:text-gray-300 disabled:cursor-not-allowed';
+            button.setAttribute('aria-label', label);
+            button.innerHTML = label === 'Précédent'
+                ? '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>'
+                : '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>';
+            if (!disabled) button.addEventListener('click', () => { currentPage = page; render(); });
+            nav.appendChild(button);
+        };
+
+        addButton('Précédent', currentPage - 1, currentPage === 1);
+        for (let page = 1; page <= pageCount; page++) {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.textContent = page;
+            button.className = `inline-flex items-center justify-center w-8 h-8 rounded-full text-sm transition-colors ${page === currentPage ? 'bg-[#9c4005] text-white font-semibold' : 'border border-gray-200 text-gray-600 hover:bg-gray-50 hover:text-gray-800 font-medium'}`;
+            button.setAttribute('aria-label', `Aller à la page ${page}`);
+            if (page === currentPage) button.setAttribute('aria-current', 'page');
+            button.addEventListener('click', () => { currentPage = page; render(); });
+            nav.appendChild(button);
+        }
+        addButton('Suivant', currentPage + 1, currentPage === pageCount);
+    };
+
+    render();
 });
 </script>
 @endpush

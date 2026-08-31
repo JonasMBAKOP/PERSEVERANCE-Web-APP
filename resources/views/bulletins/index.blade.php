@@ -197,9 +197,9 @@
         </div>
 
         <template x-if="students.length > 0">
-            <div class="divide-y divide-gray-50 max-h-80 overflow-y-auto">
+            <div class="divide-y divide-gray-50 max-h-80 overflow-x-auto overflow-y-auto">
                 <template x-for="s in students" :key="s.id">
-                    <div class="flex items-center justify-between px-5 py-3 hover:bg-gray-50 transition-colors">
+                    <div class="flex min-w-[680px] items-center justify-between px-5 py-3 hover:bg-gray-50 transition-colors">
                         <label class="flex items-center gap-3 cursor-pointer flex-1 min-w-0">
                             <input type="checkbox" name="student_ids[]" :value="s.id"
                                    x-model="selected"

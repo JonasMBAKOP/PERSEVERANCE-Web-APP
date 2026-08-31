@@ -113,7 +113,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'view-subjects',
             'view-grades', 'enter-grades',
             'view-bulletins',
-            'view-absences', 'manage-absences',
+            'view-absences',
             'view-timetable',
             'view-announcements',
             'view-messages', 'send-messages',
@@ -163,6 +163,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'view-messages', 'send-messages',
         ]);
 
+        // 9. INFIRMIER(E)
         $infirmier = Role::firstOrCreate(['name' => 'infirmier']);
         $infirmier->syncPermissions([
             'view-students',

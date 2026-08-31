@@ -6,16 +6,16 @@
 @section('content')
 
 {{-- ── SÉLECTEUR CLASSE ────────────────────────────────────────────────── --}}
-<div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 mb-5">
+<div class="-mx-2 -mt-2 bg-white rounded-2xl shadow-sm border border-gray-100 p-5 mb-5">
     <form method="GET" action="{{ route('absences.index') }}"
           class="flex flex-wrap gap-3 items-end">
-        <div class="min-w-40">
+        <div class="min-w-[14rem]">
             <label class="block text-xs font-bold text-gray-500 uppercase
                            tracking-wider mb-1.5">
                 Section
             </label>
             <select name="section_id" onchange="this.form.submit()"
-                    class="w-full px-3 py-2.5 border border-gray-200 rounded-xl
+                    class="w-full px-3 py-2.5 pr-10 border border-gray-200 rounded-xl
                            text-sm focus:outline-none bg-white font-medium"
                     style="color:#1A3A6B;">
                 <option value="">— Toutes les sections —</option>
@@ -67,7 +67,7 @@
 
 {{-- ── TABLEAU ÉLÈVES (si classe sélectionnée) ────────────────────────── --}}
 @if($selectedClass && $enrollments->isNotEmpty())
-<div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mb-5">
+<div class="-mx-2 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mb-5">
     <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
         <h3 class="font-black text-sm" style="color:#1A3A6B;">
             {{ $selectedClass->full_name }}
@@ -160,7 +160,7 @@
 @endif
 
 {{-- ── ABSENCES RÉCENTES ────────────────────────────────────────────────── --}}
-<div class="bg-white rounded-2xl shadow-sm border border-gray-100">
+<div class="-mx-2 bg-white rounded-2xl shadow-sm border border-gray-100">
     <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
         <h3 class="font-black text-sm" style="color:#1A3A6B;">
             Absences récentes
@@ -171,9 +171,9 @@
         Aucune absence enregistrée.
     </div>
     @else
-    <div class="divide-y divide-gray-50">
+    <div class="max-h-[28rem] overflow-x-auto overflow-y-auto divide-y divide-gray-50 sm:max-h-none">
         @foreach($recentAbsences as $ab)
-        <div class="px-5 py-3 flex items-center justify-between gap-4">
+        <div class="min-w-[760px] px-5 py-3 flex items-center justify-between gap-4">
             <div class="flex items-center gap-3 min-w-0">
                 <div class="w-8 h-8 rounded-full flex items-center justify-center
                             text-white text-xs font-bold flex-shrink-0"

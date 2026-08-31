@@ -277,8 +277,8 @@
 }
 
 .id-card__top-logo-image {
-    width: 13.5mm;
-    height: 13.5mm;
+    width: 12mm;
+    height: 12mm;
     object-fit: contain;
     display: block;
 }
@@ -305,21 +305,21 @@
     flex-direction: column;
     align-items: center;
     gap: 0.3mm;
-    width: 16mm;
+    width: 15mm;
     text-align: center;
 }
 
 .id-card__seal-image {
-    width: 18.5mm;
-    height: 18.5mm;
+    width: 16.5mm;
+    height: 16.5mm;
     object-fit: contain;
     transform: rotate(-12deg);
     opacity: 0.95;
 }
 
 .id-card__seal-svg {
-    width: 18.5mm;
-    height: 18.5mm;
+    width: 16.5mm;
+    height: 16.5mm;
     flex-shrink: 0;
     transform: rotate(-12deg);
 }

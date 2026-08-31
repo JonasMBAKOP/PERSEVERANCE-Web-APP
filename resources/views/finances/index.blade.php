@@ -14,7 +14,7 @@
         <div class="flex items-center gap-2">
             <label class="text-sm text-gray-500">Année :</label>
             <select name="year_id" onchange="this.form.submit()"
-                    class="px-3 py-2 border border-gray-200 rounded-lg text-sm
+                    class="w-[13rem] min-w-[13rem] px-3 py-2 pr-10 border border-gray-200 rounded-lg text-sm
                            focus:outline-none bg-white"
                     style="color:#1A3A6B;">
                 @foreach($years as $year)
@@ -30,7 +30,7 @@
         <div class="flex items-center gap-2">
             <label class="text-sm text-gray-500">Section :</label>
             <select name="section_id" onchange="this.form.submit()"
-                    class="px-3 py-2 border border-gray-200 rounded-lg text-sm
+                    class="w-[14rem] min-w-[14rem] px-3 py-2 pr-10 border border-gray-200 rounded-lg text-sm
                            focus:outline-none bg-white"
                     style="color:#1A3A6B;">
                 <option value="">Toutes les sections</option>
@@ -150,7 +150,8 @@
     </h3>
     <div class="bg-white rounded-2xl shadow-sm border border-gray-100
                 overflow-hidden">
-        <table class="w-full">
+        <div class="overflow-x-auto overscroll-x-contain">
+        <table class="w-full min-w-[760px]">
             <thead>
                 <tr style="background-color:#F8FAFC;"
                     class="border-b border-gray-100">
@@ -324,6 +325,7 @@
                 @endforeach
             </tbody>
         </table>
+        </div>
     </div>
 </div>
 @endforeach

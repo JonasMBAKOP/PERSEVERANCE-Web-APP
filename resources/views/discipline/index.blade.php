@@ -3,7 +3,39 @@
 @section('page-title', 'Discipline')
 @section('page-subtitle', 'Suivi des incidents disciplinaires')
 
+@push('styles')
+<style>
+.discipline-filter select {
+    min-width: 11rem;
+    padding-right: 2.75rem;
+}
+.discipline-filter .discipline-search { min-width: 14rem; }
+.discipline-table-scroll { width: 100%; overflow-x: auto; }
+.discipline-table { min-width: 1120px; }
+@media (min-width: 1024px) {
+    .discipline-table { min-width: 0; table-layout: fixed; }
+    .discipline-table th:nth-child(1), .discipline-table td:nth-child(1) { width: 3%; }
+    .discipline-table th:nth-child(2), .discipline-table td:nth-child(2) { width: 12%; }
+    .discipline-table th:nth-child(3), .discipline-table td:nth-child(3) { width: 33%; }
+    .discipline-table th:nth-child(4), .discipline-table td:nth-child(4) { width: 16%; }
+    .discipline-table th:nth-child(5), .discipline-table td:nth-child(5) { width: 14%; }
+    .discipline-table th:nth-child(6), .discipline-table td:nth-child(6) { width: 10%; }
+    .discipline-table th:nth-child(7), .discipline-table td:nth-child(7) { width: 12%; }
+    .discipline-table th,
+    .discipline-table td { overflow-wrap: anywhere; }
+    .discipline-table-scroll { overflow-x: hidden; }
+}
+@media (max-width: 639px) {
+    .discipline-filter > * { width: 100%; min-width: 0; }
+    .discipline-filter select,
+    .discipline-filter .discipline-search { width: 100%; min-width: 0; }
+}
+</style>
+@endpush
+
 @section('content')
+
+<div class="finance-page -mx-2 -mt-2 -mb-2 lg:-mx-4 lg:-mt-4 lg:-mb-4">
 
 {{-- ── STATS ───────────────────────────────────────────────────────────── --}}
 <div class="grid grid-cols-2 sm:grid-cols-5 gap-4 mb-6">
@@ -28,18 +60,19 @@
 {{-- ── FILTRES ──────────────────────────────────────────────────────────── --}}
 <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-4">
     <form method="GET" action="{{ route('discipline.index') }}"
-          class="flex flex-wrap gap-3 items-end">
-        <div class="relative flex-1 min-w-40">
+          class="discipline-filter flex flex-wrap gap-3 items-end">
+        <div class="discipline-search relative flex-1 min-w-40">
             <input type="text" name="search" value="{{ request('search') }}"
                    placeholder="Rechercher un élève..."
-                   class="w-full pl-8 pr-4 py-2 border border-gray-200
+                   class="w-full pl-4 pr-10 py-2 border border-gray-200
                           rounded-lg text-sm focus:outline-none">
-            <span class="absolute inset-y-0 left-2.5 flex items-center text-gray-400">
+            <button type="submit" aria-label="Lancer la recherche"
+                    class="absolute inset-y-0 right-2 flex items-center text-gray-400 hover:text-[#1A3A6B]">
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                           d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                 </svg>
-            </span>
+            </button>
         </div>
         <select name="class_id" class="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white">
             <option value="">Toutes les classes</option>
@@ -99,13 +132,14 @@
             </div>
             <div class="text-xs text-gray-500">Convocation disponible pour <strong>{{ $incidents->where('parent_convoked', true)->count() }}</strong> incident(s)</div>
         </div>
-        <table class="w-full">
+        <div class="discipline-table-scroll">
+        <table class="discipline-table w-full">
         <thead>
             <tr style="background:#F8FAFC; border-bottom:1px solid #E5E7EB;">
                 <th class="text-left px-5 py-3 text-xs font-bold text-gray-400 uppercase tracking-wider">
                     <span class="sr-only">Sélection</span>
                 </th>
-                @foreach(['Date','Élève','Type d\'incident','Sanction','Statut',''] as $th)
+                @foreach(['Date','Élève','Type d\'incident','Sanction','Statut','Actions'] as $th)
                 <th class="text-left px-5 py-3 text-xs font-bold text-gray-400
                            uppercase tracking-wider {{ $loop->last ? 'text-right' : '' }}">
                     {{ $th }}
@@ -221,6 +255,7 @@
             @endforeach
         </tbody>
     </table>
+    </div>
     </form>
 
     @can('manage-discipline')
@@ -232,9 +267,15 @@
     @endforeach
     @endcan
     @if($incidents->hasPages())
-    <div class="px-5 py-3 border-t border-gray-100">{{ $incidents->links() }}</div>
+    <div class="px-5 py-4 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <span class="text-sm text-gray-500 font-medium">
+            Affichage {{ $incidents->firstItem() }}-{{ $incidents->lastItem() }} sur {{ $incidents->total() }} incidents
+        </span>
+        <div>{{ $incidents->links('vendor.pagination.custom') }}</div>
+    </div>
     @endif
     @endif
+</div>
 </div>
 
 <div id="report-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 px-4 py-6">

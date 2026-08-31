@@ -13,6 +13,15 @@
 
 @section('content')
 
+<style>
+    .grades-entry-page .grades-notes-table-scroll {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    .grades-entry-page .grades-notes-table-scroll table { min-width: 700px; }
+</style>
+<div class="grades-entry-page -mx-2 -mt-2 -mb-2 lg:-mx-4 lg:-mt-4 lg:-mb-4">
+
 @if(!$activeYear)
 <div class="bg-amber-50 border border-amber-200 rounded-xl p-6 text-center">
     <p class="text-amber-700 font-semibold"><svg class="inline h-4 w-4 mr-1 align-[-2px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>Aucune année scolaire active.</p>
@@ -278,8 +287,8 @@
     <input type="hidden" name="_redirect"
            value="{{ request()->fullUrl() }}">
 
-    <div class="bg-white rounded-2xl shadow-sm border border-gray-100
-                overflow-hidden mb-20">
+    <div class="grades-notes-table-scroll bg-white rounded-2xl shadow-sm border border-gray-100
+                mb-20">
         <table class="w-full">
             <thead>
                 <tr style="background:#F8FAFC; border-bottom:2px solid #E5E7EB;">
@@ -400,11 +409,11 @@
             </span>
         </div>
         <div class="flex items-center gap-2">
-            <a href="{{ route('grades.entry.form') }}"
+            {{-- <a href="{{ route('grades.entry.form') }}"
                class="px-4 py-2 border border-gray-200 rounded-lg text-sm
                       font-medium text-gray-600 hover:bg-gray-50">
                 ← Changer les filtres
-            </a>
+            </a> --}}
             <button type="submit"
                     class="flex items-center gap-2 px-6 py-2.5 rounded-xl
                            text-white text-sm font-bold transition-all
@@ -424,7 +433,7 @@
 
 @else {{-- isLocked --}}
 {{-- Vue en lecture seule --}}
-<div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+<div class="grades-notes-table-scroll bg-white rounded-2xl shadow-sm border border-gray-100">
     <table class="w-full">
         <thead>
             <tr style="background:#F8FAFC; border-bottom:2px solid #E5E7EB;">
@@ -500,6 +509,7 @@ function gradeStyle(float $g): string {
 }
 @endphp
 
+</div>
 @endsection
 
 @push('scripts')

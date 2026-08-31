@@ -5,9 +5,9 @@
     <title>Bordereau Effectif de Notes — {{ $classGroup->full_name }}</title>
     @include('students.documents.partials.base-styles')
     <style>
-        @page { size: A4 landscape; margin: 3mm 5mm; }
+        @page { size: A4 landscape; margin: 0; }
         body { background: #eef1f5; }
-        .page { max-width: 297mm; margin: 0 auto; padding: 5mm 7mm; background: #fff; }
+        .page { width: 100%; max-width: none; box-sizing: border-box; margin: 0 auto; padding: 1mm; background: #fff; }
         .print-toolbar { margin-bottom: 10px; }
         .document-card { border: 1px solid #CBD5E1; border-radius: 18px; padding: 18px; margin-bottom: 14px; }
         .header-row { display: grid; grid-template-columns: 1fr auto; gap: 16px; align-items: start; }
@@ -51,6 +51,8 @@
         .bordereau-header__subtitle { font-size: 12px; color: #475569; margin-top: 4px; }
         .page-number { margin-top: 12px; font-size: 10px; text-align: right; color: #475569; }
         @media print {
+            html, body { width: 100%; margin: 0; padding: 0; background: #fff; }
+            .page { width: 100%; max-width: none; margin: 0; padding: 1mm; }
             .page-number { color: transparent; }
             .page-number::before { content: "Page " counter(page) " sur " counter(pages); color: #475569; position: fixed; bottom: 8mm; right: 8mm; }
         }
@@ -78,7 +80,7 @@
                     <th style="min-width:18px;">N°</th>
                     <th style="min-width:160px; text-align:left;">Noms et Prénoms</th>
                     @foreach($subjects as $subject)
-                        <th style="width: 34px; min-width: 34px; max-width: 34px;"><div class="subject-label">{{ $subject->subject->code }} ({{ $subject->coefficient == (int) $subject->coefficient ? (int) $subject->coefficient : $subject->coefficient }})</div></th>
+                        <th style="width: 34px; min-width: 34px; max-width: 34px;"><div class="subject-label">{{ $subject->subject->name_fr }} ({{ $subject->coefficient == (int) $subject->coefficient ? (int) $subject->coefficient : $subject->coefficient }})</div></th>
                     @endforeach
                     <th style="width: 34px; min-width: 34px; max-width: 34px;"><div class="subject-label">MOYENNE ({{ $totalCoefficient }})</div></th>
                     <th style="width: 30px; min-width: 30px; max-width: 30px;"><div class="subject-label">RANG</div></th>
