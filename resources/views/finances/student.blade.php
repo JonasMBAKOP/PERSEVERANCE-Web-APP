@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('title', 'Compte — ' . $enrollment->student->full_name)
-@section('page-title', 'Compte Financier - Fix')
+@section('page-title', 'Compte Financier')
 @section('page-subtitle'){{ $enrollment->student->full_name }}@endsection
 
 @section('breadcrumb')
