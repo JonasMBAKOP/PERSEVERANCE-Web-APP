@@ -25,7 +25,7 @@ body { background: #E5E7EB; }
 <body>
 @include('students.documents.partials.print-toolbar')
 
-@if(false)
+{{--
 @php
     $phones = array_filter([
         $enrollment->student->father_phone ?? null,
@@ -52,7 +52,7 @@ body { background: #E5E7EB; }
     </button>
 </form>
 @endif
-@endif
+--}}
 
 @include('bulletins.partials.pdf-page')
 

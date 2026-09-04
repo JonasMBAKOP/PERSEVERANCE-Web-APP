@@ -223,7 +223,7 @@
                                        x-bind:disabled="contractType === 'vacataire'"
                                        value="{{ old('monthly_salary') }}"
                                        placeholder="Ex: 150 000"
-                                       min="0" step="500"
+                                       min="0" step="25"
                                        class="w-full pl-3.5 pr-14 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-all">
                                 <span class="absolute inset-y-0 right-3.5 flex items-center text-xs font-semibold text-gray-400 pointer-events-none">
                                     FCFA
@@ -241,7 +241,7 @@
                                        x-bind:disabled="contractType !== 'vacataire'"
                                        value="{{ old('hourly_rate') }}"
                                        placeholder="Ex: 2 500"
-                                       min="0" step="100"
+                                       min="0" step="25"
                                        class="w-full pl-3.5 pr-16 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-all">
                                 <span class="absolute inset-y-0 right-3.5 flex items-center text-xs font-semibold text-gray-400 pointer-events-none">
                                     FCFA/h

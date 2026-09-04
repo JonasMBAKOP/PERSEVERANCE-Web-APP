@@ -219,7 +219,7 @@
                                 <input type="number" name="monthly_salary"
                                        x-bind:disabled="contractType === 'vacataire'"
                                        value="{{ old('monthly_salary', $staff->monthly_salary) }}"
-                                       min="0" step="500"
+                                       min="0" step="25"
                                        class="w-full pl-3.5 pr-14 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-all">
                                 <span class="absolute inset-y-0 right-3.5 flex items-center text-xs font-semibold text-gray-400 pointer-events-none">
                                     FCFA
@@ -236,7 +236,7 @@
                                 <input type="number" name="hourly_rate"
                                        x-bind:disabled="contractType !== 'vacataire'"
                                        value="{{ old('hourly_rate', $staff->hourly_rate) }}"
-                                       min="0" step="100"
+                                       min="0" step="25"
                                        class="w-full pl-3.5 pr-16 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-all">
                                 <span class="absolute inset-y-0 right-3.5 flex items-center text-xs font-semibold text-gray-400 pointer-events-none">
                                     FCFA/h

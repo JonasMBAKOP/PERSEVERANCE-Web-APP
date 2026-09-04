@@ -220,7 +220,7 @@
                 <input type="number" name="monthly_salary"
                        value="{{ old('monthly_salary', $staff->monthly_salary ?? '') }}"
                        placeholder="Ex : 120000"
-                       min="0"
+                       min="0" step="25"
                        class="w-full px-3 py-2.5 pr-24 border border-gray-200 rounded-lg text-sm
                               focus:outline-none focus:border-blue-400">
                 <span class="absolute inset-y-0 right-3 flex items-center text-xs text-gray-400 pointer-events-none">
@@ -231,7 +231,7 @@
                 <input type="number" name="hourly_rate"
                        value="{{ old('hourly_rate', $staff->hourly_rate ?? '') }}"
                        placeholder="Ex : 1500"
-                       min="0"
+                       min="0" step="25"
                        class="w-full px-3 py-2.5 pr-20 border border-gray-200 rounded-lg text-sm
                               focus:outline-none focus:border-blue-400">
                 <span class="absolute inset-y-0 right-3 flex items-center text-xs text-gray-400 pointer-events-none">

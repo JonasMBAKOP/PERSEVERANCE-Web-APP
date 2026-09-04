@@ -108,8 +108,8 @@
     margin-top: 8px;
 }
 .fiche-principal-signature__seal img {
-    max-width: 84px;
-    max-height: 84px;
+    max-width: 115px;
+    max-height: 115px;
     display: block;
     margin: 6px auto 0;
     margin-top: 0;

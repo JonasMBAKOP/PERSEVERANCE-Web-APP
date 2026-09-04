@@ -53,6 +53,7 @@
     $activeAppreciationCode = $average !== null
         ? \App\Models\AppreciationScale::forGrade((float) $average)?->code
         : null;
+    $activeAppreciationCode = strtoupper(trim((string) $activeAppreciationCode));
     $appreciationStyles = [
         'CNA' => 'background:#FEE2E2;color:#991B1B;border-color:#FCA5A5;',
         'CMA' => 'background:#FEF3C7;color:#92400E;border-color:#FCD34D;',
@@ -67,6 +68,7 @@
         grid-template-columns: 1.55fr .75fr !important;
         gap: 5px !important;
         margin-top: 3px !important;
+        margin-bottom: 0 !important;
     }
     .bulletin-page .bilan-bottom .work-badges {
         flex-wrap: nowrap;
@@ -84,48 +86,48 @@
     }
     /* Ajustements propres aux bulletins, sans modifier les autres documents. */
     .bulletin-page .cert-official-header {
-        margin-bottom: 6px;
-        padding-bottom: 4px;
+        margin-bottom: 4px;
+        padding-bottom: 2px;
     }
     .bulletin-page .bulletin-academic-year { display: none !important; }
 
     .bulletin-page .cert-official-header__columns {
         grid-template-columns: 1fr 34mm 1fr;
-        gap: 4mm;
+        gap: 3mm;
     }
 
     .bulletin-page .cert-official-header__republic {
         font-size: 9.5px;
-        line-height: 1.05;
+        line-height: .98;
     }
 
     .bulletin-page .cert-official-header__motto {
         font-size: 8px;
-        line-height: 1.05;
-        margin: 2px 0;
+        line-height: .98;
+        margin: .5px 0;
     }
 
     .bulletin-page .cert-official-header__stars {
         font-size: 9px;
-        line-height: 1;
-        margin: 1px 0;
+        line-height: .9;
+        margin: 0;
         letter-spacing: .5px;
     }
 
     .bulletin-page .cert-official-header__ministry {
         font-size: 8.5px;
-        line-height: 1.05;
+        line-height: .98;
     }
 
     .bulletin-page .cert-official-header__school {
         font-size: 9.5px;
-        line-height: 1.05;
+        line-height: .98;
     }
 
     .bulletin-page .cert-official-header__meta,
     .bulletin-page .cert-official-header__email {
         font-size: 7.5px;
-        line-height: 1.15;
+        line-height: 1;
     }
 
     .bulletin-page .cert-official-header__email span {
@@ -134,8 +136,8 @@
 
     .bulletin-page .cert-official-header__logo img,
     .bulletin-page .cert-official-header__logo-placeholder {
-        width: 26mm !important;
-        height: 26mm !important;
+        width: 22mm !important;
+        height: 22mm !important;
     }
 
     .bulletin-page .cert-official-header__logo-placeholder {
@@ -203,6 +205,64 @@
     .bulletin-page .authority-seal { height: 17mm !important; margin-top: 0 !important; }
     .bulletin-page .authority-seal img { max-width: 34mm !important; max-height: 17mm !important; }
     .bulletin-page .authority-seal svg { width: 92px; height: 48px; }
+    .bulletin-page .info-sublabel,
+    .bulletin-page .cert-translation,
+    .bulletin-page .appr-code-cell em,
+    .bulletin-page .meaning em {
+        color: #111827 !important;
+    }
+    .bulletin-page .info-label,
+    .bulletin-page .meaning,
+    .bulletin-page .signature-authority {
+        color: #030712 !important;
+    }
+    .bulletin-page .bilan-bottom,
+    .bulletin-page .bilan-bottom .bilan-label,
+    .bulletin-page .bilan-bottom .stat-metric,
+    .bulletin-page .bilan-bottom .work-badge,
+    .bulletin-page .bilan-bottom .conduct-table,
+    .bulletin-page .bilan-bottom span[style*="color:#1A3A6B"],
+    .bulletin-page .signatures-row {
+        color: #030712 !important;
+    }
+    .bulletin-page .bilan-bottom span[style*="font-style:italic"],
+    .bulletin-page .signatures-row span[style*="font-style:italic"],
+    .bulletin-page .signatures-row span[style*="color:#9CA3AF"] {
+        color: #111827 !important;
+    }
+    .bulletin-page .perseverance-bottom-grid span[style*="color: #374151"],
+    .bulletin-page .perseverance-bottom-grid span[style*="color: #1A3A6B"],
+    .bulletin-page .signatures-row > div > div[style*="color: #1A3A6B"] {
+        color: #030712 !important;
+    }
+    .bulletin-page .perseverance-bottom-grid span[style*="color: #9CA3AF"],
+    .bulletin-page .signatures-row span[style*="color:#9CA3AF"] {
+        color: #111827 !important;
+    }
+    .bulletin-page .bilan-bottom > div > div[style*="color:#1A3A6B"] {
+        color: #030712 !important;
+    }
+    .bulletin-page .perseverance-bottom-grid .stat-value,
+    .bulletin-page .perseverance-bottom-grid .stat-value > span {
+        color: inherit !important;
+        -webkit-text-fill-color: inherit !important;
+    }
+    .bulletin-page .perseverance-bottom-grid .stat-value > span {
+        font-weight: inherit !important;
+    }
+    .bulletin-page .bilan-bottom .work-badge .wben {
+        color: #111827 !important;
+    }
+    .bulletin-page .signatures-row > div > div:first-child {
+        color: #030712 !important;
+    }
+    .bulletin-page .perseverance-appreciations > div:first-child span {
+        color: #000000 !important;
+    }
+    .bulletin-page .signatures-row {
+        padding-top: 0 !important;
+        margin-top: 0 !important;
+    }
 
     .bulletin-page .perseverance-bottom-grid {
         grid-template-columns: 1.05fr 1.4fr 1.05fr !important;
@@ -467,10 +527,8 @@
                         
                         if ($grade !== null && !$isAbsent) {
                             $sumPoints += $grade * $coef;
-                            $sumCoef += $coef;
-                        } elseif ($isAbsent) {
-                            $sumCoef += $coef;
                         }
+                        $sumCoef += $coef;
 
                         $gradeClass = $isAbsent ? 'grade-absent' : (
                             $grade === null ? '' : (
@@ -580,10 +638,8 @@
                         $cAbsent = $d['is_absent'] ?? false;
                         if ($cGrade !== null && !$cAbsent) {
                             $catTotalPoints += $cGrade * $cCoef;
-                            $catTotalCoef += $cCoef;
-                        } elseif ($cAbsent) {
-                            $catTotalCoef += $cCoef;
                         }
+                        $catTotalCoef += $cCoef;
                     }
                     $catAvg = $catTotalCoef > 0 ? round($catTotalPoints / $catTotalCoef, 2) : null;
                 @endphp
@@ -643,21 +699,28 @@
     </table>
 
     {{-- ── STATISTIQUES ET MOYENNES (DEUX BLOCS) ── --}}
+    @php
+        $appreciationValueColors = [
+            'CNA' => '#991B1B', 'CMA' => '#92400E', 'CA' => '#6D28D9',
+            'CBA' => '#1D4ED8', 'CTBA' => '#065F46',
+        ];
+        $statValueColor = $appreciationValueColors[$activeAppreciationCode] ?? '#1A3A6B';
+    @endphp
     <div class="perseverance-bottom-grid" style="display: grid; grid-template-columns: 1.05fr 1.05fr 1.4fr; gap: 6px; margin-top: 3px; margin-bottom: 6px; align-items: stretch;">
     <div class="stats-row perseverance-stats" style="display: contents;">
         {{-- Bloc 1: Moyenne, Rang, Moy. de Classe --}}
         <div class="perseverance-stats-primary" style="border: 1px solid #CBD5E1; border-radius: 4px; padding: 5px 7px; background: #F8FAFC; display: flex; flex-direction: column; gap: 3px; font-size: 7.5px;">
             <div class="stat-metric" style="display: flex; justify-content: space-between; align-items: baseline;">
                 <span style="font-weight: 700; color: #374151;">Moyenne <span style="font-size: 6px; color: #9CA3AF; font-style: italic; font-weight: normal; margin-left: 2px;">/ Average</span></span>
-                <span style="font-weight: 900; font-size: 10px; color: #1A3A6B;">{{ $average !== null ? number_format($average, 2) : '—' }}<span style="font-size: 7px; font-weight: normal; color: #9CA3AF;">/20</span></span>
+                <span class="stat-value" style="font-weight: 900; font-size: 10px; color: {{ $statValueColor }} !important;">{{ $average !== null ? number_format($average, 2) : '—' }}<span style="font-size: 7px; font-weight: normal; color: #9CA3AF;">/20</span></span>
             </div>
             <div class="stat-metric" style="display: flex; justify-content: space-between; align-items: baseline;">
                 <span style="font-weight: 700; color: #374151;">Rang <span style="font-size: 6px; color: #9CA3AF; font-style: italic; font-weight: normal; margin-left: 2px;">/ Position</span></span>
-                <span style="font-weight: 900; font-size: 10px; color: #1A3A6B;">{{ isset($rankInfo['rank']) ? ((int) $rankInfo['rank'] === 1 ? '1er' : $rankInfo['rank'] . 'e') : '—' }}<span style="font-size: 7px; font-weight: normal; color: #9CA3AF;">/{{ $rankInfo['class_size'] ?? '—' }}</span></span>
+                <span class="stat-value" style="font-weight: 900; font-size: 10px; color: {{ $statValueColor }} !important;">{{ isset($rankInfo['rank']) ? ((int) $rankInfo['rank'] === 1 ? '1er' : $rankInfo['rank'] . 'e') : '—' }}<span style="font-size: 7px; font-weight: normal; color: #9CA3AF;">/{{ $rankInfo['class_size'] ?? '—' }}</span></span>
             </div>
             <div class="stat-metric" style="display: flex; justify-content: space-between; align-items: baseline;">
                 <span style="font-weight: 700; color: #374151;">Moyenne de classe <span style="font-size: 6px; color: #9CA3AF; font-style: italic; font-weight: normal; margin-left: 2px;">/ Class average</span></span>
-                <span style="font-weight: 900; font-size: 10px; color: #1A3A6B;">{{ isset($rankInfo['class_average']) ? number_format($rankInfo['class_average'], 2) : '—' }}<span style="font-size: 7px; font-weight: normal; color: #9CA3AF;">/20</span></span>
+                <span class="stat-value" style="font-weight: 900; font-size: 10px; color: {{ $statValueColor }} !important;">{{ isset($rankInfo['class_average']) ? number_format($rankInfo['class_average'], 2) : '—' }}<span style="font-size: 7px; font-weight: normal; color: #9CA3AF;">/20</span></span>
             </div>
         </div>
 
@@ -665,19 +728,19 @@
         <div class="perseverance-stats-secondary" style="border: 1px solid #CBD5E1; border-radius: 4px; padding: 5px 7px; background: #F8FAFC; display: flex; flex-direction: column; gap: 3px; font-size: 7.5px;">
             <div style="display: flex; justify-content: space-between; align-items: baseline;">
                 <span style="font-weight: 700; color: #374151;">Moyenne du premier <span style="font-size: 6px; color: #9CA3AF; font-style: italic; font-weight: normal; margin-left: 2px;">/ Highest average</span></span>
-                <span style="font-weight: 900; font-size: 10px; color: #1A3A6B;">{{ isset($rankInfo['highest']) ? number_format($rankInfo['highest'], 2) : '—' }}<span style="font-size: 7px; font-weight: normal; color: #9CA3AF;">/20</span></span>
+                <span class="stat-value" style="font-weight: 900; font-size: 10px; color: {{ $statValueColor }} !important;">{{ isset($rankInfo['highest']) ? number_format($rankInfo['highest'], 2) : '—' }}<span style="font-size: 7px; font-weight: normal; color: #9CA3AF;">/20</span></span>
             </div>
             <div style="display: flex; justify-content: space-between; align-items: baseline;">
                 <span style="font-weight: 700; color: #374151;">Moyenne du dernier <span style="font-size: 6px; color: #9CA3AF; font-style: italic; font-weight: normal; margin-left: 2px;">/ Lowest average</span></span>
-                <span style="font-weight: 900; font-size: 10px; color: #1A3A6B;">{{ isset($rankInfo['lowest']) ? number_format($rankInfo['lowest'], 2) : '—' }}<span style="font-size: 7px; font-weight: normal; color: #9CA3AF;">/20</span></span>
+                <span class="stat-value" style="font-weight: 900; font-size: 10px; color: {{ $statValueColor }} !important;">{{ isset($rankInfo['lowest']) ? number_format($rankInfo['lowest'], 2) : '—' }}<span style="font-size: 7px; font-weight: normal; color: #9CA3AF;">/20</span></span>
             </div>
             <div style="display: flex; justify-content: space-between; align-items: baseline;">
                 <span style="font-weight: 700; color: #374151;">Nbre de moyennes <span style="font-size: 6px; color: #9CA3AF; font-style: italic; font-weight: normal; margin-left: 2px;">/ Number of averages</span></span>
-                <span style="font-weight: 900; font-size: 10px; color: #1A3A6B;">{{ $rankInfo['averages_count'] ?? '—' }}</span>
+                <span class="stat-value" style="font-weight: 900; font-size: 10px; color: {{ $statValueColor }} !important;">{{ $rankInfo['averages_count'] ?? '—' }}</span>
             </div>
             <div style="display: flex; justify-content: space-between; align-items: baseline;">
                 <span style="font-weight: 700; color: #374151;">Taux de réussite <span style="font-size: 6px; color: #9CA3AF; font-style: italic; font-weight: normal; margin-left: 2px;">/ Success rate</span></span>
-                <span style="font-weight: 900; font-size: 10px; color: #1A3A6B;">{{ isset($rankInfo['success_rate']) ? number_format($rankInfo['success_rate'], 1) . '%' : '—' }}</span>
+                <span class="stat-value" style="font-weight: 900; font-size: 10px; color: {{ $statValueColor }} !important;">{{ isset($rankInfo['success_rate']) ? number_format($rankInfo['success_rate'], 1) . '%' : '—' }}</span>
             </div>
         </div>
     </div>
@@ -701,8 +764,8 @@
 
     {{-- ── APPRÉCIATIONS / APPRECIATIONS ── --}}
     <div class="perseverance-appreciations" style="margin-top: 0; min-width: 0; align-self: stretch;">
-        <div style="text-align:center; font-size:7.5px; font-weight:900; text-transform:uppercase; letter-spacing:.06em; color:#1A3A6B; margin-bottom:4px; border-top: 1px solid #CBD5E1; padding-top:4px;">
-            APPRÉCIATIONS / <span style="font-style:italic; font-weight:600; color:#6B7280;">APPRECIATIONS</span>
+        <div style="text-align:center; font-size:7.5px; font-weight:900; text-transform:uppercase; letter-spacing:.06em; color:#000; margin-bottom:4px; border-top: 1px solid #CBD5E1; padding-top:4px;">
+            APPRÉCIATIONS / <span style="font-style:italic; font-weight:600; color:#000000 !important;">APPRECIATIONS</span>
         </div>
         <div class="appr-codes-row">
             <div class="appr-code-cell" style="{{ $activeAppreciationCode === 'CNA' ? $appreciationStyles['CNA'] : '' }}">
@@ -793,7 +856,7 @@
     </div>
 
     {{-- ── SIGNATURES ── --}}
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; border-top: 1px dashed #D1D5DB; padding-top: 3px; margin-top: 2px;">
+    <div class="signatures-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; border-top: 1px dashed #D1D5DB; padding-top: 1px; margin-top: 0;">
         <div style="text-align: center; font-size: 7.5px;">
             <div style="font-size: 7px; font-weight: 700; color: #6B7280; margin-bottom: 4px;">Date : ...............</div>
             <div style="font-size: 7.5px; font-weight: 900; text-transform: uppercase; color: #1A3A6B; margin-bottom: 18px;">

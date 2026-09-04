@@ -113,7 +113,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'view-subjects',
             'view-grades', 'enter-grades',
             'view-bulletins',
-            'view-absences',
+            'view-absences', 'manage-absences',
             'view-timetable',
             'view-announcements',
             'view-messages', 'send-messages',

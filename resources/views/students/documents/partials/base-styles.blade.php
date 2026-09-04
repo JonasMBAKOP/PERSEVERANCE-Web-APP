@@ -528,8 +528,8 @@ body {
     margin-top: 8px;
 }
 .cert-signature__seal img {
-    max-width: 110px;
-    max-height: 110px;
+    max-width: 150px;
+    max-height: 150px;
     display: block;
     margin: 6px auto 0;
 }

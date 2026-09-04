@@ -96,7 +96,7 @@
                         <label class="block text-sm font-medium text-slate-700">Salaire mensuel</label>
                         <input type="number" name="monthly_salary"
                                value="{{ old('monthly_salary', $staff->monthly_salary) }}"
-                               min="0" step="100"
+                               min="0" step="25"
                                class="w-full rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100">
                         @error('monthly_salary')
                             <p class="text-sm text-red-600">{{ $message }}</p>
@@ -109,7 +109,7 @@
                         <label class="block text-sm font-medium text-slate-700">Tarif horaire</label>
                         <input type="number" name="hourly_rate"
                                value="{{ old('hourly_rate', $staff->hourly_rate) }}"
-                               min="0" step="50"
+                               min="0" step="25"
                                class="w-full rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100">
                         @error('hourly_rate')
                             <p class="text-sm text-red-600">{{ $message }}</p>
