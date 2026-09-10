@@ -929,16 +929,18 @@ class StaffController extends Controller
 
     private function allowedAccountRoles(User $authUser)
     {
-        $referenceUser = new User();
-
-        return Role::orderBy('name')->get()->filter(function ($role) use ($authUser, $referenceUser) {
-            return $authUser->hasRole('super-admin')
-                || $authUser->getRoleLevel() > $referenceUser->getRoleLevelByName($role->name);
+        return Role::orderBy('name')->get()->filter(function ($role) use ($authUser) {
+            return $this->canAssignRole($authUser, $role->name);
         });
     }
 
     private function canAssignRole(User $authUser, string $roleName): bool
     {
+        if ($roleName === 'assistant-direction') {
+            return $authUser->hasRole('super-admin')
+                || $authUser->hasAnyRole(['directeur', 'fondateur', 'censeur']);
+        }
+
         return $authUser->hasRole('super-admin')
             || $authUser->getRoleLevel() > $authUser->getRoleLevelByName($roleName);
     }
@@ -952,6 +954,9 @@ class StaffController extends Controller
     {
         if (! $user) return false;
         if ($user->hasRole('super-admin')) return true;
+        if ($position === 'assistant_direction') {
+            return $user->hasAnyRole(['directeur', 'fondateur', 'censeur']);
+        }
         if ($user->hasRole('directeur')) return $position !== 'directeur';
         if ($user->hasRole('censeur')) return ! in_array($position, ['directeur', 'prefet_des_etudes'], true);
         return $position !== 'directeur';

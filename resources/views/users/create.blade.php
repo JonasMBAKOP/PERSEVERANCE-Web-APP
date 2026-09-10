@@ -165,7 +165,7 @@
                            style="accent-color: #1A3A6B;">
                     <div>
                         <p class="text-sm font-medium text-gray-800">
-                            {{ ucfirst(str_replace('-', ' ', $role->name)) }}
+                            {{ $role->name === 'assistant-direction' ? 'Assistant(e) de Direction' : ucfirst(str_replace('-', ' ', $role->name)) }}
                         </p>
                         <p class="text-xs text-gray-500">{{ $desc }}</p>
                     </div>

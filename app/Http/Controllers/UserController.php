@@ -75,10 +75,8 @@ class UserController extends Controller
         $authUser = Auth::user();
 
         // Un directeur ne peut créer que des comptes de niveau inférieur au sien
-        $roles = Role::orderBy('name')->get()->filter(fn($role) =>
-            $authUser->hasRole('super-admin') ||
-            ($authUser->getRoleLevel() > (new User)->fill([])->getRoleLevelByName($role->name))
-        );
+        $roles = Role::orderBy('name')->get()
+            ->filter(fn ($role) => $this->canAssignRole($authUser, $role->name));
 
         return view('users.create', compact('roles'));
     }
@@ -86,6 +84,12 @@ class UserController extends Controller
     // ── ENREGISTREMENT ────────────────────────────────────────────────────────
     public function store(StoreUserRequest $request)
     {
+        abort_unless(
+            collect($request->roles)->every(fn (string $role) => $this->canAssignRole(Auth::user(), $role)),
+            403,
+            'Vous ne pouvez pas attribuer ce rôle.'
+        );
+
         $user = User::create([
             'name'      => $request->name,
             'email'     => $request->email,
@@ -112,10 +116,22 @@ class UserController extends Controller
             abort(403, 'Vous ne pouvez pas modifier ce compte.');
         }
 
-        $roles     = Role::orderBy('name')->get();
+        $roles     = Role::orderBy('name')->get()
+            ->filter(fn ($role) => $this->canAssignRole($authUser, $role->name));
         $userRoles = $user->roles->pluck('name')->toArray();
 
         return view('users.edit', compact('user', 'roles', 'userRoles'));
+    }
+
+    private function canAssignRole(User $authUser, string $roleName): bool
+    {
+        if ($roleName === 'assistant-direction') {
+            return $authUser->hasRole('super-admin')
+                || $authUser->hasAnyRole(['directeur', 'fondateur', 'censeur']);
+        }
+
+        return $authUser->hasRole('super-admin')
+            || $authUser->getRoleLevel() > (new User)->getRoleLevelByName($roleName);
     }
 
     // ── MISE À JOUR ───────────────────────────────────────────────────────────
@@ -127,6 +143,12 @@ class UserController extends Controller
         if ($authUser->id !== $user->id && !$authUser->canManage($user)) {
             abort(403, 'Vous ne pouvez pas modifier ce compte.');
         }
+
+        abort_unless(
+            collect($request->roles)->every(fn (string $role) => $this->canAssignRole($authUser, $role)),
+            403,
+            'Vous ne pouvez pas attribuer ce rôle.'
+        );
 
         $data = [
             'name'      => $request->name,

@@ -158,11 +158,13 @@
                 href="{{ route('staff.presences.index') }}"
                 :active="request()->routeIs('staff.presences.*')" />
 
-            <x-sidebar-item
-                icon="bank"
-                label="Salaires"
-                href="{{ route('staff.salaries') }}"
-                :active="request()->routeIs('staff.salaries', 'staff.salary.edit')" />
+            @can('manage-staff')
+                <x-sidebar-item
+                    icon="bank"
+                    label="Salaires"
+                    href="{{ route('staff.salaries') }}"
+                    :active="request()->routeIs('staff.salaries', 'staff.salary.edit')" />    
+            @endcan
         @endcan    
         
 
@@ -276,19 +278,19 @@
                 Présences élèves
             </div>
 
+            <x-sidebar-item
+                icon="clipboard"
+                label="Appel du jour"
+                href="{{ route('attendance.index') }}"
+                :active="request()->routeIs('attendance.*')" />
+
             @can('manage-absences')
                 <x-sidebar-item
-                    icon="clipboard"
-                    label="Appel du jour"
-                    href="{{ route('attendance.index') }}"
-                    :active="request()->routeIs('attendance.*')" />
+                    icon="x-circle"
+                    label="Absences"
+                    href="{{ route('absences.index') }}"
+                    :active="request()->routeIs('absences.*')" />
             @endcan
-
-            <x-sidebar-item
-                icon="x-circle"
-                label="Absences"
-                href="{{ route('absences.index') }}"
-                :active="request()->routeIs('absences.*')" />
         @endcan
 
         {{-- ── INFIRMERIE ──────────────────────────────────────────── --}}

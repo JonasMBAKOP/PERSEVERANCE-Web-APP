@@ -37,7 +37,8 @@
          style="background:radial-gradient(circle,#fff 0%,transparent 70%);transform:translate(30%,-30%);">
     </div>
     <h2 class="text-2xl font-black text-white mb-1">
-        {{ now()->hour < 18 ? 'Bonjour' : 'Bonsoir' }}, Prof. {{ explode(' ', auth()->user()->name)[0] }}
+        {{ now()->hour < 18 ? 'Bonjour' : 'Bonsoir' }},
+        Prof. {{ explode(' ', auth()->user()->name)[0] }}
         — Année scolaire {{ $activeYear->label }}
     </h2>
     <p class="text-white/70 text-sm mb-5">

@@ -158,7 +158,7 @@
             </div>
 
             {{-- ── CACHET (sauf enseignants) ──────────────────────────────── --}}
-            @if(!auth()->user()->hasRole('enseignant'))
+            @if(!auth()->user()->hasAnyRole(['enseignant', 'assistant-direction']))
             <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5"
                  x-data="{ sealPreview: '{{ $user->signature_seal ? asset('storage/'.$user->signature_seal) : '' }}' }">
                 <h3 class="text-sm font-black mb-4 pb-2 border-b border-gray-100"

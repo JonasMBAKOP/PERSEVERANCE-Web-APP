@@ -16,7 +16,7 @@ class StoreGradeRequest extends FormRequest
         /** @var \App\Models\User|null $user */
         $user = Auth::user();
         return $user && $user->hasAnyRole([
-            'super-admin','directeur','censeur','secretaire','enseignant'
+            'super-admin','directeur','censeur','secretaire','enseignant','assistant-direction'
         ]);
     }
 

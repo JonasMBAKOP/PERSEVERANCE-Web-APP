@@ -299,7 +299,7 @@ class TimetableController extends Controller
 
         /** @var \App\Models\User $user */
         $user = Auth::user();
-        $isAdmin = $user->hasAnyRole(['super-admin', 'directeur', 'censeur']);
+        $isAdmin = $user->hasAnyRole(['super-admin', 'directeur', 'censeur', 'assistant-direction']);
 
         $staffList = $isAdmin
             ? Staff::teachers()->orderBy('last_name')->get()
@@ -348,6 +348,10 @@ class TimetableController extends Controller
 
     public function printTeacher(Staff $staff)
     {
+        $user = Auth::user();
+        $canViewAnyStaff = $user->hasAnyRole(['super-admin', 'directeur', 'censeur', 'assistant-direction']);
+        abort_unless($canViewAnyStaff || $user->staff?->is($staff), 403);
+
         $activeYear = AcademicYear::active();
         $setting = TimetableSetting::current();
         $grid = $this->buildGrid($setting);

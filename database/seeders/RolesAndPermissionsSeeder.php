@@ -113,13 +113,21 @@ class RolesAndPermissionsSeeder extends Seeder
             'view-subjects',
             'view-grades', 'enter-grades',
             'view-bulletins',
-            'view-absences', 'manage-absences',
+            'view-absences',
+            //  'manage-absences',
             'view-timetable',
             'view-announcements',
             'view-messages', 'send-messages',
         ]);
 
         // 6. SURVEILLANT GÉNÉRAL
+        // 6. ASSISTANT(E) DE DIRECTION — droits pédagogiques d'un enseignant + consultation du personnel
+        $assistantDirection = Role::firstOrCreate(['name' => 'assistant-direction']);
+        $assistantDirection->syncPermissions(array_merge(
+            $enseignant->permissions->pluck('name')->all(),
+            ['view-staff']
+        ));
+
         $surveillant = Role::firstOrCreate(['name' => 'surveillant-general']);
         $surveillant->syncPermissions([
             'view-students', 'manage-students',

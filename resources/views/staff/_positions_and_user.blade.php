@@ -41,6 +41,7 @@
         'secretaire'             => 'Secrétaire',
         'infirmier'              => 'Infirmier(ère)',
         'enseignant'             => 'Enseignant(e)',
+        'assistant-direction'    => 'Assistant(e) de Direction',
     ];
 
     $staffModel = $staff ?? null;

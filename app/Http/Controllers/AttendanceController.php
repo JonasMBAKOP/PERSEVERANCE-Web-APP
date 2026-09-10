@@ -18,7 +18,7 @@ class AttendanceController extends Controller
         $activeYear = AcademicYear::active();
         $user = Auth::user();
         $isUnrestricted = $this->canManageAllAttendance($user);
-        $isTeacher = $user?->hasRole('enseignant') && ! $isUnrestricted;
+        $isTeacher = $user?->hasAnyRole(['enseignant', 'assistant-direction']) && ! $isUnrestricted;
         $staffId = $user?->staff?->id;
         $date = $isTeacher
             ? today()
@@ -109,7 +109,7 @@ class AttendanceController extends Controller
         $validated = $request->validate($rules);
 
         $activeYear = AcademicYear::active();
-        $isTeacher = $user?->hasRole('enseignant') && ! $isUnrestricted;
+        $isTeacher = $user?->hasAnyRole(['enseignant', 'assistant-direction']) && ! $isUnrestricted;
         $staffId = $user?->staff?->id;
         $class = ClassGroup::where('academic_year_id', $activeYear?->id)
             ->findOrFail($validated['class_group_id']);

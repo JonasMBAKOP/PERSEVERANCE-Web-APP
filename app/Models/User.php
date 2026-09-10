@@ -41,6 +41,7 @@ class User extends Authenticatable
             $this->hasRole('censeur')                => route('censeur.dashboard'),
             $this->hasRole('econome')                => route('econome.dashboard'),
             $this->hasRole('enseignant')             => route('enseignant.dashboard'),
+            $this->hasRole('assistant-direction')   => route('assistant-direction.dashboard'),
             $this->hasRole('surveillant-general')    => route('surveillant.dashboard'),
             $this->hasRole('surveillant-de-secteur') => route('surveillant-secteur.dashboard'),
             $this->hasRole('secretaire')             => route('secretaire.dashboard'),
@@ -70,6 +71,7 @@ class User extends Authenticatable
         'secretaire'             => 2,
         'infirmier'              => 2,
         'enseignant'             => 1,
+        'assistant-direction'    => 1,
     ];
 
     // Retourne le niveau hiérarchique du rôle le plus élevé

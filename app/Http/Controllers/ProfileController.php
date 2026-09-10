@@ -88,7 +88,7 @@ class ProfileController extends Controller
         }
 
         // Traiter le cachet/signature (sauf pour les enseignants)
-        if ($request->hasFile('signature_seal') && !$user->hasRole('enseignant')) {
+        if ($request->hasFile('signature_seal') && !$user->hasAnyRole(['enseignant', 'assistant-direction'])) {
             if ($user->signature_seal) {
                 Storage::disk('public')->delete($user->signature_seal);
             }
@@ -118,7 +118,7 @@ class ProfileController extends Controller
         /** @var \App\Models\User|null $user */
         $user = Auth::user();
         
-        if ($user->hasRole('enseignant')) {
+        if ($user->hasAnyRole(['enseignant', 'assistant-direction'])) {
             abort(403, 'Non autorisé');
         }
         

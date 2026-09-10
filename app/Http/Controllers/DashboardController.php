@@ -57,6 +57,7 @@ class DashboardController extends Controller
         if ($user->hasRole('censeur'))                  return redirect()->route('dashboard.censeur');
         if ($user->hasRole('econome'))                  return redirect()->route('dashboard.econome');
         if ($user->hasRole('enseignant'))               return redirect()->route('dashboard.enseignant');
+        if ($user->hasRole('assistant-direction'))     return redirect()->route('assistant-direction.dashboard');
         if ($user->hasRole('surveillant-general'))      return redirect()->route('dashboard.surveillant');
         if ($user->hasRole('surveillant-de-secteur'))   return redirect()->route('dashboard.surveillant-secteur');
         if ($user->hasRole('secretaire'))               return redirect()->route('dashboard.secretaire');
@@ -488,7 +489,17 @@ class DashboardController extends Controller
     }
 
     // ── ENSEIGNANT ────────────────────────────────────────────────────────
+    public function assistantDirection()
+    {
+        return view('dashboards.assistant-direction', $this->teacherDashboardData());
+    }
+
     public function enseignant()
+    {
+        return view('dashboards.enseignant', $this->teacherDashboardData());
+    }
+
+    private function teacherDashboardData(): array
     {
         $user       = Auth::user();
         $staff      = $user->staff;
@@ -496,12 +507,13 @@ class DashboardController extends Controller
         $days       = [1=>'Lundi',2=>'Mardi',3=>'Mercredi',4=>'Jeudi',5=>'Vendredi'];
 
         if (!$staff || !$activeYear) {
-            return view('dashboards.enseignant', [
+            return [
                 'noStaff' => !$staff, 'activeYear' => $activeYear,
                 'myClasses' => collect(), 'mySlots' => collect(), 'days' => $days,
                 'totalStudents' => 0, 'totalClasses' => 0, 'totalSubjects' => 0,
                 'currentSeq' => null,
-            ]);
+                'gridRows' => [],
+            ];
         }
 
         $assignments = TeacherAssignment::where('staff_id', $staff->id)
@@ -567,10 +579,10 @@ class DashboardController extends Controller
         $setting = TimetableSetting::current();
         $grid = $this->timetableGridService->buildGrid($setting, $days);
 
-        return view('dashboards.enseignant', compact(
+        return compact(
             'activeYear', 'myClasses', 'mySlots', 'days',
             'totalClasses', 'totalSubjects', 'totalStudents', 'currentSeq'
-        ) + ['noStaff' => false, 'gridRows' => $grid['rows']]);
+        ) + ['noStaff' => false, 'gridRows' => $grid['rows']];
     }
 
     // ── SURVEILLANT GÉNÉRAL ───────────────────────────────────────────────
