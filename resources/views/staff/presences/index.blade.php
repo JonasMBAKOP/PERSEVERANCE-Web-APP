@@ -67,7 +67,22 @@
                     @forelse($staff as $member)
                         @php $p = $presences->get($member->id); @endphp
                         <tr class="hover:bg-gray-50">
-                            <td class="px-4 py-3">{{ $member->full_name }}</td>
+                            @php
+                                $words = preg_split('/\\s+/', trim($member->full_name));
+                                $initials = collect($words)->filter()->map(fn($word) => strtoupper(substr($word, 0, 1)))->take(2)->implode('');
+                            @endphp
+                            <td class="px-4 py-3">
+                                <div class="flex items-center gap-2.5">
+                                    @if($member->photo)
+                                        <button type="button" class="flex-shrink-0 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-400" onclick="openStaffPhoto(@js($member->photo_url), @js($member->full_name))">
+                                            <img src="{{ $member->photo_url }}" alt="{{ $member->full_name }}" class="h-9 w-9 rounded-full object-cover">
+                                        </button>
+                                    @else
+                                        <div class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-[#1A3A6B] text-xs font-black text-white">{{ $initials }}</div>
+                                    @endif
+                                    <span>{{ $member->full_name }}</span>
+                                </div>
+                            </td>
                             <td class="px-4 py-3 text-center">{{ ucfirst(str_replace('_', ' ', $member->contract_type)) }}</td>
                             <td class="px-4 py-3 text-center">{{ $p?->arrival_time ? substr((string) $p->arrival_time, 0, 5) : '—' }}</td>
                             <td class="px-4 py-3 text-center">{{ $p?->departure_time ? substr((string) $p->departure_time, 0, 5) : '—' }}</td>
@@ -89,4 +104,5 @@
             </table>
         </div>
 </div>
+@include('staff.partials.photo-modal')
 @endsection

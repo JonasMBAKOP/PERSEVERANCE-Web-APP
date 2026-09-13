@@ -25,7 +25,7 @@ class ClassManagementController extends Controller
         /** @var \App\Models\User $user */
         $user = Auth::user();
 
-        return $user->hasAnyRole(['super-admin', 'directeur', 'censeur', 'fondateur']);
+        return $user->hasAnyRole(['super-admin', 'directeur', 'censeur', 'fondateur', 'assistant-direction']);
     }
 
     private function isTeacherView(): bool

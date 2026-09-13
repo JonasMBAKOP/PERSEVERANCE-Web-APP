@@ -184,6 +184,30 @@ class PresenceController extends Controller
             ->whereDate('date', $date->toDateString())
             ->get()
             ->keyBy('staff_id');
+
+        // Keep the attendance sheet ordered by attendance state first, then arrival time.
+        // Staff marked present without an arrival time stays before absentees; absentees
+        // are kept in alphabetical order for quick lookup.
+        $staff = $staff->sort(function ($left, $right) use ($presences) {
+            $leftPresence = $presences->get($left->id);
+            $rightPresence = $presences->get($right->id);
+            $leftIsPresent = strtolower(trim((string) ($leftPresence?->status ?? ''))) === 'present';
+            $rightIsPresent = strtolower(trim((string) ($rightPresence?->status ?? ''))) === 'present';
+            $leftArrival = $leftPresence?->arrival_time;
+            $rightArrival = $rightPresence?->arrival_time;
+            $leftGroup = !$leftIsPresent ? 2 : ($leftArrival ? 0 : 1);
+            $rightGroup = !$rightIsPresent ? 2 : ($rightArrival ? 0 : 1);
+
+            if ($leftGroup !== $rightGroup) {
+                return $leftGroup <=> $rightGroup;
+            }
+
+            if ($leftGroup === 0 && (string) $leftArrival !== (string) $rightArrival) {
+                return strcmp((string) $leftArrival, (string) $rightArrival);
+            }
+
+            return strnatcasecmp((string) $left->full_name, (string) $right->full_name);
+        })->values();
         $school = \App\Models\SchoolSetting::instance();
         $phones = \App\Models\SchoolPhone::orderByDesc('is_primary')->orderBy('id')->get();
         $activeYear = \App\Models\AcademicYear::active();

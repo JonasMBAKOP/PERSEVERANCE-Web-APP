@@ -98,6 +98,9 @@ class AbsenceController extends Controller
         $sections          = Section::orderBy('id')->get();
         $selectedSectionId = $request->input('section_id');
         $selectedClassId   = $request->input('class_id');
+        $recentType        = in_array($request->input('recent_type'), ['all', 'absences', 'retards'], true)
+            ? $request->input('recent_type')
+            : 'all';
 
         $classes = $activeYear
             ? ClassGroup::where('academic_year_id', $activeYear->id)
@@ -127,9 +130,12 @@ class AbsenceController extends Controller
             ])->get()
               ->sortBy('student.last_name')
               ->map(function($enr) {
-                  $enr->total_hours       = $enr->absences->sum('hours');
-                  $enr->justified_hours   = $enr->absences->where('is_justified', true)->sum('hours');
-                  $enr->unjustified_hours = $enr->absences->where('is_justified', false)->sum('hours');
+                  $relevant = $enr->absences->filter(fn ($absence) =>
+                      $absence->status !== 'present' || $absence->effective_hours > 0
+                  );
+                  $enr->total_hours       = $relevant->sum('effective_hours');
+                  $enr->justified_hours   = $relevant->where('is_justified', true)->sum('effective_hours');
+                  $enr->unjustified_hours = $relevant->where('is_justified', false)->sum('effective_hours');
                   return $enr;
               });
         }
@@ -142,6 +148,22 @@ class AbsenceController extends Controller
               ->when(!$selectedClassId && $selectedSectionId, fn($q2) => $q2->whereHas('classGroup.level', fn ($q3) =>
                     $q3->where('section_id', $selectedSectionId)
                 ));
+        })->where(function ($q) use ($recentType) {
+            if ($recentType === 'retards') {
+                $q->where('status', 'present')
+                  ->where('delay_minutes', '>', 0);
+                return;
+            }
+
+            if ($recentType === 'absences') {
+                $q->whereNull('status')
+                  ->orWhere('status', 'absent');
+                return;
+            }
+
+            $q->whereNull('status')
+              ->orWhere('status', 'absent')
+              ->orWhere('delay_minutes', '>', 0);
         })->with([
             'studentEnrollment.student',
             'studentEnrollment.classGroup',
@@ -149,12 +171,17 @@ class AbsenceController extends Controller
             'recordedBy',
         ])->orderByDesc('created_at')
           ->orderByDesc('absence_date')
-          ->take(20)->get();
+          ->paginate(20)
+          ->withQueryString();
+
+        if ($request->boolean('recent_only')) {
+            return view('absences.partials.recent-list', compact('recentAbsences'));
+        }
 
         return view('absences.index', compact(
             'activeYear', 'sections', 'classes',
             'selectedClass', 'enrollments', 'recentAbsences',
-            'selectedSectionId'
+            'selectedSectionId', 'recentType'
         ));
     }
 
@@ -261,22 +288,27 @@ class AbsenceController extends Controller
 
         $saved = 0;
         foreach ($request->input('absences', []) as $enrollmentId => $data) {
-            if (empty($data['hours']) || (float)$data['hours'] <= 0) continue;
+            $isAbsent = filter_var($data['absent'] ?? false, FILTER_VALIDATE_BOOLEAN);
 
             Absence::updateOrCreate(
                 [
                     'student_enrollment_id' => (int)$enrollmentId,
                     'absence_date'          => $request->absence_date,
                     'period'                => $request->period ?? 'journée',
-                    'class_subject_id'      => $request->class_subject_id ?: null,
+                    'timetable_slot_id'     => null,
+                    'class_subject_id'      => null,
                 ],
                 [
-                    'hours'        => (float)$data['hours'],
+                    'status'       => $isAbsent ? 'absent' : 'present',
+                    'hours'        => $isAbsent ? (float) config('attendance.daily_absence_hours', 0) : 0,
+                    'arrival_time' => null,
+                    'observation'  => null,
+                    'delay_minutes'=> 0,
                     'is_justified' => false,
                     'recorded_by'  => Auth::id(),
                 ]
             );
-            $saved++;
+            $saved += $isAbsent ? 1 : 0;
         }
 
         return redirect()
@@ -285,7 +317,7 @@ class AbsenceController extends Controller
     }
 
     // ── ABSENCES D'UN ÉLÈVE ───────────────────────────────────────────────
-    public function student(StudentEnrollment $enrollment)
+    public function student(Request $request, StudentEnrollment $enrollment)
     {
         $filters = request()->validate([
             'start_date' => ['nullable', 'date'],
@@ -298,19 +330,54 @@ class AbsenceController extends Controller
             'student',
             'classGroup.level.section',
             'academicYear',
-            'absences' => fn($q) =>
-                $q->with(['classSubject.subject', 'recordedBy', 'timetableSlot'])
-                  ->when($startDate, fn($query) => $query->whereDate('absence_date', '>=', $startDate))
-                  ->when($endDate, fn($query) => $query->whereDate('absence_date', '<=', $endDate))
-                  ->orderByDesc('absence_date'),
         ]);
 
-        $totalH        = $enrollment->absences->sum('hours');
-        $justifiedH    = $enrollment->absences->where('is_justified', true)->sum('hours');
-        $unjustifiedH  = $enrollment->absences->where('is_justified', false)->sum('hours');
+        $absenceQuery = Absence::where('student_enrollment_id', $enrollment->id)
+            ->when($startDate, fn($query) => $query->whereDate('absence_date', '>=', $startDate))
+            ->when($endDate, fn($query) => $query->whereDate('absence_date', '<=', $endDate));
+
+        $absenceType = in_array($request->input('type'), ['all', 'absences', 'retards'], true)
+            ? $request->input('type')
+            : 'all';
+
+        $relevantAbsences = (clone $absenceQuery)->get()->filter(fn ($absence) =>
+            $absence->status !== 'present' || $absence->effective_hours > 0
+        );
+        $totalH        = $relevantAbsences->sum('effective_hours');
+        $justifiedH    = $relevantAbsences->where('is_justified', true)->sum('effective_hours');
+        $unjustifiedH  = $relevantAbsences->where('is_justified', false)->sum('effective_hours');
+
+        $absences = $absenceQuery
+            ->where(function ($query) use ($absenceType) {
+                if ($absenceType === 'retards') {
+                    $query->where('status', 'present')
+                        ->where('delay_minutes', '>', 0);
+                    return;
+                }
+
+                if ($absenceType === 'absences') {
+                    $query->whereNull('status')
+                        ->orWhere('status', 'absent');
+                    return;
+                }
+
+                $query->whereNull('status')
+                    ->orWhere('status', 'absent')
+                    ->orWhere('delay_minutes', '>', 0);
+            })
+            ->with(['classSubject.subject', 'recordedBy', 'timetableSlot'])
+            ->orderByDesc('absence_date')
+            ->orderByDesc('created_at')
+            ->paginate(20)
+            ->withQueryString();
+
+        if ($request->boolean('history_only')) {
+            return view('absences.partials.student-history', compact('absences'));
+        }
 
         return view('absences.student', compact(
-            'enrollment', 'totalH', 'justifiedH', 'unjustifiedH', 'startDate', 'endDate'
+            'enrollment', 'totalH', 'justifiedH', 'unjustifiedH',
+            'startDate', 'endDate', 'absenceType', 'absences'
         ));
     }
 

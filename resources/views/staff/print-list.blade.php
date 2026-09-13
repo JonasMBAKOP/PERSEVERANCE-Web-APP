@@ -16,6 +16,8 @@ body { margin: 0; padding: 0; color: #111827; }
 .staff-table th { background: #E5E7EB; text-transform: uppercase; font-size: 12px; font-weight: 900; text-align: center; }
 .staff-table td { font-size: 10px; font-weight: 600; text-transform: uppercase; }
 .staff-table td.num { text-align: center; width: 8mm; }
+.staff-table th:nth-child(2), .staff-table td:nth-child(2) { width: 32%; }
+.staff-table th:nth-child(3), .staff-table td:nth-child(3) { width: 11%; }
 .staff-table .center { text-align: center; }
 @media print { body { background: #fff !important; } .no-print { display: none !important; } }
 </style>
@@ -32,8 +34,8 @@ body { margin: 0; padding: 0; color: #111827; }
         <thead><tr>
             <th>#</th>
             <th>Noms et Prénoms</th>
-            <th>Date de Naissance</th>
-            <th>Genre</th>
+            <th>Né(e) le</th>
+            <th>Sexe</th>
             <th>Poste</th>
             <th>Grade</th>
             <th>Numéro</th>
@@ -43,7 +45,7 @@ body { margin: 0; padding: 0; color: #111827; }
         @forelse($staff as $index => $member)
             @php
                 $positions = $member->positions->sortByDesc('is_primary')->map->position_label->filter()->implode(' / ');
-                $gender = in_array(strtolower((string) $member->gender), ['f', 'female', 'femme'], true) ? 'Féminin' : (in_array(strtolower((string) $member->gender), ['m', 'male', 'homme'], true) ? 'Masculin' : '—');
+                $gender = in_array(strtolower((string) $member->gender), ['f', 'F', 'female', 'femme', 'Femme', 'feminin', 'Feminin'], true) ? 'F' : (in_array(strtolower((string) $member->gender), ['m', 'M', 'male', 'homme', 'Homme', 'masculin', 'Masculin'], true) ? 'M' : '—');
             @endphp
             <tr>
                 <td class="num">{{ $index + 1 }}</td>

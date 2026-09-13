@@ -121,13 +121,6 @@ class RolesAndPermissionsSeeder extends Seeder
         ]);
 
         // 6. SURVEILLANT GÉNÉRAL
-        // 6. ASSISTANT(E) DE DIRECTION — droits pédagogiques d'un enseignant + consultation du personnel
-        $assistantDirection = Role::firstOrCreate(['name' => 'assistant-direction']);
-        $assistantDirection->syncPermissions(array_merge(
-            $enseignant->permissions->pluck('name')->all(),
-            ['view-staff']
-        ));
-
         $surveillant = Role::firstOrCreate(['name' => 'surveillant-general']);
         $surveillant->syncPermissions([
             'view-students', 'manage-students',
@@ -179,6 +172,13 @@ class RolesAndPermissionsSeeder extends Seeder
             'view-announcements',
             'view-messages', 'send-messages',
         ]);
+
+        // 10. ASSISTANT(E) DE DIRECTION — droits pédagogiques d'un enseignant + consultation du personnel
+        $assistantDirection = Role::firstOrCreate(['name' => 'assistant-direction']);
+        $assistantDirection->syncPermissions(array_merge(
+            $enseignant->permissions->pluck('name')->all(),
+            ['view-staff', 'manage-students', 'manage-absences']
+        ));
 
         $this->command->info('✅ Rôles et permissions créés avec succès.');
     }

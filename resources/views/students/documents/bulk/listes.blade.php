@@ -13,7 +13,22 @@ body { margin: 0; padding: 0; }
     color: #111827;
 }
 .student-list-page .cert-official-header {
-    margin-bottom: 10px;
+    margin-bottom: 6px;
+}
+.student-list-page .cert-official-header__side {
+    min-height: 40mm;
+}
+.student-list-page .cert-official-header__motto,
+.student-list-page .cert-official-header__stars,
+.student-list-page .cert-official-header__ministry,
+.student-list-page .cert-official-header__school {
+    margin-top: 1px;
+    margin-bottom: 1px;
+}
+.student-list-page .cert-official-header__logo img,
+.student-list-page .cert-official-header__logo-placeholder {
+    width: 30mm;
+    height: 30mm;
 }
 .student-list-title {
     background: #E5E7EB;
@@ -43,13 +58,27 @@ body { margin: 0; padding: 0; }
 .class-title {
     font-size: 14px; font-weight: 900; color: #9c4005;
     border-bottom: 1px solid #E5E7EB; padding-bottom: 6px; margin: 14px 0 8px;
+    text-align: center;
 }
 .list-table { width: 100%; border-collapse: collapse; font-size: 10px; margin-bottom: 16px; }
 .list-table th, .list-table td { border: 1px solid #D1D5DB; padding: 6px 8px; }
+.list-table, .list-table th, .list-table td { color: #000; }
 .list-table th { background: #F3F4F6; font-weight: 700; text-align: left; font-size: 10px; }
-.list-table td.num { width: 32px; text-align: center; color: #6B7280; font-size: 10px; }
+.list-table td.num { width: 32px; text-align: center; font-size: 10px; }
 .list-table td.mat { font-family: 'Courier New', monospace; font-size: 10px; }
 .list-summary { font-size: 10px; color: #6B7280; margin-bottom: 8px; }
+.list-summary--totals { color: #000; font-weight: 700; }
+.list-summary--totals.list-summary--class,
+.list-summary--overall { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.list-summary--class span,
+.list-summary--overall span { flex: 1 1 0; min-width: 0; }
+.list-summary--class span:first-child,
+.list-summary--overall span:first-child { text-align: left; }
+.list-summary--class span:not(:first-child):not(:last-child),
+.list-summary--overall span:not(:first-child):not(:last-child) { text-align: center; }
+.list-summary--class span:last-child,
+.list-summary--overall span:last-child { text-align: right; }
+.list-summary--overall { margin-top: 18px; border-top: 1px solid #000; padding-top: 8px; }
 .footer-signature-right {
     margin-top: 60px;
     margin-right: 18px;
@@ -81,6 +110,9 @@ body { margin: 0; padding: 0; }
 <div class="page student-list-page">
     @php
         $totalStudents = 0;
+        $totalGirls = 0;
+        $totalBoys = 0;
+        $classCount = 0;
         $isSingleClass = ($filters['scope'] ?? '') === 'class';
         $listSubtitle = $year?->label ? 'Année scolaire ' . $year->label : '';
         if ($isSingleClass && !empty($groups[0]['classes'][0]['class'])) {
@@ -107,22 +139,34 @@ body { margin: 0; padding: 0; }
     @endunless
 
     @foreach($group['classes'] as $block)
-    @php $totalStudents += $block['students']->count(); @endphp
+    @php
+        $classStudents = $block['students'];
+        $classTotal = $classStudents->count();
+        $classGirls = $classStudents->filter(fn ($student) => strtoupper((string) $student->gender) === 'F')->count();
+        $classBoys = $classStudents->filter(fn ($student) => strtoupper((string) $student->gender) === 'M')->count();
+        $totalStudents += $classTotal;
+        $totalGirls += $classGirls;
+        $totalBoys += $classBoys;
+        $classCount++;
+    @endphp
     <div class="class-block">
         <div class="class-title">
             Classe : {{ $block['class']->full_name }}
-            @unless($isSingleClass)
+            {{-- @unless($isSingleClass)
             — Niveau {{ $block['class']->level?->name }}
-            @endunless
+            @endunless --}}
         </div>
-        <div class="list-summary">{{ $block['students']->count() }} élève(s) inscrit(s)</div>
+        <div class="list-summary list-summary--totals list-summary--class">
+            <span>Effectif Total : {{ $classTotal }} élève(s)</span>
+            <span>Nombre de Filles : {{ $classGirls }}</span>
+            <span>Nombre de Garçons : {{ $classBoys }}</span>
+        </div>
         <table class="list-table">
             <thead>
                 <tr>
                     <th class="num">N°</th>
+                    <th>Nom(s) et Pr&eacute;nom(s)</th>
                     <th>Matricule</th>
-                    <th>Nom</th>
-                    <th>Prénom(s)</th>
                     <th>Sexe</th>
                     <th>Date naiss.</th>
                     <th>Lieu de naissance</th>
@@ -134,9 +178,8 @@ body { margin: 0; padding: 0; }
                 @php $printEnrollment = $student->printEnrollment ?? null; @endphp
                 <tr>
                     <td class="num">{{ $i + 1 }}</td>
+                    <td><strong>{{ $student->full_name }}</strong></td>
                     <td class="mat">{{ $student->matricule }}</td>
-                    <td><strong>{{ $student->last_name }}</strong></td>
-                    <td>{{ $student->first_name }}</td>
                     <td>{{ $student->gender === 'M' ? 'M' : 'F' }}</td>
                     <td>{{ $student->date_of_birth?->format('d/m/Y') ?? '—' }}</td>
                     <td>{{ strtoupper($student->place_of_birth ?? '—') }}</td>
@@ -148,6 +191,15 @@ body { margin: 0; padding: 0; }
     </div>
     @endforeach
     @endforeach
+
+    @if($classCount > 1)
+    <div class="list-summary list-summary--totals list-summary--overall">
+        <span style="font-weight: 900;">Bilan des effectifs :</span>
+        <span>Effectif Total des élèves : {{ $totalStudents }}</span>
+        <span>Nombre de Filles : {{ $totalGirls }}</span>
+        <span>Nombre de Garçons : {{ $totalBoys }}</span>
+    </div>
+    @endif
 
     <div class="footer-signature-right">
         <div>La Direction</div>

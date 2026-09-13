@@ -15,9 +15,7 @@ class StoreAbsenceRequest extends FormRequest
     {
         /** @var \App\Models\User|null $user */
         $user = Auth::user();
-        return $user && $user->hasAnyRole([
-            'super-admin','directeur','censeur','enseignant','surveillant-general'
-        ]);
+        return (bool) $user?->can('manage-absences');
     }
 
     /**
@@ -29,11 +27,10 @@ class StoreAbsenceRequest extends FormRequest
     {
         return [
             'class_group_id'    => ['required', 'exists:class_groups,id'],
-            'class_subject_id'  => ['nullable', 'exists:class_subjects,id'],
             'absence_date'      => ['required', 'date', 'before_or_equal:today'],
-            'period'            => ['nullable', 'string', 'max:20'],
             'absences'          => ['required', 'array'],
-            'absences.*.hours'  => ['nullable', 'numeric', 'min:0.5', 'max:8'],
+            'absences.*.enrollment_id' => ['required', 'integer', 'exists:student_enrollments,id'],
+            'absences.*.absent' => ['nullable', 'boolean'],
         ];
     }
 }

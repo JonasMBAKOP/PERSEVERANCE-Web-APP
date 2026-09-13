@@ -704,9 +704,7 @@ Route::middleware(['auth', 'permission:view-bulletins'])
     ->prefix('livrets')
     ->name('livrets.')
     ->group(function () {
-        Route::middleware('permission:manage-bulletins')->group(function () {
-            Route::get('/bulk', [LivretController::class, 'bulk'])->name('bulk');
-        });
+        Route::get('/bulk', [LivretController::class, 'bulk'])->name('bulk');
 
         Route::get('/{enrollment}',     [LivretController::class, 'show'])->name('show');
     });

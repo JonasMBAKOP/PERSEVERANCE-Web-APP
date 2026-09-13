@@ -294,6 +294,9 @@ class StudentDocumentController extends Controller
         $section->addTextBreak(1);
 
         $totalStudents = 0;
+        $totalGirls = 0;
+        $totalBoys = 0;
+        $classCount = 0;
         $isSingleClass = ($filters['scope'] ?? '') === 'class';
 
         foreach ($groups as $group) {
@@ -302,9 +305,20 @@ class StudentDocumentController extends Controller
             }
 
             foreach ($group['classes'] as $block) {
-                $totalStudents += $block['students']->count();
-                $section->addText('Classe : ' . ($block['class']->full_name ?? ''), ['bold' => true, 'size' => 12, 'color' => '9C4005']);
-                $section->addText(($block['students']->count()) . ' élève(s) inscrit(s)', ['size' => 10]);
+                $classStudents = $block['students'];
+                $classTotal = $classStudents->count();
+                $classGirls = $classStudents->filter(fn ($student) => strtoupper((string) $student->gender) === 'F')->count();
+                $classBoys = $classStudents->filter(fn ($student) => strtoupper((string) $student->gender) === 'M')->count();
+                $totalStudents += $classTotal;
+                $totalGirls += $classGirls;
+                $totalBoys += $classBoys;
+                $classCount++;
+                $section->addText('Classe : ' . ($block['class']->full_name ?? ''), ['bold' => true, 'size' => 12, 'color' => '9C4005'], ['alignment' => 'center']);
+                $summaryTable = $section->addTable(['borderSize' => 0, 'cellMargin' => 0, 'tblLayout' => 'fixed']);
+                $summaryTable->addRow(260);
+                $summaryTable->addCell(2900)->addText('Effectif : ' . $classTotal . ' élève(s)', ['bold' => true, 'size' => 10, 'color' => '000000'], ['alignment' => 'left']);
+                $summaryTable->addCell(2900)->addText('Filles : ' . $classGirls, ['bold' => true, 'size' => 10, 'color' => '000000'], ['alignment' => 'center']);
+                $summaryTable->addCell(2900)->addText('Garçons : ' . $classBoys, ['bold' => true, 'size' => 10, 'color' => '000000'], ['alignment' => 'right']);
                 $section->addTextBreak(0.5);
 
                 $table = $section->addTable([
@@ -315,28 +329,32 @@ class StudentDocumentController extends Controller
                 ]);
 
                 $table->addRow(260);
-                $table->addCell(500)->addText('N°', ['bold' => true]);
-                $table->addCell(1800)->addText('Matricule', ['bold' => true]);
-                $table->addCell(2200)->addText('Nom', ['bold' => true]);
-                $table->addCell(2200)->addText('Prénom(s)', ['bold' => true]);
-                $table->addCell(600)->addText('Sexe', ['bold' => true]);
-                $table->addCell(1400)->addText('Date naiss.', ['bold' => true]);
+                $table->addCell(500)->addText('N°', ['bold' => true, 'color' => '000000']);
+                $table->addCell(1800)->addText('Matricule', ['bold' => true, 'color' => '000000']);
+                $table->addCell(4400)->addText('Nom(s) et Prénom(s)', ['bold' => true, 'color' => '000000']);
+                $table->addCell(600)->addText('Sexe', ['bold' => true, 'color' => '000000']);
+                $table->addCell(1400)->addText('Date naiss.', ['bold' => true, 'color' => '000000']);
 
                 foreach ($block['students'] as $index => $student) {
                     $table->addRow(240);
-                    $table->addCell(500)->addText((string) ($index + 1), ['size' => 9]);
-                    $table->addCell(1800)->addText((string) ($student->matricule ?? ''), ['size' => 9]);
-                    $table->addCell(2200)->addText((string) ($student->last_name ?? ''), ['size' => 9]);
-                    $table->addCell(2200)->addText((string) ($student->first_name ?? ''), ['size' => 9]);
-                    $table->addCell(600)->addText($student->gender === 'M' ? 'M' : 'F', ['size' => 9]);
-                    $table->addCell(1400)->addText($student->date_of_birth?->format('d/m/Y') ?? '—', ['size' => 9]);
+                    $table->addCell(500)->addText((string) ($index + 1), ['size' => 9, 'color' => '000000']);
+                    $table->addCell(1800)->addText((string) ($student->matricule ?? ''), ['size' => 9, 'color' => '000000']);
+                    $table->addCell(4400)->addText((string) ($student->full_name ?? ''), ['size' => 9, 'color' => '000000']);
+                    $table->addCell(600)->addText($student->gender === 'M' ? 'M' : 'F', ['size' => 9, 'color' => '000000']);
+                    $table->addCell(1400)->addText($student->date_of_birth?->format('d/m/Y') ?? '—', ['size' => 9, 'color' => '000000']);
                 }
 
                 $section->addTextBreak(1);
             }
         }
 
-        $section->addText('Total général : ' . $totalStudents . ' élève(s)', ['bold' => true, 'size' => 10, 'color' => '4B5563']);
+        if ($classCount > 1) {
+            $summaryTable = $section->addTable(['borderSize' => 0, 'cellMargin' => 0, 'tblLayout' => 'fixed']);
+            $summaryTable->addRow(260);
+            $summaryTable->addCell(2900)->addText('Bilan : ' . $totalStudents . ' élève(s)', ['bold' => true, 'size' => 10, 'color' => '000000'], ['alignment' => 'left']);
+            $summaryTable->addCell(2900)->addText('Filles : ' . $totalGirls, ['bold' => true, 'size' => 10, 'color' => '000000'], ['alignment' => 'center']);
+            $summaryTable->addCell(2900)->addText('Garçons : ' . $totalBoys, ['bold' => true, 'size' => 10, 'color' => '000000'], ['alignment' => 'right']);
+        }
         $section->addText('Document généré le ' . now()->format('d/m/Y à H:i'), ['size' => 9, 'color' => '6B7280']);
     }
 

@@ -45,7 +45,7 @@ class GradeController extends Controller
         /** @var \App\Models\User $authUser */
         $authUser = Auth::user();
         return $authUser->hasAnyRole([
-            'super-admin', 'directeur', 'censeur', 'secretaire'
+            'super-admin', 'directeur', 'censeur', 'secretaire', 'assistant-direction'
         ]);
     }
 

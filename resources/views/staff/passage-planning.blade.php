@@ -76,7 +76,6 @@
                     <table class="min-w-full bordereau-table text-sm">
                         <thead>
                             <tr>
-                                <th class="px-3 py-2 text-left text-xs font-bold uppercase tracking-wide text-gray-400">#</th>
                                 <th class="px-3 py-2 text-left text-xs font-bold uppercase tracking-wide text-gray-400">Nom</th>
                                 <th class="px-3 py-2 text-left text-xs font-bold uppercase tracking-wide text-gray-400">Contrat</th>
                                 <th class="px-3 py-2 text-left text-xs font-bold uppercase tracking-wide text-gray-400">Téléphone</th>
@@ -87,8 +86,23 @@
                         <tbody>
                             @foreach($scheduleItems as $item)
                                 <tr class="bg-white border-t">
-                                    <td class="px-3 py-2 font-semibold text-gray-800">{{ $scheduleItems->firstItem() + $loop->index }}</td>
-                                    <td class="px-3 py-2 font-semibold text-gray-800">{{ $item['staff']->full_name }}</td>
+                                    @php
+                                        $person = $item['staff'];
+                                        $words = preg_split('/\\s+/', trim($person->full_name));
+                                        $initials = collect($words)->filter()->map(fn($word) => strtoupper(substr($word, 0, 1)))->take(2)->implode('');
+                                    @endphp
+                                    <td class="px-3 py-2 font-semibold text-gray-800">
+                                        <div class="flex items-center gap-2.5">
+                                            @if($person->photo)
+                                                <button type="button" class="flex-shrink-0 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-400" onclick="openStaffPhoto(@js($person->photo_url), @js($person->full_name))">
+                                                    <img src="{{ $person->photo_url }}" alt="{{ $person->full_name }}" class="h-9 w-9 rounded-full object-cover">
+                                                </button>
+                                            @else
+                                                <div class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-[#1A3A6B] text-xs font-black text-white">{{ $initials }}</div>
+                                            @endif
+                                            <span>{{ $person->full_name }}</span>
+                                        </div>
+                                    </td>
                                     <td class="px-3 py-2 text-gray-700">{{ $item['staff']->contract_label }}</td>
                                     <td class="px-3 py-2 text-gray-700">{{ $item['staff']->phone ?: '—' }}</td>
                                     <td class="px-3 py-2 text-gray-700">{{ $item['staff']->positions->pluck('position')->map(fn($p) => ucfirst(str_replace('_', ' ', $p)))->join(' • ') ?: 'Aucun' }}</td>
@@ -107,4 +121,5 @@
         @endif
     @endif
 </div>
+@include('staff.partials.photo-modal')
 @endsection

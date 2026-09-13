@@ -112,14 +112,6 @@
                               : ''">
                     </span>
                 </h3>
-                <button type="button"
-                        @click="markAll()"
-                        x-show="enrollments.length > 0"
-                        class="text-xs font-bold px-3 py-1.5 rounded-lg
-                               border border-gray-200 text-gray-600
-                               hover:bg-gray-50 transition-colors">
-                    Tout marquer absent (2h)
-                </button>
             </div>
 
             {{-- État vide --}}
@@ -143,10 +135,6 @@
                             <th class="text-center px-4 py-3 text-xs font-bold
                                        text-gray-400 uppercase tracking-wider">
                                 Absent
-                            </th>
-                            <th class="text-center px-4 py-3 text-xs font-bold
-                                       text-gray-400 uppercase tracking-wider">
-                                Heures
                             </th>
                         </tr>
                     </thead>
@@ -177,22 +165,11 @@
                                 <td class="px-4 py-3.5 text-center">
                                     <input type="checkbox"
                                            :id="'abs-' + e.id"
-                                           @change="toggleAbsent(e.id, $event.target.checked)"
+                                           :name="'absences[' + e.id + '][absent]'"
+                                           value="1"
+                                           x-model="absences[e.id]"
                                            class="w-5 h-5 rounded cursor-pointer"
                                            style="accent-color:#EF4444;">
-                                </td>
-                                <td class="px-4 py-3.5 text-center">
-                                    <input type="number"
-                                           :name="'absences[' + e.id + '][hours]'"
-                                           x-model="absences[e.id]"
-                                           :disabled="!absences[e.id]"
-                                           min="0.5" max="8" step="0.5"
-                                           placeholder="—"
-                                           class="w-16 px-2 py-1.5 border border-gray-200
-                                                  rounded-lg text-sm text-center
-                                                  font-bold focus:outline-none
-                                                  disabled:opacity-30"
-                                           style="color:#EF4444;">
                                 </td>
                             </tr>
                         </template>
@@ -251,7 +228,7 @@ function absenceForm() {
         },
 
         get absentCount() {
-            return Object.values(this.absences).filter(v => v > 0).length;
+            return Object.values(this.absences).filter(Boolean).length;
         },
 
         init() {
@@ -299,23 +276,12 @@ function absenceForm() {
                 const d = await r.json();
                 this.enrollments = d.enrollments || [];
                 this.absences    = {};
-                this.enrollments.forEach(e => this.absences[e.id] = 0);
+                this.enrollments.forEach(e => this.absences[e.id] = false);
             } catch (e) {
                 console.error(e);
             }
         },
 
-        toggleAbsent(eid, checked) {
-            this.absences[eid] = checked ? 2 : 0;
-        },
-
-        markAll() {
-            this.enrollments.forEach(e => {
-                this.absences[e.id] = 2;
-                const cb = document.getElementById(`abs-${e.id}`);
-                if (cb) cb.checked = true;
-            });
-        }
     }
 }
 </script>

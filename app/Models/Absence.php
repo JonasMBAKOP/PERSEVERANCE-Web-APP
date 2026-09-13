@@ -9,6 +9,10 @@ class Absence extends Model
     protected $fillable = [
         'student_enrollment_id',
         'absence_date',
+        'status',
+        'arrival_time',
+        'observation',
+        'delay_minutes',
         'period',
         'timetable_slot_id',
         'timetable_period_index',
@@ -24,8 +28,27 @@ class Absence extends Model
         return [
             'absence_date' => 'date',
             'hours'        => 'decimal:1',
+            'delay_minutes' => 'integer',
             'is_justified' => 'boolean',
         ];
+    }
+
+    public function getEffectiveHoursAttribute(): float
+    {
+        $hours = (float) $this->hours;
+
+        if ($this->status === 'absent'
+            && $this->timetable_slot_id === null
+            && $this->class_subject_id === null) {
+            $hours = (float) config('attendance.daily_absence_hours', $hours);
+        }
+
+        return $hours + ((int) $this->delay_minutes / 60);
+    }
+
+    public function getEffectiveMinutesAttribute(): int
+    {
+        return (int) round($this->effective_hours * 60);
     }
 
     // ── Relations ──────────────────────────────────────────────────────────

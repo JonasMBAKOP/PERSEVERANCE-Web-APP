@@ -229,7 +229,9 @@
                 <div class="flex justify-between items-start mb-4">
                     <!-- Avatar -->
                     @if($member->photo)
-                        <img src="{{ $member->photo_url }}" alt="{{ $member->full_name }}" class="w-12 h-12 rounded-full object-cover ring-2 ring-gray-50">
+                        <button type="button" class="rounded-full focus:outline-none focus:ring-2 focus:ring-blue-400" onclick="openStaffPhoto(@js($member->photo_url), @js($member->full_name))">
+                            <img src="{{ $member->photo_url }}" alt="{{ $member->full_name }}" class="w-12 h-12 rounded-full object-cover ring-2 ring-gray-50">
+                        </button>
                     @else
                         @php
                             $words = explode(' ', $member->full_name);
@@ -389,7 +391,9 @@
                         <td class="px-5 py-3">
                             <div class="flex items-center gap-3">
                                 @if($member->photo)
-                                    <img src="{{ $member->photo_url }}" alt="" class="w-10 h-10 rounded-full object-cover">
+                                    <button type="button" class="rounded-full focus:outline-none focus:ring-2 focus:ring-blue-400" onclick="openStaffPhoto(@js($member->photo_url), @js($member->full_name))">
+                                        <img src="{{ $member->photo_url }}" alt="{{ $member->full_name }}" class="w-10 h-10 rounded-full object-cover">
+                                    </button>
                                 @else
                                     <div class="w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs bg-slate-800 text-white">
                                         {{ strtoupper(substr($member->last_name, 0, 1) . substr($member->first_name, 0, 1)) }}
@@ -472,4 +476,5 @@
     </a>
     @endcan
 </div>
+@include('staff.partials.photo-modal')
 @endsection

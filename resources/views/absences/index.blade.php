@@ -163,9 +163,18 @@
 <div class="-mx-2 bg-white rounded-2xl shadow-sm border border-gray-100">
     <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
         <h3 class="font-black text-sm" style="color:#1A3A6B;">
-            Absences récentes
+            Absences et Retards récents
         </h3>
+        <select data-recent-type
+                class="px-3 py-2 pr-9 border border-gray-200 rounded-xl text-xs
+                       font-bold text-gray-600 bg-white focus:outline-none"
+                aria-label="Filtrer les absences récentes">
+            <option value="all" @selected($recentType === 'all')>Tous les types</option>
+            <option value="absences" @selected($recentType === 'absences')>Absences</option>
+            <option value="retards" @selected($recentType === 'retards')>Retards</option>
+        </select>
     </div>
+    <div id="recent-absences-list">
     @if($recentAbsences->isEmpty())
     <div class="px-5 py-8 text-center text-sm text-gray-400 italic">
         Aucune absence enregistrée.
@@ -186,21 +195,31 @@
                     </p>
                     <p class="text-xs text-gray-400">
                         {{ $ab->studentEnrollment?->classGroup?->full_name ?? 'Classe inconnue' }}
-                        @if($ab->classSubject)
+                        {{-- @if($ab->classSubject)
                         · {{ $ab->classSubject->subject->name_fr }}
                         @endif
-                        · Abs. {{ $ab->absence_date->format('d/m/Y') }}
+                        · Abs. --}}
+                        {{-- · {{ $ab->absence_date->format('d/m/Y') }} --}}
                     </p>
                 </div>
             </div>
             <div class="flex items-center gap-4 flex-shrink-0">
                 <div class="text-right">
+                    <p class="text-xs text-gray-800">
+                        {{ $ab->absence_date->format('d/m/Y') }}
+                    </p>
                     <p class="text-sm font-black"
                        style="color:{{ $ab->is_justified ? '#1A5C2A' : '#EF4444' }};">
-                        {{ $ab->hours }}h
-                    </p>
-                    <p class="text-xs text-gray-400">
-                        {{ $ab->created_at->format('d/m/Y H:i') }}
+                        @if($ab->status === 'present' && $ab->delay_minutes > 0)
+                            Retard : {{ $ab->delay_minutes }} min
+                        @else
+                            Absent(e) : {{ number_format(
+                                $ab->timetable_slot_id === null && $ab->class_subject_id === null
+                                    ? config('attendance.daily_absence_hours', 0)
+                                    : (float) $ab->hours,
+                                1, '.', ''
+                            ) }}h
+                        @endif
                     </p>
                 </div>
                 <span class="px-2 py-0.5 rounded-full text-xs font-bold"
@@ -226,6 +245,64 @@
         @endforeach
     </div>
     @endif
+    @if($recentAbsences->hasPages())
+    <div class="border-t border-gray-100 px-5 py-4">
+        {{ $recentAbsences->onEachSide(1)->links('vendor.pagination.custom') }}
+    </div>
+    @endif
+    </div>
 </div>
+
+@push('scripts')
+<script>
+(() => {
+    const filter = document.querySelector('[data-recent-type]');
+    if (!filter) return;
+
+    const getPanel = () => document.getElementById('recent-absences-list');
+
+    const loadRecentAbsences = (url) => {
+        const target = new URL(url, window.location.origin);
+        target.searchParams.set('recent_only', '1');
+        const panel = getPanel();
+        if (!panel) return;
+        panel.classList.add('opacity-60', 'pointer-events-none');
+
+        fetch(target.toString(), {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'text/html',
+            },
+        })
+            .then(response => {
+                if (!response.ok) throw new Error('Unable to load recent absences');
+                return response.text();
+            })
+            .then(html => {
+                const documentFragment = new DOMParser().parseFromString(html, 'text/html');
+                const replacement = documentFragment.querySelector('#recent-absences-list');
+                if (replacement) panel.replaceWith(replacement);
+            })
+            .catch(() => {
+                panel.classList.remove('opacity-60', 'pointer-events-none');
+            });
+    };
+
+    filter.addEventListener('change', (event) => {
+        const url = new URL(window.location.href);
+        url.searchParams.set('recent_type', event.target.value);
+        url.searchParams.delete('page');
+        loadRecentAbsences(url.toString());
+    });
+
+    document.addEventListener('click', (event) => {
+        const link = event.target.closest('a[href]');
+        if (!link || !link.closest('#recent-absences-list')) return;
+        event.preventDefault();
+        loadRecentAbsences(link.href);
+    });
+})();
+</script>
+@endpush
 
 @endsection
