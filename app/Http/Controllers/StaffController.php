@@ -523,24 +523,34 @@ class StaffController extends Controller
 
     public function printSalaryList(Request $request)
     {
+        $contractFilter = $request->input('contract');
         $query = Staff::with(['positions', 'user'])
             ->orderBy('last_name')
             ->orderBy('first_name');
 
-        if ($request->filled('contract')) {
-            $query->where('contract_type', $request->contract);
+        if ($contractFilter) {
+            $query->where('contract_type', $contractFilter);
         }
 
         if ($request->filled('search')) {
             $query->where(fn($q) =>
                 $q->where('first_name', 'like', "%{$request->search}%")
                     ->orWhere('last_name', 'like', "%{$request->search}%")
+                    ->orWhere('email', 'like', "%{$request->search}%")
+                    ->orWhere('phone', 'like', "%{$request->search}%")
             );
         }
 
         $staff = $query->get();
         $data = $this->staffDocumentContext(new Staff());
         $data['staff'] = $staff;
+        $data['contractFilter'] = $contractFilter;
+        $data['contractLabel'] = $contractFilter
+            ? (Staff::contractLabels()[$contractFilter] ?? ucfirst(str_replace('_', ' ', $contractFilter)))
+            : 'Tous les contrats';
+        $data['documentTitle'] = $contractFilter
+            ? 'FICHE DE SALAIRES - ' . mb_strtoupper($data['contractLabel'])
+            : 'FICHE DE SALAIRES';
 
         return view('staff.documents.salary-list', $data);
     }

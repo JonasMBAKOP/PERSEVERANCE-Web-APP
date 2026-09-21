@@ -73,6 +73,7 @@
         <table class="bordereau-table">
             <thead>
                 <tr>
+                    <th>#</th>
                     <th>Nom</th>
                     <th>Contrat</th>
                     <th>Téléphone</th>
@@ -84,18 +85,10 @@
                     <tr>
                         @php
                             $person = $item['staff'];
-                            $words = preg_split('/\\s+/', trim($person->full_name));
-                            $initials = collect($words)->filter()->map(fn($word) => strtoupper(substr($word, 0, 1)))->take(2)->implode('');
                         @endphp
+                        <td>{{ $index + 1 }}</td>
                         <td class="name-cell">
-                            <div style="display:flex;align-items:center;gap:6px;">
-                                @if($person->photo)
-                                    <img src="{{ $person->photo_url }}" alt="{{ $person->full_name }}" style="width:24px;height:24px;border-radius:50%;object-fit:cover;">
-                                @else
-                                    <span style="display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;background:#1A3A6B;color:#fff;font-size:8px;font-weight:900;">{{ $initials }}</span>
-                                @endif
-                                <span>{{ $person->full_name }}</span>
-                            </div>
+                            {{ $person->full_name }}
                         </td>
                         <td>{{ $item['staff']->contract_label }}</td>
                         <td>{{ $item['staff']->phone ?: '—' }}</td>

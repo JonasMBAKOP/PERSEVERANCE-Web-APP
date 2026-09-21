@@ -27,6 +27,11 @@
             font: 700 9px Arial, Helvetica, sans-serif;
             color: #4B5563;
         }
+        @page { margin: 3mm; }
+        body { padding: 0 !important; }
+        .cert-official-header { margin-bottom: 2px !important; padding-bottom: 2px !important; }
+        .cert-official-header__agreements { margin: 0 auto 2px !important; }
+        .cert-official-header__agreements div { padding: 2px 4px !important; }
         .summary-row {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -39,6 +44,7 @@
             padding: 6px 8px;
             border-radius: 4px;
         }
+        .summary-box:nth-child(2) { display: none; }
         .summary-box .label {
             font-size: 7.5px;
             font-weight: 800;
@@ -106,6 +112,10 @@
     </div>
 
     <div class="summary-row">
+        <div class="summary-box">
+            <div class="label">Responsable</div>
+            <div class="value">{{ $cashierName }}</div>
+        </div>
         <div class="summary-box">
             <div class="label">Année scolaire</div>
             <div class="value">{{ $selectedYear?->label ?? '—' }}</div>

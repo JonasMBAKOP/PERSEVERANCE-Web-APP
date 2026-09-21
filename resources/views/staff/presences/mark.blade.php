@@ -65,7 +65,24 @@
                             $isPresent = $p?->status === 'present';
                         @endphp
                         <tr>
-                            <td class="px-4 py-3">{{ $member->full_name }}</td>
+                            <td class="px-4 py-3">
+                                <div class="flex items-center gap-3">
+                                    @if($member->photo)
+                                        <button type="button" class="flex-shrink-0 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-400" onclick="openStaffPhoto(@js($member->photo_url), @js($member->full_name))">
+                                            <img src="{{ $member->photo_url }}" alt="{{ $member->full_name }}" class="h-9 w-9 rounded-full object-cover">
+                                        </button>
+                                    @else
+                                        @php
+                                            $words = preg_split('/\\s+/', trim($member->full_name));
+                                            $initials = collect($words)->filter()->map(fn ($word) => strtoupper(substr($word, 0, 1)))->take(2)->implode('');
+                                        @endphp
+                                        <div class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-[#1A3A6B] text-xs font-black text-white">
+                                            {{ $initials }}
+                                        </div>
+                                    @endif
+                                    <span>{{ $member->full_name }}</span>
+                                </div>
+                            </td>
                             <td class="px-4 py-3 text-center">{{ ucfirst(str_replace('_', ' ', $member->contract_type)) }}</td>
                             <td class="px-4 py-3 text-center">
                                 <input type="time" name="presences[{{ $member->id }}][arrival_time]" value="{{ $p?->arrival_time ?? ($isPresent ? '07:20' : '') }}" class="border rounded px-2 py-1" @disabled(!$isPresent)>
@@ -92,8 +109,10 @@
         <div class="mt-4 text-right">
             <button type="submit" class="bg-green-600 text-white px-5 py-2 rounded font-semibold">Enregistrer</button>
         </div>
-    </form>
+</form>
 </div>
+
+@include('staff.partials.photo-modal')
 
 @push('scripts')
 <script>

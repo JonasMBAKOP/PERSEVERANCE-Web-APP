@@ -1,4 +1,4 @@
-@extends('layouts.app')
+﻿@extends('layouts.app')
 
 @section('title', 'Rapports Financiers')
 @section('page-title', 'Rapports Financiers')
@@ -177,17 +177,21 @@
                             class="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none bg-white font-medium"
                             style="color:#1A3A6B;">
                         <option value="global"  {{ $whoFilter === 'global'  ? 'selected' : '' }}>
-                            Tous les responsables
+                            Tous
                         </option>
-                        <option value="me"      {{ $whoFilter === 'me'      ? 'selected' : '' }}>
-                            Moi ({{ auth()->user()->name }})
-                        </option>
-                        @foreach($economes as $eco)
-                        <option value="econome" {{ $whoFilter === 'econome' ? 'selected' : '' }}>
-                            Économe — {{ $eco->name }}
+                        @foreach($responsibleUsers as $eco)
+                        <option value="{{ $eco->id }}" {{ (string) $whoFilter === (string) $eco->id ? 'selected' : '' }}>
+                            {{ $eco->name }}
                         </option>
                         @endforeach
                     </select>
+                </div>
+                @else
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Responsable</label>
+                    <div class="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm font-bold text-[#1A3A6B]">
+                        {{ $responsibleName }}
+                    </div>
                 </div>
                 @endif
             </div>
@@ -240,10 +244,7 @@
             · {{ $selectedYear?->label ?? '—' }}
         </h3>
         <p class="text-xs text-gray-500 mt-0.5">
-            @if($whoFilter === 'global') Tous les enregistrements
-            @elseif($whoFilter === 'me') Mes enregistrements ({{ auth()->user()->name }})
-            @else Enregistrements de l'économe
-            @endif
+            {{ $whoFilter === 'global' ? 'Tous les enregistrements' : $responsibleName }}
             · Généré le {{ now()->format('d/m/Y à H:i') }}
         </p>
     </div>

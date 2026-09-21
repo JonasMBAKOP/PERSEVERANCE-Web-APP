@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Fiche de salaires — {{ $school->short_name ?? 'Établissement' }}</title>
+    <title>{{ $documentTitle }} — {{ $school->short_name ?? 'Établissement' }}</title>
     <style>
         @page { size: A4 portrait; margin: 4mm; }
         body { font-family: Arial, Helvetica, sans-serif; margin: 0; color: #000; background: #fff; }
@@ -63,7 +63,7 @@
         </div>
     </div>
     <div class="bordereau-header__title-row">
-        <div class="bordereau-header__title">FICHE DE SALAIRES</div>
+        <div class="bordereau-header__title">{{ $documentTitle }}</div>
         {{-- <div class="bordereau-header__subtitle">Liste du personnel</div> --}}
     </div>
 

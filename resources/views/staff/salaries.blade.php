@@ -13,10 +13,32 @@
         </div>
 
         <form method="GET" action="{{ route('staff.salaries') }}"
-              class="flex flex-wrap items-center gap-3">
-            <div class="relative">
+              class="flex w-full flex-col items-stretch gap-3 sm:flex-row sm:flex-wrap sm:items-center lg:w-auto">
+            <div class="relative w-full sm:w-[220px]">
+                <input type="text" name="search" value="{{ request('search') }}"
+                       placeholder="Rechercher un membre"
+                       class="w-full rounded-lg border border-gray-200 bg-white py-2 pl-3 pr-20 text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <div class="absolute inset-y-0 right-2 flex items-center gap-1">
+                    @if(request('search'))
+                        <a href="{{ route('staff.salaries', request()->except('search', 'page')) }}"
+                           aria-label="Réinitialiser la recherche"
+                           class="text-gray-400 hover:text-gray-600">
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                        </a>
+                    @endif
+                    <button type="submit" aria-label="Lancer la recherche" class="text-gray-500 transition hover:text-[#1A3A6B]">
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m21 21-4.35-4.35m1.35-5.15a6.5 6.5 0 1 1-13 0 6.5 6.5 0 0 1 13 0Z"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <div class="relative w-full sm:w-auto">
                 <select name="contract" onchange="this.form.submit()"
-                        class="appearance-none pl-3 pr-8 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent min-w-[180px] cursor-pointer">
+                        class="w-full min-w-[220px] cursor-pointer appearance-none rounded-lg border border-gray-200 bg-white py-2 pl-3 pr-9 text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500">
                     <option value="">Tous les contrats</option>
                     @foreach(\App\Models\Staff::contractLabels() as $value => $label)
                         <option value="{{ $value }}" {{ request('contract') === $value ? 'selected' : '' }}>
@@ -31,19 +53,14 @@
                 </span>
             </div>
 
-            <div class="relative w-full sm:w-auto">
-                <input type="text" name="search" value="{{ request('search') }}"
-                       placeholder="Rechercher un membre"
-                       class="pl-3 pr-10 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent min-w-[220px]">
-                @if(request('search'))
-                    <a href="{{ route('staff.salaries', array_merge(request()->except('search', 'page'), [])) }}"
-                       class="absolute inset-y-0 right-2 flex items-center text-gray-400 hover:text-gray-600">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                        </svg>
-                    </a>
-                @endif
-            </div>
+            <a href="{{ route('staff.salaries.print', array_filter(['contract' => request('contract'), 'search' => request('search')], fn ($value) => filled($value))) }}"
+               target="_blank"
+               class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-[#1A3A6B] px-4 py-2 text-sm font-semibold text-white hover:bg-[#14304f] sm:w-auto">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 9V4h12v5M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v6H6v-6Z"/>
+                </svg>
+                Imprimer la fiche
+            </a>
         </form>
     </div>
 
@@ -54,14 +71,6 @@
                 <p class="text-3xl font-bold text-gray-900">{{ $contractCounts[$type] ?? 0 }}</p>
             </div>
         @endforeach
-    </div>
-
-    <div class="flex flex-wrap gap-3 mb-6">
-        <a href="{{ route('staff.salaries.print') }}"
-           target="_blank"
-           class="inline-flex items-center px-4 py-2 rounded-lg bg-[#1A3A6B] text-white text-sm font-semibold hover:bg-[#14304f]">
-            Imprimer la fiche de salaires
-        </a>
     </div>
 
     <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">

@@ -15,6 +15,11 @@
             font-family: Georgia, 'Times New Roman', serif;
             margin: 7px 0 9px;
         }
+        @page { margin: 3mm; }
+        body { padding: 0 !important; }
+        .cert-official-header { margin-bottom: 2px !important; padding-bottom: 2px !important; }
+        .cert-official-header__agreements { margin: 0 auto 2px !important; }
+        .cert-official-header__agreements div { padding: 2px 4px !important; }
         .finance-doc-title .main {
             font-size: 20px;
             font-weight: 900;
@@ -157,10 +162,8 @@
         if ($selectedYear && $type !== 'annuel') {
             $subtitleParts[] = $selectedYear->label;
         }
-        $subtitleParts[] = $whoFilter === 'global'
-            ? 'Tous les enregistrements'
-            : ($whoFilter === 'me' ? $user->name : 'Économe');
         $subtitleParts[] = 'Généré le ' . now()->format('d/m/Y à H:i');
+        $subtitleParts[] = $whoFilter === 'global' ? 'Tous les enregistrements' : $responsibleName;
     @endphp
 
     <div class="finance-doc-title">

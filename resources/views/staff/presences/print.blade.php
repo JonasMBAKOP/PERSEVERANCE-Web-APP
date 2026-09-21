@@ -79,21 +79,10 @@
             @forelse($staff as $index => $member)
                 @php
                     $presence = $presences->get($member->id);
-                    $words = preg_split('/\\s+/', trim($member->full_name));
-                    $initials = collect($words)->filter()->map(fn($word) => strtoupper(substr($word, 0, 1)))->take(2)->implode('');
                 @endphp
                 <tr>
                     <td>{{ $index + 1 }}</td>
-                    <td>
-                        <div style="display:flex;align-items:center;gap:6px;">
-                            @if($member->photo)
-                                <img src="{{ $member->photo_url }}" alt="{{ $member->full_name }}" style="width:24px;height:24px;border-radius:50%;object-fit:cover;">
-                            @else
-                                <span style="display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;background:#1A3A6B;color:#fff;font-size:8px;font-weight:900;">{{ $initials }}</span>
-                            @endif
-                            <span>{{ $member->full_name }}</span>
-                        </div>
-                    </td>
+                    <td>{{ $member->full_name }}</td>
                     <td>{{ $member->contract_label }}</td>
                     <td>{{ $presence?->arrival_time ? substr((string) $presence->arrival_time, 0, 5) : '—' }}</td>
                     <td>{{ $presence?->departure_time ? substr((string) $presence->departure_time, 0, 5) : '—' }}</td>

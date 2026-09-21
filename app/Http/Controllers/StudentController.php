@@ -644,6 +644,7 @@ class StudentController extends Controller
             }
 
             DB::transaction(function () use ($request, $enrollment, $newClass) {
+                $this->assertTransferTablesSupportTransactions();
                 $activeYear = AcademicYear::active();
                 if (! $activeYear || (int) $enrollment->academic_year_id !== (int) $activeYear->id
                     || (int) $newClass->academic_year_id !== (int) $activeYear->id) {
@@ -669,15 +670,23 @@ class StudentController extends Controller
                 $student = $enrollment->student;
                 $oldEnrollmentData = $enrollment->toArray();
                 $oldClass = $enrollment->classGroup;
-                $oldPayments = StudentPayment::query()
+                $oldPayments = StudentPayment::with('feeInstallment')
                     ->where('student_enrollment_id', $enrollment->id)
-                    ->whereNull('parent_payment_id')
+                    ->orderBy('id')
                     ->get();
-                $amountToTransfer = (int) $oldPayments->sum('amount_paid');
-                $scholarshipToTransfer = (int) $oldPayments->sum('scholarship_amount');
 
                 // Snapshot all enrollment-owned records before the cascade delete.
                 $relatedRows = $this->snapshotTransferRows($enrollment->id);
+                // The receipt number is globally unique. Remove the old payment
+                // rows after loading them, so their exact receipt numbers can be
+                // reused safely by restoreTransferPayments().
+                DB::table('student_payments')
+                    ->where('student_enrollment_id', $enrollment->id)
+                    ->whereNotNull('parent_payment_id')
+                    ->delete();
+                DB::table('student_payments')
+                    ->where('student_enrollment_id', $enrollment->id)
+                    ->delete();
                 $enrollment->delete();
 
                 $newEnrollment = StudentEnrollment::create([
@@ -696,16 +705,7 @@ class StudentController extends Controller
 
                 $this->restoreTransferRows($newEnrollment, $newClass, $relatedRows);
 
-                if ($amountToTransfer > 0 || $scholarshipToTransfer > 0) {
-                    $this->createTransferBulkPayment(
-                        $newEnrollment,
-                        $newClass,
-                        $amountToTransfer,
-                        $scholarshipToTransfer,
-                        $oldPayments->sortByDesc('payment_date')->first()?->payment_method ?? 'cash',
-                        $request->user()?->id ?? auth()->id()
-                    );
-                }
+                $this->restoreTransferPayments($newEnrollment, $newClass, $oldPayments);
 
                 AuditLog::log('transferred', $newEnrollment, $oldEnrollmentData, $newEnrollment->toArray());
                 return;
@@ -782,7 +782,6 @@ class StudentController extends Controller
     // ── CHANGEMENT DE STATUT ──────────────────────────────────────────────
     /**
      * Capture and restore every active-year record owned by an enrollment.
-     * Payments are intentionally excluded because they are rebuilt as one new bulk receipt.
      */
     private function snapshotTransferRows(int $enrollmentId): array
     {
@@ -805,6 +804,32 @@ class StudentController extends Controller
         return $rows;
     }
 
+    private function assertTransferTablesSupportTransactions(): void
+    {
+        foreach ([
+            'students', 'student_enrollments', 'student_payments',
+            'student_subjects', 'grades', 'absences', 'bulletin_reports',
+            'manual_insolvables', 'discipline_incidents', 'discipline_records',
+            'infirmary_visits',
+        ] as $table) {
+            if (! \Illuminate\Support\Facades\Schema::hasTable($table)) {
+                continue;
+            }
+
+            $engine = DB::table('information_schema.tables')
+                ->where('TABLE_SCHEMA', DB::getDatabaseName())
+                ->where('TABLE_NAME', $table)
+                ->value('ENGINE');
+
+            if (strtolower((string) $engine) !== 'innodb') {
+                throw new \InvalidArgumentException(
+                    'Le transfert est temporairement indisponible : la table ' . $table
+                    . ' doit être convertie en InnoDB. Exécutez php artisan migrate.'
+                );
+            }
+        }
+    }
+
     private function restoreTransferRows(
         StudentEnrollment $newEnrollment,
         ClassGroup $newClass,
@@ -825,6 +850,81 @@ class StudentController extends Controller
             }
         }
 
+    }
+
+    private function restoreTransferPayments(
+        StudentEnrollment $enrollment,
+        ClassGroup $class,
+        $oldPayments
+    ): void {
+        if ($oldPayments->isEmpty()) {
+            return;
+        }
+
+        $feeStructure = $class->feeStructures()->with('installments')->first();
+        if (! $feeStructure) {
+            throw new \InvalidArgumentException('Aucune structure de frais n\'est configurée pour la classe cible.');
+        }
+
+        $newInstallments = $feeStructure->installments->keyBy(
+            fn ($installment) => (string) $installment->installment_number
+        );
+        $resolveInstallmentId = function ($payment) use ($newInstallments): ?int {
+            $oldInstallment = $payment->feeInstallment;
+            if (! $oldInstallment) {
+                return null;
+            }
+
+            $newInstallment = $newInstallments->get((string) $oldInstallment->installment_number)
+                ?? $newInstallments->first(fn ($item) => $item->label === $oldInstallment->label);
+
+            return $newInstallment?->id;
+        };
+
+        $parentIds = [];
+        $parentMap = [];
+        $rows = $oldPayments->sortBy('id')->values();
+
+        foreach ($rows->whereNull('parent_payment_id') as $payment) {
+            $data = $payment->getAttributes();
+            unset($data['id']);
+            $data['student_enrollment_id'] = $enrollment->id;
+            $data['parent_payment_id'] = null;
+            $data['fee_installment_id'] = $resolveInstallmentId($payment);
+
+            $newId = DB::table('student_payments')->insertGetId($data);
+            $parentMap[$payment->id] = $newId;
+            $parentIds[] = $newId;
+        }
+
+        foreach ($rows->whereNotNull('parent_payment_id') as $payment) {
+            $data = $payment->getAttributes();
+            unset($data['id']);
+            $data['student_enrollment_id'] = $enrollment->id;
+            $data['parent_payment_id'] = $parentMap[$payment->parent_payment_id] ?? null;
+            $data['fee_installment_id'] = $resolveInstallmentId($payment);
+            DB::table('student_payments')->insert($data);
+        }
+
+        $snapshotColumns = [
+            'snapshot_total_due',
+            'snapshot_total_paid',
+            'snapshot_total_remaining',
+        ];
+        if ($parentIds && collect($snapshotColumns)->every(
+            fn ($column) => \Illuminate\Support\Facades\Schema::hasColumn('student_payments', $column)
+        )) {
+            $totalDue = (int) $feeStructure->installments->sum('amount');
+            $visible = StudentPayment::visible()->where('student_enrollment_id', $enrollment->id);
+            $totalPaid = (int) (clone $visible)->sum('amount_paid');
+            $totalScholarship = (int) (clone $visible)->sum('scholarship_amount');
+
+            DB::table('student_payments')->whereIn('id', $parentIds)->update([
+                'snapshot_total_due'       => $totalDue,
+                'snapshot_total_paid'      => $totalPaid,
+                'snapshot_total_remaining' => max(0, $totalDue - $totalPaid - $totalScholarship),
+            ]);
+        }
     }
 
     private function createTransferBulkPayment(
