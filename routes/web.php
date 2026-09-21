@@ -741,7 +741,6 @@ Route::middleware(['auth', 'permission:view-absences'])
     ->group(function () {
         Route::get('/', [AttendanceController::class, 'index'])->name('index');
         Route::post('/roll-call', [AttendanceController::class, 'store'])
-            ->middleware('permission:manage-absences')
             ->name('store');
     });
 

@@ -866,64 +866,36 @@ class StudentController extends Controller
             throw new \InvalidArgumentException('Aucune structure de frais n\'est configurée pour la classe cible.');
         }
 
-        $newInstallments = $feeStructure->installments->keyBy(
-            fn ($installment) => (string) $installment->installment_number
-        );
-        $resolveInstallmentId = function ($payment) use ($newInstallments): ?int {
-            $oldInstallment = $payment->feeInstallment;
-            if (! $oldInstallment) {
-                return null;
+        $installments = $feeStructure->installments->sortBy('installment_number')->values();
+        $remainingByInstallment = $installments->mapWithKeys(
+            fn ($installment) => [(int) $installment->id => (int) $installment->amount]
+        )->all();
+
+        // Only root rows represent payments visible to the parent. Allocation
+        // children must not become additional payments after the transfer.
+        foreach ($oldPayments->sortBy('id')->whereNull('parent_payment_id') as $payment) {
+            $sourceDate = $payment->payment_date ?: $payment->created_at;
+            if (! $sourceDate) {
+                throw new \InvalidArgumentException('La date du paiement d\'origine est introuvable.');
             }
+            $paymentDate = \Illuminate\Support\Carbon::parse($sourceDate)->toDateString();
+            $sourceTimestamp = $payment->created_at
+                ? \Illuminate\Support\Carbon::parse($payment->created_at)->format('Y-m-d H:i:s')
+                : $paymentDate . ' 00:00:00';
 
-            $newInstallment = $newInstallments->get((string) $oldInstallment->installment_number)
-                ?? $newInstallments->first(fn ($item) => $item->label === $oldInstallment->label);
-
-            return $newInstallment?->id;
-        };
-
-        $parentIds = [];
-        $parentMap = [];
-        $rows = $oldPayments->sortBy('id')->values();
-
-        foreach ($rows->whereNull('parent_payment_id') as $payment) {
-            $data = $payment->getAttributes();
-            unset($data['id']);
-            $data['student_enrollment_id'] = $enrollment->id;
-            $data['parent_payment_id'] = null;
-            $data['fee_installment_id'] = $resolveInstallmentId($payment);
-
-            $newId = DB::table('student_payments')->insertGetId($data);
-            $parentMap[$payment->id] = $newId;
-            $parentIds[] = $newId;
-        }
-
-        foreach ($rows->whereNotNull('parent_payment_id') as $payment) {
-            $data = $payment->getAttributes();
-            unset($data['id']);
-            $data['student_enrollment_id'] = $enrollment->id;
-            $data['parent_payment_id'] = $parentMap[$payment->parent_payment_id] ?? null;
-            $data['fee_installment_id'] = $resolveInstallmentId($payment);
-            DB::table('student_payments')->insert($data);
-        }
-
-        $snapshotColumns = [
-            'snapshot_total_due',
-            'snapshot_total_paid',
-            'snapshot_total_remaining',
-        ];
-        if ($parentIds && collect($snapshotColumns)->every(
-            fn ($column) => \Illuminate\Support\Facades\Schema::hasColumn('student_payments', $column)
-        )) {
-            $totalDue = (int) $feeStructure->installments->sum('amount');
-            $visible = StudentPayment::visible()->where('student_enrollment_id', $enrollment->id);
-            $totalPaid = (int) (clone $visible)->sum('amount_paid');
-            $totalScholarship = (int) (clone $visible)->sum('scholarship_amount');
-
-            DB::table('student_payments')->whereIn('id', $parentIds)->update([
-                'snapshot_total_due'       => $totalDue,
-                'snapshot_total_paid'      => $totalPaid,
-                'snapshot_total_remaining' => max(0, $totalDue - $totalPaid - $totalScholarship),
-            ]);
+            $this->createTransferBulkPayment(
+                $enrollment,
+                $class,
+                (int) $payment->amount_paid,
+                (int) $payment->scholarship_amount,
+                $paymentDate,
+                $sourceTimestamp,
+                (string) ($payment->payment_method ?: 'cash'),
+                $payment->recorded_by ? (int) $payment->recorded_by : null,
+                $payment->reference,
+                $payment->notes,
+                $remainingByInstallment
+            );
         }
     }
 
@@ -932,8 +904,13 @@ class StudentController extends Controller
         ClassGroup $class,
         int $amountPaid,
         int $scholarshipAmount,
+        string $paymentDate,
+        string $sourceTimestamp,
         string $paymentMethod,
-        ?int $recordedBy
+        ?int $recordedBy,
+        ?string $reference,
+        ?string $notes,
+        array &$remainingByInstallment
     ): StudentPayment {
         $feeStructure = $class->feeStructures()->with('installments')->first();
         if (! $feeStructure) {
@@ -942,11 +919,11 @@ class StudentController extends Controller
 
         $coverage = $amountPaid + $scholarshipAmount;
         $totalDue = (int) $feeStructure->installments->sum('amount');
-        if ($coverage > $totalDue) {
+        $remainingTotal = array_sum($remainingByInstallment);
+        if ($coverage > $remainingTotal) {
             throw new \InvalidArgumentException('Les montants déjà versés dépassent les frais de la classe cible.');
         }
 
-        $paymentDate = now()->toDateString();
         $bulkPayment = StudentPayment::create([
             'student_enrollment_id' => $enrollment->id,
             'fee_installment_id'    => null,
@@ -954,11 +931,16 @@ class StudentController extends Controller
             'scholarship_amount'    => $scholarshipAmount,
             'payment_date'          => $paymentDate,
             'payment_method'        => $paymentMethod,
-            'reference'             => null,
+            'reference'             => $reference,
             'receipt_number'        => StudentPayment::generateReceiptNumber(),
             'recorded_by'           => $recordedBy,
-            'notes'                 => 'Report du paiement lors d\'un transfert',
+            'notes'                 => $notes ?: 'Report du paiement lors d\'un transfert',
             'is_bulk'               => true,
+        ]);
+
+        DB::table('student_payments')->where('id', $bulkPayment->id)->update([
+            'created_at' => $sourceTimestamp,
+            'updated_at' => $sourceTimestamp,
         ]);
 
         $remainingScholarship = $scholarshipAmount;
@@ -969,7 +951,12 @@ class StudentController extends Controller
                 break;
             }
 
-            $need = min((int) $installment->amount, $coverage - $allocated);
+            $installmentRemaining = (int) ($remainingByInstallment[$installment->id] ?? 0);
+            if ($installmentRemaining <= 0) {
+                continue;
+            }
+
+            $need = min($installmentRemaining, $coverage - $allocated);
             $useScholarship = min($need, $remainingScholarship);
             $useCash = $need - $useScholarship;
             $index++;
@@ -989,16 +976,36 @@ class StudentController extends Controller
                 'is_bulk'               => false,
             ]);
 
+            DB::table('student_payments')
+                ->where('receipt_number', $bulkPayment->receipt_number . '-A' . $index)
+                ->update([
+                    'created_at' => $sourceTimestamp,
+                    'updated_at' => $sourceTimestamp,
+                ]);
+
             $allocated += $need;
             $remainingScholarship -= $useScholarship;
+            $remainingByInstallment[$installment->id] -= $need;
+        }
+
+        if ($allocated < $coverage) {
+            throw new \InvalidArgumentException('Les montants déjà versés dépassent les frais de la classe cible.');
         }
 
         if (\Illuminate\Support\Facades\Schema::hasColumn('student_payments', 'snapshot_total_due')) {
+            $visible = StudentPayment::visible()->where('student_enrollment_id', $enrollment->id);
+            $totalPaid = (int) (clone $visible)->sum('amount_paid');
+            $totalScholarship = (int) (clone $visible)->sum('scholarship_amount');
             $bulkPayment->forceFill([
                 'snapshot_total_due'       => $totalDue,
-                'snapshot_total_paid'      => $amountPaid,
-                'snapshot_total_remaining' => max(0, $totalDue - $coverage),
+                'snapshot_total_paid'      => $totalPaid,
+                'snapshot_total_remaining' => max(0, $totalDue - $totalPaid - $totalScholarship),
             ])->saveQuietly();
+
+            DB::table('student_payments')->where('id', $bulkPayment->id)->update([
+                'created_at' => $sourceTimestamp,
+                'updated_at' => $sourceTimestamp,
+            ]);
         }
 
         return $bulkPayment;

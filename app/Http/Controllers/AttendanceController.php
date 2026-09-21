@@ -17,7 +17,7 @@ class AttendanceController extends Controller
         $activeYear = AcademicYear::active();
         $user = Auth::user();
         $isUnrestricted = $this->canManageAllAttendance($user);
-        $isTeacher = $user?->hasAnyRole(['enseignant', 'assistant-direction']) && ! $isUnrestricted;
+        $isTeacher = $this->isTeachingAttendanceUser($user) && ! $isUnrestricted;
         $date = $isTeacher
             ? today()
             : Carbon::parse($request->input('date', now()->toDateString()));
@@ -77,7 +77,8 @@ class AttendanceController extends Controller
 
         $data = $request->validate($rules);
         $activeYear = AcademicYear::active();
-        $isTeacher = $user?->hasAnyRole(['enseignant', 'assistant-direction']) && ! $isUnrestricted;
+        $isTeacher = $this->isTeachingAttendanceUser($user) && ! $isUnrestricted;
+        abort_unless($isUnrestricted || $isTeacher, 403, 'Vous n\'etes pas autorise a enregistrer cet appel.');
         $class = ClassGroup::where('academic_year_id', $activeYear?->id)
             ->findOrFail($data['class_group_id']);
         $date = Carbon::parse($data['absence_date']);
@@ -141,6 +142,10 @@ class AttendanceController extends Controller
             return false;
         }
 
+        if ($user->can('manage-absences')) {
+            return true;
+        }
+
         if ($user->hasAnyRole([
             'super-admin', 'directeur', 'censeur',
             'surveillant-general', 'assistant-direction',
@@ -152,6 +157,21 @@ class AttendanceController extends Controller
             fn ($position) => in_array($position->position, [
                 'directeur', 'censeur', 'prefet_des_etudes', 'surveillant_general',
             ], true)
+        ) ?? false;
+    }
+
+    private function isTeachingAttendanceUser($user): bool
+    {
+        if (! $user) {
+            return false;
+        }
+
+        if ($user->hasRole('enseignant') || $user->can('enter-grades')) {
+            return true;
+        }
+
+        return $user->staff?->positions?->contains(
+            fn ($position) => $position->position === 'enseignant'
         ) ?? false;
     }
 }
