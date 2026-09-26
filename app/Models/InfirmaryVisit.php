@@ -17,7 +17,7 @@ class InfirmaryVisit extends Model
         return ['visit_date' => 'date', 'student_age' => 'integer', 'temperature' => 'decimal:1'];
     }
 
-    public function recordedBy() { return $this->belongsTo(Staff::class, 'recorded_by_staff_id'); }
+    public function recordedBy() { return $this->belongsTo(Staff::class, 'recorded_by_staff_id')->withTrashed(); }
     public function student() { return $this->belongsTo(Student::class); }
     public function classGroup() { return $this->belongsTo(ClassGroup::class); }
     public function academicYear() { return $this->belongsTo(AcademicYear::class); }

@@ -269,7 +269,7 @@
                             </div>
                         </template>
 
-                        <div class="w-full text-center">
+                        <div class="w-full text-center flex items-center justify-center gap-2 flex-wrap">
                             <label class="cursor-pointer text-xs font-semibold text-[#1A3A6B] hover:underline inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50/60 hover:bg-blue-50 transition-colors">
                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
@@ -278,6 +278,17 @@
                                 Changer la photo
                                 <input type="file" name="photo" class="hidden" accept="image/*" @change="preview = URL.createObjectURL($event.target.files[0])">
                             </label>
+                            @if($staff->photo)
+                            <button type="button"
+                                    onclick="if(confirm('Confirmer la suppression ?')) document.getElementById('deleteStaffPhotoForm').submit()"
+                                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-50 text-red-600
+                                           text-xs font-semibold hover:bg-red-100 transition-colors">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7 5 7m2 0 1 13h8l1-13M9 7V4h6v3"/>
+                                </svg>
+                                Supprimer
+                            </button>
+                            @endif
                         </div>
                     </div>
                 </div>
@@ -340,6 +351,11 @@
         </div>
 
     </div>
+</form>
+
+<form method="POST" action="{{ route('staff.photo.delete', $staff) }}"
+      id="deleteStaffPhotoForm" class="hidden">
+    @csrf @method('DELETE')
 </form>
 
 

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
 use App\Models\User;
+use App\Models\AuditLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -69,6 +70,28 @@ class UserController extends Controller
     }
 
     // ── FORMULAIRE DE CRÉATION ────────────────────────────────────────────────
+    public function archived()
+    {
+        abort_unless(Auth::user()->hasRole('super-admin'), 403);
+        $users = User::onlyTrashed()->with(['roles', 'staff'])->latest('deleted_at')->paginate(15);
+        return view('users.archived', compact('users'));
+    }
+
+    public function restoreArchived(int $user)
+    {
+        abort_unless(Auth::user()->hasRole('super-admin'), 403);
+        $user = User::withTrashed()->findOrFail($user);
+        $user->restore();
+        $user->update(['is_active' => true]);
+        $staff = $user->staff;
+        if ($staff?->trashed()) {
+            $staff->restore();
+        }
+        $staff?->update(['is_active' => true]);
+        AuditLog::log('restored', $user, ['name' => $user->name]);
+        return back()->with('success', "Compte de {$user->name} restaure avec succes.");
+    }
+
     public function create()
     {
         /** @var \App\Models\User $authUser */
@@ -165,12 +188,19 @@ class UserController extends Controller
         $user->update($data);
         $user->syncRoles($request->roles);
 
+        // L'activation d'un compte de connexion réactive aussi son dossier RH.
+        $staff = $user->staff;
+        if ($data['is_active'] && $staff?->trashed()) {
+            $staff->restore();
+        }
+        $staff?->update(['is_active' => $data['is_active']]);
+
         return redirect()->route('users.index')
                          ->with('success',
                              "Compte de {$user->name} mis à jour.");
     }
 
-    // ── SUPPRESSION PHYSIQUE DIRECTE ───────────────────────────
+    // ── DÉSACTIVATION / ARCHIVAGE ──────────────────────────────
     public function destroy(User $user)
     {
         /** @var \App\Models\User $authUser */
@@ -195,10 +225,25 @@ class UserController extends Controller
         }
 
         $name = $user->name;
+        $staff = $user->staff;
+
+        if (!$authUser->hasRole('super-admin')) {
+            $user->update(['is_active' => false]);
+            $staff?->update(['is_active' => false]);
+            AuditLog::log('deactivated', $user, ['name' => $name], ['is_active' => false]);
+
+            return back()->with('success', "Compte de {$name} désactivé. Les opérations historiques sont conservées.");
+        }
+
+        // L'archivage conserve l'ID et toutes les relations historiques.
+        $user->update(['is_active' => false]);
+        $staff?->update(['is_active' => false]);
         $user->delete();
+        $staff?->delete();
+        AuditLog::log('deleted', $user, ['name' => $name], ['archived' => true]);
 
         return back()->with('success',
-            "Compte de {$name} désactivé et supprimé défnitivement.");
+            "Compte de {$name} archivé définitivement. Les opérations historiques sont conservées.");
     }
 
     // ── TOGGLE ACTIF / INACTIF ────────────────────────────────────────────────

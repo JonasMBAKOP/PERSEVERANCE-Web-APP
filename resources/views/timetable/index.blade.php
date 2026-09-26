@@ -179,6 +179,52 @@
     @endif
 </div>
 @endif
+@php
+    $teacherConflict = session('timetable_teacher_conflict');
+@endphp
+
+@if($teacherConflict)
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const payload = @json($teacherConflict);
+    if (!payload) return;
+
+    if (window.confirm(payload.message)) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = payload.action;
+
+        const csrf = document.createElement('input');
+        csrf.type = 'hidden';
+        csrf.name = '_token';
+        csrf.value = '{{ csrf_token() }}';
+        form.appendChild(csrf);
+
+        if ((payload.method || 'POST').toUpperCase() === 'PUT') {
+            const method = document.createElement('input');
+            method.type = 'hidden';
+            method.name = '_method';
+            method.value = 'PUT';
+            form.appendChild(method);
+        }
+
+        Object.entries(payload.fields || {}).forEach(([name, value]) => {
+            const field = document.createElement('input');
+            field.type = 'hidden';
+            field.name = name;
+            field.value = value;
+            form.appendChild(field);
+        });
+
+        document.body.appendChild(form);
+        form.submit();
+        return;
+    }
+
+    window.location.href = payload.cancelUrl || '{{ route('timetable.index') }}';
+});
+</script>
+@endif
 @endsection
 
 @push('scripts')

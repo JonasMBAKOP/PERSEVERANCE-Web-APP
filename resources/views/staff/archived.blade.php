@@ -1,0 +1,9 @@
+@extends('layouts.app')
+@section('title', 'Dossiers RH archives')
+@section('page-title', 'Dossiers RH archives')
+@section('page-subtitle', 'Restauration reservee au super-admin')
+@section('content')
+<div class="mb-6 flex items-center justify-between gap-3"><p class="text-sm text-gray-500">Les IDs et operations historiques sont conserves.</p><a href="{{ route('staff.index') }}" class="rounded-lg border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">Retour</a></div>
+<div class="overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm"><div class="overflow-x-auto"><table class="w-full min-w-[720px] text-sm"><thead class="bg-gray-50 text-left text-xs uppercase tracking-wider text-gray-500"><tr><th class="px-4 py-3">Personnel</th><th class="px-4 py-3">Poste(s)</th><th class="px-4 py-3">Archive le</th><th class="px-4 py-3 text-right">Action</th></tr></thead><tbody class="divide-y divide-gray-100">@forelse($staff as $member)<tr><td class="px-4 py-3 font-medium text-gray-800">{{ $member->full_name }}<div class="text-xs font-normal text-gray-500">{{ $member->email }}</div></td><td class="px-4 py-3 text-gray-600">{{ $member->positions->pluck('position')->join(', ') ?: 'Non renseigne' }}</td><td class="px-4 py-3 text-gray-600">{{ optional($member->deleted_at)->format('d/m/Y H:i') }}</td><td class="px-4 py-3 text-right"><form method="POST" action="{{ route('staff.restore', $member->id) }}" onsubmit="return confirm('Restaurer ce dossier RH et son compte de connexion lie ?')">@csrf<button class="rounded-lg bg-green-600 px-3 py-2 text-xs font-semibold text-white hover:bg-green-700">Restaurer</button></form></td></tr>@empty<tr><td colspan="4" class="px-4 py-10 text-center text-sm text-gray-500">Aucun dossier RH archive.</td></tr>@endforelse</tbody></table></div></div>
+<div class="mt-4">{{ $staff->links() }}</div>
+@endsection

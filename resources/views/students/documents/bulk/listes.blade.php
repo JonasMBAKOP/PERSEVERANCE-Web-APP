@@ -2,14 +2,35 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<title>Liste des élèves — {{ $year->label ?? '' }}</title>
+@php
+    $documentBrand = str_contains(strtolower((string) ($school->full_name ?? '')), 'perseverance') ? 'PERSEVERANCE' : 'COPTAN';
+    $documentRange = ($year?->start_date?->format('Y') ?? '') . '-' . ($year?->end_date?->format('Y') ?? '');
+    $documentScope = 'Complet';
+    if (($filters['scope'] ?? null) === 'class' && ! empty($groups[0]['classes'][0]['class'])) {
+        $documentScope = $groups[0]['classes'][0]['class']->full_name;
+    } elseif (($filters['scope'] ?? null) === 'section' && ! empty($groups[0]['section'])) {
+        $documentScope = $groups[0]['section']->code ?: $groups[0]['section']->name;
+    }
+    $documentFilename = 'Liste des élèves ' . $documentBrand . ' ' . $documentScope . ' ' . $documentRange;
+@endphp
+<title>{{ $documentFilename }}</title>
 @include('students.documents.partials.base-styles')
 <style>
-@page { size: A4 portrait; margin: 2mm 4mm; }
+@page {
+    size: A4 portrait;
+    margin: 2mm 4mm 9mm;
+    @bottom-right {
+        content: counter(page) " / " counter(pages);
+        font-family: Arial, Helvetica, sans-serif;
+        font-size: 9px;
+        color: #111827;
+    }
+}
 body { margin: 0; padding: 0; }
 .student-list-page {
     max-width: 196mm;
-    padding: 3mm 4mm;
+    margin: 0 auto;
+    padding: 3mm 3mm;
     color: #111827;
 }
 .student-list-page .cert-official-header {
@@ -65,7 +86,7 @@ body { margin: 0; padding: 0; }
 .list-table, .list-table th, .list-table td { color: #000; }
 .list-table th { background: #F3F4F6; font-weight: 700; text-align: left; font-size: 10px; }
 .list-table td.num { width: 32px; text-align: center; font-size: 10px; }
-.list-table td.mat { font-family: 'Courier New', monospace; font-size: 10px; }
+.list-table td.mat { font-family: Arial, Helvetica, sans-serif; font-size: 10px; color: #000; }
 .list-summary { font-size: 10px; color: #6B7280; margin-bottom: 8px; }
 .list-summary--totals { color: #000; font-weight: 700; }
 .list-summary--totals.list-summary--class,
@@ -92,15 +113,28 @@ body { margin: 0; padding: 0; }
     float: right;
 }
 .footer-principal-seal {
-    max-width: 100px;
-    max-height: 100px;
+    max-width: 180px;
+    max-height: 180px;
     margin-top: 6px;
     display: block;
 }
+.print-page-number { display: none; }
 @media print {
     body { background: #fff !important; }
     .section-banner { page-break-before: auto; }
-    .class-block { page-break-inside: avoid; }
+    .class-block { page-break-inside: auto; break-inside: auto; }
+    .list-table { page-break-inside: auto; break-inside: auto; }
+    .list-table thead { display: table-row-group; }
+    .list-table tr { page-break-inside: avoid; break-inside: avoid; }
+    .print-page-number {
+        display: block;
+        position: fixed;
+        right: 4mm;
+        bottom: 2mm;
+        font: 9px Arial, Helvetica, sans-serif;
+        color: #111827;
+    }
+    /* .print-page-number::after { content: counter(page) " / " counter(pages); } */
 }
 </style>
 </head>
@@ -115,10 +149,10 @@ body { margin: 0; padding: 0; }
         $classCount = 0;
         $isSingleClass = ($filters['scope'] ?? '') === 'class';
         $listSubtitle = $year?->label ? 'Année scolaire ' . $year->label : '';
-        if ($isSingleClass && !empty($groups[0]['classes'][0]['class'])) {
-            $listSubtitle .= ' — Classe ' . $groups[0]['classes'][0]['class']->full_name;
-        }
-        $listSubtitle .= ' — ' . now()->format('d/m/Y');
+        // if ($isSingleClass && !empty($groups[0]['classes'][0]['class'])) {
+        //     $listSubtitle .= ' — Classe ' . $groups[0]['classes'][0]['class']->full_name;
+        // }
+        // $listSubtitle .= ' — ' . now()->format('d/m/Y');
     @endphp
 
     @include('students.documents.partials.certificate-official-header', [
@@ -151,7 +185,7 @@ body { margin: 0; padding: 0; }
     @endphp
     <div class="class-block">
         <div class="class-title">
-            Classe : {{ $block['class']->full_name }}
+            {{ $block['class']->full_name }}
             {{-- @unless($isSingleClass)
             — Niveau {{ $block['class']->level?->name }}
             @endunless --}}
@@ -192,7 +226,7 @@ body { margin: 0; padding: 0; }
     @endforeach
     @endforeach
 
-    @if($classCount > 1)
+    @if($classCount > 0)
     <div class="list-summary list-summary--totals list-summary--overall">
         <span style="font-weight: 900;">Bilan des effectifs :</span>
         <span>Effectif Total des élèves : {{ $totalStudents }}</span>
@@ -207,6 +241,7 @@ body { margin: 0; padding: 0; }
             <img src="{{ asset('storage/' . $school->signature_seal) }}" alt="Cachet du Principal" class="footer-principal-seal">
         @endif
     </div>
+    <div class="print-page-number" aria-hidden="true"></div>
     {{-- <div class="footer-note">
         Total général : {{ $totalStudents }} élève(s) — Document généré le {{ now()->format('d/m/Y à H:i') }}
     </div> --}}

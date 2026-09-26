@@ -148,9 +148,10 @@
                 </a>
                 @endif
 
-                {{-- Supprimer (avec confirmation) --}}
+                {{-- Désactiver ou activer le dossier RH et le compte de connexion --}}
                 @can('manage-staff')
-                <form method="POST" action="{{ route('staff.destroy', $staff) }}" 
+                @if($staff->is_active)
+                <form method="POST" action="{{ route('staff.destroy', $staff) }}"
                       class="inline"
                       onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer {{ $staff->full_name }} ? Cette action est irréversible.')">
                     @csrf
@@ -163,6 +164,21 @@
                         Supprimer
                     </button>
                 </form>
+                @else
+                <form method="POST" action="{{ route('staff.toggle', $staff) }}"
+                      class="inline"
+                      onsubmit="return confirm('Activer {{ $staff->full_name }} et son compte de connexion ?')">
+                    @csrf
+                    @method('PATCH')
+                    <button type="submit"
+                            class="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg text-white text-sm font-semibold transition-colors shadow">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        Activer
+                    </button>
+                </form>
+                @endif
                 @endcan
             </div>
         </div>

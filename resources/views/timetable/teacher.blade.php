@@ -127,7 +127,7 @@
             </div>
             <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                 <p class="text-xs font-bold uppercase tracking-wide text-gray-400">Périodes programmées</p>
-                <p class="mt-2 text-2xl font-black text-[#1A5C2A]">{{ $slots->sum('periods_count') }}</p>
+                <p class="mt-2 text-2xl font-black text-[#1A5C2A]">{{ $totalHours }}</p>
             </div>
         </div>
 

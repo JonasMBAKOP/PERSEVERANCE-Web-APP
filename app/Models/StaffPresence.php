@@ -29,6 +29,6 @@ class StaffPresence extends Model
 
     public function staff()
     {
-        return $this->belongsTo(Staff::class);
+        return $this->belongsTo(Staff::class)->withTrashed();
     }
 }

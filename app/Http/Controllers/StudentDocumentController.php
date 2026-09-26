@@ -167,7 +167,7 @@ class StudentDocumentController extends Controller
             $groups,
             $filters,
             $this->documents->schoolContext(),
-            'liste-eleves-' . $year->id . '.docx'
+            $this->listWordFilename($year, $groups, $filters)
         );
     }
 
@@ -189,7 +189,7 @@ class StudentDocumentController extends Controller
             $report,
             $filters,
             $this->documents->schoolContext(),
-            'effectifs-' . $year->id . '.docx'
+            $this->enrollmentReportWordFilename($year, $report, $filters)
         );
     }
 
@@ -235,6 +235,135 @@ class StudentDocumentController extends Controller
         return 'Établissement';
     }
 
+    private function schoolBrand(array $schoolContext): string
+    {
+        $name = mb_strtolower((string) ($schoolContext['school']->full_name ?? ''));
+
+        return str_contains($name, 'perseverance') ? 'PERSEVERANCE' : 'COPTAN';
+    }
+
+    private function schoolYearRange($year): string
+    {
+        $start = $year->start_date?->format('Y') ?? '';
+        $end = $year->end_date?->format('Y') ?? '';
+
+        return $start && $end ? $start . '-' . $end : (string) ($year->label ?? $year->id);
+    }
+
+    private function filenamePart(string $value): string
+    {
+        return trim((string) preg_replace('/[\\\\\/:*?"<>|]+/', '-', $value));
+    }
+
+    private function listWordFilename($year, array $groups, array $filters): string
+    {
+        $context = $this->documents->schoolContext();
+        $scope = 'Complet';
+
+        if (($filters['scope'] ?? null) === 'class' && ! empty($filters['class_id'])) {
+            $class = \App\Models\ClassGroup::find($filters['class_id']);
+            $scope = $class?->full_name ?: 'Complet';
+        } elseif (($filters['scope'] ?? null) === 'section' && ! empty($filters['section_id'])) {
+            $section = \App\Models\Section::find($filters['section_id']);
+            $scope = $section?->code ?: ($section?->name ?: 'Complet');
+        }
+
+        return $this->filenamePart('Liste des élèves ' . $this->schoolBrand($context) . ' ' . $scope . ' ' . $this->schoolYearRange($year)) . '.docx';
+    }
+
+    private function enrollmentReportWordFilename($year, array $report, array $filters): string
+    {
+        $context = $this->documents->schoolContext();
+        $scope = 'Complet';
+
+        if (($filters['scope'] ?? null) === 'section' && ! empty($filters['section_id'])) {
+            $section = \App\Models\Section::find($filters['section_id']);
+            $scope = $section?->code ?: ($section?->name ?: 'Complet');
+        }
+
+        return $this->filenamePart('Rapport des effectifs ' . $scope . ' ' . $this->schoolBrand($context) . ' ' . $this->schoolYearRange($year)) . '.docx';
+    }
+
+    private function wordImagePath(?string $path): ?string
+    {
+        if (! $path) {
+            return null;
+        }
+
+        $relative = ltrim(str_replace('storage/', '', $path), '/');
+        $candidates = [
+            public_path('storage/' . $relative),
+            storage_path('app/public/' . $relative),
+            public_path($relative),
+        ];
+
+        foreach ($candidates as $candidate) {
+            if (is_file($candidate)) {
+                return $candidate;
+            }
+        }
+
+        return null;
+    }
+
+    private function appendWordOfficialHeader($section, array $schoolContext): void
+    {
+        $school = $schoolContext['school'];
+        $phones = $schoolContext['phones'];
+        $phoneLine = $phones->isNotEmpty() ? $phones->pluck('number')->join(' / ') : '';
+        $fr = ['REPUBLIQUE DU CAMEROUN', 'Paix-Travail-Patrie', 'MINISTERE DES ENSEIGNEMENTS SECONDAIRES', strtoupper((string) $school->full_name)];
+        $en = ['REPUBLIC OF CAMEROON', 'Peace-Work-Fatherland', 'MINISTRY OF SECONDARY EDUCATION', strtoupper((string) ($school->full_name_en ?: 'NTANKEU POLYVALENT COLLEGE'))];
+        $small = ['name' => 'Arial', 'size' => 7, 'color' => '000000'];
+        $bold = ['name' => 'Arial', 'size' => 8, 'bold' => true, 'color' => '000000'];
+
+        $table = $section->addTable(['borderSize' => 0, 'cellMargin' => 0, 'tblLayout' => 'fixed']);
+        $table->addRow(1700, ['cantSplit' => true]);
+        $left = $table->addCell(4400);
+        foreach ($fr as $line) {
+            $left->addText($line, $bold, ['alignment' => 'center', 'spaceAfter' => 0]);
+        }
+        $left->addText('********', $small, ['alignment' => 'center', 'spaceAfter' => 0]);
+        if ($phoneLine) {
+            $left->addText('Tél. ' . $phoneLine, $small, ['alignment' => 'center', 'spaceAfter' => 0]);
+        }
+        $left->addText(($school->postal_box ? 'B.P. ' . $school->postal_box : ''), $small, ['alignment' => 'center', 'spaceAfter' => 0]);
+
+        $center = $table->addCell(2500);
+        $logo = $this->wordImagePath($school->logo) ?: $this->wordImagePath('images/logo.jpg');
+        if ($logo) {
+            $center->addImage($logo, ['width' => 82, 'height' => 82, 'alignment' => 'center']);
+        } else {
+            $center->addText(strtoupper(substr((string) ($school->short_name ?? 'C'), 0, 1)), ['name' => 'Arial', 'size' => 28, 'bold' => true, 'color' => '000000'], ['alignment' => 'center']);
+        }
+
+        $right = $table->addCell(4400);
+        foreach ($en as $line) {
+            $right->addText($line, $bold, ['alignment' => 'center', 'spaceAfter' => 0]);
+        }
+        $right->addText('********', $small, ['alignment' => 'center', 'spaceAfter' => 0]);
+        if ($phoneLine) {
+            $right->addText('Phone. ' . $phoneLine, $small, ['alignment' => 'center', 'spaceAfter' => 0]);
+        }
+        $right->addText(($school->postal_box ? 'P.O. BOX ' . $school->postal_box : ''), $small, ['alignment' => 'center', 'spaceAfter' => 0]);
+
+        foreach ($schoolContext['agreements'] as $agreement) {
+            $section->addText('N° ' . $agreement->number, $small, ['alignment' => 'center', 'spaceAfter' => 0]);
+        }
+    }
+
+    private function appendWordSignature($section, array $schoolContext): void
+    {
+        $table = $section->addTable(['borderSize' => 0, 'cellMargin' => 0, 'tblLayout' => 'fixed']);
+        $table->addRow(1200, ['cantSplit' => true]);
+        $table->addCell(6500)->addText('Signature du parent', ['name' => 'Arial', 'size' => 9, 'color' => '000000'], ['alignment' => 'center']);
+        $right = $table->addCell(4800);
+        $right->addText($this->schoolBrand($schoolContext) === 'PERSEVERANCE' ? 'La Direction' : 'Le Principal',
+            ['name' => 'Arial', 'size' => 9, 'bold' => true, 'color' => '000000'], ['alignment' => 'center']);
+        if ($seal = $this->wordImagePath($schoolContext['school']->signature_seal)) {
+            $right->addImage($seal, ['width' => 92, 'height' => 92, 'alignment' => 'center']);
+        }
+    }
+
     private function downloadListWordDocument($year, array $groups, array $filters, array $schoolContext, string $filename)
     {
         $phpWord = new PhpWord();
@@ -242,11 +371,15 @@ class StudentDocumentController extends Controller
         $phpWord->setDefaultFontSize(11);
 
         $section = $phpWord->addSection([
-            'marginTop' => 720,
-            'marginRight' => 720,
-            'marginBottom' => 720,
-            'marginLeft' => 720,
+            'marginTop' => 113,
+            'marginRight' => 227,
+            'marginBottom' => 510,
+            'marginLeft' => 227,
         ]);
+
+        $section->addFooter()->addPreserveText('{PAGE} / {NUMPAGES}',
+            ['name' => 'Arial', 'size' => 9, 'color' => '000000'],
+            ['alignment' => 'right']);
 
         $this->appendListWordContent($section, $year, $groups, $filters, $schoolContext);
 
@@ -260,11 +393,15 @@ class StudentDocumentController extends Controller
         $phpWord->setDefaultFontSize(11);
 
         $section = $phpWord->addSection([
-            'marginTop' => 720,
-            'marginRight' => 720,
-            'marginBottom' => 720,
-            'marginLeft' => 720,
+            'marginTop' => 113,
+            'marginRight' => 227,
+            'marginBottom' => 510,
+            'marginLeft' => 227,
         ]);
+
+        $section->addFooter()->addPreserveText('{PAGE} / {NUMPAGES}',
+            ['name' => 'Arial', 'size' => 9, 'color' => '000000'],
+            ['alignment' => 'right']);
 
         $this->appendEnrollmentReportWordContent($section, $year, $report, $filters, $schoolContext);
 
@@ -286,11 +423,9 @@ class StudentDocumentController extends Controller
 
     private function appendListWordContent($section, $year, array $groups, array $filters, array $schoolContext): void
     {
-        $schoolName = $schoolContext['school']->full_name ?? 'COPTAN';
-        $section->addText($schoolName, ['bold' => true, 'size' => 16, 'color' => '1A3A6B']);
-        $section->addText('Liste des élèves', ['bold' => true, 'size' => 20, 'color' => '9C4005']);
-        $section->addText('Année scolaire ' . ($year->label ?? ''), ['size' => 11]);
-        $section->addText('Périmètre : ' . $this->describeScope($filters, $year), ['size' => 11]);
+        $this->appendWordOfficialHeader($section, $schoolContext);
+        $section->addText('Liste des élèves', ['bold' => true, 'size' => 16, 'color' => '000000'], ['alignment' => 'center']);
+        $section->addText('Année scolaire ' . ($year->label ?? ''), ['size' => 10, 'color' => '000000'], ['alignment' => 'center']);
         $section->addTextBreak(1);
 
         $totalStudents = 0;
@@ -301,7 +436,7 @@ class StudentDocumentController extends Controller
 
         foreach ($groups as $group) {
             if (! $isSingleClass) {
-                $section->addText('Section : ' . ($group['section']->name ?? ''), ['bold' => true, 'size' => 13, 'color' => '1A3A6B']);
+                $section->addText('Section : ' . ($group['section']->name ?? '') . ' (' . ($group['section']->code ?? '') . ')', ['bold' => true, 'size' => 13, 'color' => '000000']);
             }
 
             foreach ($group['classes'] as $block) {
@@ -313,10 +448,10 @@ class StudentDocumentController extends Controller
                 $totalGirls += $classGirls;
                 $totalBoys += $classBoys;
                 $classCount++;
-                $section->addText('Classe : ' . ($block['class']->full_name ?? ''), ['bold' => true, 'size' => 12, 'color' => '9C4005'], ['alignment' => 'center']);
+                $section->addText((string) ($block['class']->full_name ?? ''), ['bold' => true, 'size' => 12, 'color' => '000000'], ['alignment' => 'center']);
                 $summaryTable = $section->addTable(['borderSize' => 0, 'cellMargin' => 0, 'tblLayout' => 'fixed']);
                 $summaryTable->addRow(260);
-                $summaryTable->addCell(2900)->addText('Effectif : ' . $classTotal . ' élève(s)', ['bold' => true, 'size' => 10, 'color' => '000000'], ['alignment' => 'left']);
+                $summaryTable->addCell(2900)->addText('Effectif Total : ' . $classTotal . ' élève(s)', ['bold' => true, 'size' => 10, 'color' => '000000'], ['alignment' => 'left']);
                 $summaryTable->addCell(2900)->addText('Filles : ' . $classGirls, ['bold' => true, 'size' => 10, 'color' => '000000'], ['alignment' => 'center']);
                 $summaryTable->addCell(2900)->addText('Garçons : ' . $classBoys, ['bold' => true, 'size' => 10, 'color' => '000000'], ['alignment' => 'right']);
                 $section->addTextBreak(0.5);
@@ -328,20 +463,25 @@ class StudentDocumentController extends Controller
                     'tblLayout' => 'fixed',
                 ]);
 
-                $table->addRow(260);
+                $table->addRow(260, ['cantSplit' => true]);
                 $table->addCell(500)->addText('N°', ['bold' => true, 'color' => '000000']);
-                $table->addCell(1800)->addText('Matricule', ['bold' => true, 'color' => '000000']);
                 $table->addCell(4400)->addText('Nom(s) et Prénom(s)', ['bold' => true, 'color' => '000000']);
+                $table->addCell(1800)->addText('Matricule', ['bold' => true, 'color' => '000000']);
                 $table->addCell(600)->addText('Sexe', ['bold' => true, 'color' => '000000']);
                 $table->addCell(1400)->addText('Date naiss.', ['bold' => true, 'color' => '000000']);
+                $table->addCell(1800)->addText('Lieu de naissance', ['bold' => true, 'color' => '000000']);
+                $table->addCell(1400)->addText('Inscrit(e) le', ['bold' => true, 'color' => '000000']);
 
                 foreach ($block['students'] as $index => $student) {
-                    $table->addRow(240);
+                    $table->addRow(240, ['cantSplit' => true]);
                     $table->addCell(500)->addText((string) ($index + 1), ['size' => 9, 'color' => '000000']);
-                    $table->addCell(1800)->addText((string) ($student->matricule ?? ''), ['size' => 9, 'color' => '000000']);
                     $table->addCell(4400)->addText((string) ($student->full_name ?? ''), ['size' => 9, 'color' => '000000']);
+                    $table->addCell(1800)->addText((string) ($student->matricule ?? ''), ['size' => 9, 'color' => '000000']);
                     $table->addCell(600)->addText($student->gender === 'M' ? 'M' : 'F', ['size' => 9, 'color' => '000000']);
                     $table->addCell(1400)->addText($student->date_of_birth?->format('d/m/Y') ?? '—', ['size' => 9, 'color' => '000000']);
+                    $table->addCell(1800)->addText(strtoupper((string) ($student->place_of_birth ?? '—')), ['size' => 9, 'color' => '000000']);
+                    $enrollment = $student->printEnrollment ?? null;
+                    $table->addCell(1400)->addText($enrollment?->enrollment_date?->format('d/m/Y') ?? '—', ['size' => 9, 'color' => '000000']);
                 }
 
                 $section->addTextBreak(1);
@@ -351,19 +491,20 @@ class StudentDocumentController extends Controller
         if ($classCount > 1) {
             $summaryTable = $section->addTable(['borderSize' => 0, 'cellMargin' => 0, 'tblLayout' => 'fixed']);
             $summaryTable->addRow(260);
-            $summaryTable->addCell(2900)->addText('Bilan : ' . $totalStudents . ' élève(s)', ['bold' => true, 'size' => 10, 'color' => '000000'], ['alignment' => 'left']);
-            $summaryTable->addCell(2900)->addText('Filles : ' . $totalGirls, ['bold' => true, 'size' => 10, 'color' => '000000'], ['alignment' => 'center']);
-            $summaryTable->addCell(2900)->addText('Garçons : ' . $totalBoys, ['bold' => true, 'size' => 10, 'color' => '000000'], ['alignment' => 'right']);
+            $summaryTable->addCell(2200)->addText('Bilan des effectifs :', ['bold' => true, 'size' => 10, 'color' => '000000'], ['alignment' => 'left']);
+            $summaryTable->addCell(2200)->addText('Effectif total des élèves : ' . $totalStudents, ['bold' => true, 'size' => 10, 'color' => '000000'], ['alignment' => 'center']);
+            $summaryTable->addCell(2200)->addText('Nombre de Filles : ' . $totalGirls, ['bold' => true, 'size' => 10, 'color' => '000000'], ['alignment' => 'center']);
+            $summaryTable->addCell(2200)->addText('Nombre de Garçons : ' . $totalBoys, ['bold' => true, 'size' => 10, 'color' => '000000'], ['alignment' => 'right']);
         }
-        $section->addText('Document généré le ' . now()->format('d/m/Y à H:i'), ['size' => 9, 'color' => '6B7280']);
+        $this->appendWordSignature($section, $schoolContext);
+        $section->addText('Document généré le ' . now()->format('d/m/Y à H:i'), ['size' => 9, 'color' => '000000'], ['alignment' => 'center']);
     }
 
     private function appendEnrollmentReportWordContent($section, $year, array $report, array $filters, array $schoolContext): void
     {
-        $schoolName = $schoolContext['school']->full_name ?? 'COPTAN';
-        $section->addText($schoolName, ['bold' => true, 'size' => 16, 'color' => '1A3A6B']);
-        $section->addText('Rapport des effectifs totaux', ['bold' => true, 'size' => 20, 'color' => '9C4005']);
-        $section->addText('Année scolaire ' . ($year->label ?? ''), ['size' => 11]);
+        $this->appendWordOfficialHeader($section, $schoolContext);
+        $section->addText('RAPPORT DES EFFECTIFS TOTAUX', ['bold' => true, 'size' => 16, 'color' => '000000'], ['alignment' => 'center']);
+        $section->addText('Année scolaire ' . ($year->label ?? ''), ['size' => 10, 'color' => '000000'], ['alignment' => 'center']);
         $section->addTextBreak(1);
 
         $isSectionScope = ($filters['scope'] ?? 'school') === 'section';
@@ -414,7 +555,8 @@ class StudentDocumentController extends Controller
             $section->addTextBreak(1);
         }
 
-        $section->addText('Document généré le ' . now()->format('d/m/Y à H:i'), ['size' => 9, 'color' => '6B7280']);
+        $this->appendWordSignature($section, $schoolContext);
+        $section->addText('Document généré le ' . now()->format('d/m/Y à H:i'), ['size' => 9, 'color' => '000000'], ['alignment' => 'center']);
     }
 
     private function renderDocument(

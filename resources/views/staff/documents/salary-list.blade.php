@@ -28,6 +28,9 @@
         table { width: 100%; border-collapse: collapse; font-size: 12px; }
         th, td { border: 1px solid #CBD5E1; padding: 8px; text-align: left; vertical-align: top; }
         th { background: #F8FAFC; font-weight: 700; color: #0F172A; }
+        .salary-summary { margin-top: 14px; border: 1px solid #CBD5E1; padding: 10px 12px; font-size: 12px; font-weight: 700; }
+        .salary-summary__row { display: flex; justify-content: space-between; gap: 16px; padding: 3px 0; }
+        .salary-summary__row--total { margin-top: 5px; padding-top: 7px; border-top: 1px solid #94A3B8; font-size: 13px; }
         @media print { .no-print { display: none !important; } }
     </style>
 </head>
@@ -73,9 +76,15 @@
             <th>#</th>
             <th>Nom et prénoms</th>
             <th>Poste</th>
-            <th>Type de contrat</th>
+            @if($showContractColumn)
+                <th>Type de contrat</th>
+            @endif
             <th>Numéro</th>
-            <th>Salaire</th>
+            <th>{{ $isVacataireFilter ? 'Tarif horaire' : 'Salaire' }}</th>
+            @if($showWeeklyColumns)
+                <th>Heures par semaine</th>
+                <th>Total</th>
+            @endif
         </tr>
         </thead>
         <tbody>
@@ -84,13 +93,60 @@
                 <td>{{ $index + 1 }}</td>
                 <td>{{ $member->full_name }}</td>
                 <td>{{ $member->primaryPosition?->position_label ?? 'Personnel' }}</td>
-                <td>{{ $member->contract_label }}</td>
+                @if($showContractColumn)
+                    <td>{{ $member->contract_label }}</td>
+                @endif
                 <td>{{ $member->phone ?? '—' }}</td>
                 <td>{{ $member->salary_display }}</td>
+                @if($showWeeklyColumns)
+                    @if($member->contract_type === 'vacataire')
+                        <td>{{ $weeklyHours->get($member->id, 0) }}</td>
+                        <td>{{ number_format($weeklyHours->get($member->id, 0) * (float) ($member->hourly_rate ?? 0), 0, ',', ' ') }} FCFA / semaine</td>
+                    @else
+                        <td>—</td>
+                        <td>—</td>
+                    @endif
+                @endif
             </tr>
         @endforeach
         </tbody>
     </table>
+
+    <div class="salary-summary">
+        @if(blank($contractFilter))
+            <div class="salary-summary__row">
+                <span>Total hebdomadaire des vacataires</span>
+                <span>{{ number_format($vacataireWeeklyTotal, 0, ',', ' ') }} FCFA / semaine</span>
+            </div>
+            <div class="salary-summary__row">
+                <span>Total mensuel des permanents</span>
+                <span>{{ number_format($permanentMonthlyTotal, 0, ',', ' ') }} FCFA / mois</span>
+            </div>
+            <div class="salary-summary__row">
+                <span>Total mensuel des semi-permanents</span>
+                <span>{{ number_format($semiPermanentMonthlyTotal, 0, ',', ' ') }} FCFA / mois</span>
+            </div>
+            <div class="salary-summary__row salary-summary__row--total">
+                <span>Total mensuel des permanents et semi-permanents</span>
+                <span>{{ number_format($monthlyGrandTotal, 0, ',', ' ') }} FCFA / mois</span>
+            </div>
+        @elseif($isVacataireFilter)
+            <div class="salary-summary__row salary-summary__row--total">
+                <span>Total hebdomadaire des vacataires</span>
+                <span>{{ number_format($vacataireWeeklyTotal, 0, ',', ' ') }} FCFA / semaine</span>
+            </div>
+        @elseif($contractFilter === 'permanent')
+            <div class="salary-summary__row salary-summary__row--total">
+                <span>Total mensuel des permanents</span>
+                <span>{{ number_format($permanentMonthlyTotal, 0, ',', ' ') }} FCFA / mois</span>
+            </div>
+        @elseif($contractFilter === 'semi_permanent')
+            <div class="salary-summary__row salary-summary__row--total">
+                <span>Total mensuel des semi-permanents</span>
+                <span>{{ number_format($semiPermanentMonthlyTotal, 0, ',', ' ') }} FCFA / mois</span>
+            </div>
+        @endif
+    </div>
 </div>
 </body>
 </html>

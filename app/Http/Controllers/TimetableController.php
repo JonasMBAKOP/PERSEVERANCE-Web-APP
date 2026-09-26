@@ -196,7 +196,15 @@ class TimetableController extends Controller
         );
 
         if ($teacherConflict) {
-            return back()->with('error', $this->teacherConflictMessage($teacherConflict));
+            if (! $request->boolean('confirm_teacher_overlap')) {
+                return back()->with('timetable_teacher_conflict', $this->buildTeacherConflictPayload(
+                    route('timetable.store'),
+                    $data,
+                    $teacherConflict,
+                    $periodWindow,
+                    route('timetable.index', ['class_id' => $data['class_group_id']])
+                ));
+            }
         }
 
         $slot = TimetableSlot::create([
@@ -258,7 +266,15 @@ class TimetableController extends Controller
         );
 
         if ($teacherConflict) {
-            return back()->with('error', $this->teacherConflictMessage($teacherConflict));
+            if (! $request->boolean('confirm_teacher_overlap')) {
+                return back()->with('timetable_teacher_conflict', $this->buildTeacherConflictPayload(
+                    route('timetable.update', ['slot' => $slot->id]),
+                    array_merge($data, ['_method' => 'PUT']),
+                    $teacherConflict,
+                    $periodWindow,
+                    route('timetable.index', ['class_id' => $slot->class_group_id])
+                ));
+            }
         }
 
         $slot->update([
@@ -458,7 +474,15 @@ class TimetableController extends Controller
 
     private function hoursFromSlots(Collection $slots, TimetableSetting $setting): float
     {
-        return round($slots->sum('periods_count'), 1);
+        $occupied = [];
+
+        foreach ($slots as $slot) {
+            for ($offset = 0; $offset < max(1, (int) $slot->periods_count); $offset++) {
+                $occupied[$slot->day_of_week . ':' . ((int) $slot->period_index + $offset)] = true;
+            }
+        }
+
+        return count($occupied);
     }
 
     private function resolveClassSubject(array $data, AcademicYear $activeYear): ?ClassSubject
@@ -517,7 +541,7 @@ class TimetableController extends Controller
             ->where('period_index', '<=', $endPeriod)
             ->whereRaw('(period_index + periods_count - 1) >= ?', [$periodIndex])
             ->with([
-                'classGroup.level',
+                'classGroup.level.section',
                 'classSubject.subject',
                 'classSubject.teacherAssignments.staff',
             ])
@@ -540,23 +564,51 @@ class TimetableController extends Controller
         return "Conflit enseignant : {$teacher} est déjà programmé en {$class} ({$subject}) le {$day}, {$period}.";
     }
 
+    private function buildTeacherConflictPayload(
+        string $action,
+        array $data,
+        TimetableSlot $conflictSlot,
+        array $periodWindow,
+        string $cancelUrl
+    ): array {
+        $teacher = $conflictSlot->classSubject?->teacherAssignments?->first()?->staff?->full_name ?? 'Cet enseignant';
+        $existingClass = $conflictSlot->classGroup?->full_name ?? 'une autre classe';
+        $existingSection = $conflictSlot->classGroup?->level?->section?->name ?? 'section inconnue';
+        $existingSubject = $conflictSlot->classSubject?->subject?->name_fr ?? 'une matière';
+        $candidateClass = ClassGroup::with('level.section')->find($data['class_group_id'] ?? null);
+        $candidateSubject = ClassSubject::with('subject')->find($data['class_subject_id'] ?? null);
+        $candidateClassName = $candidateClass?->full_name ?? 'la classe sélectionnée';
+        $candidateSection = $candidateClass?->level?->section?->name ?? 'section inconnue';
+        $candidateSubjectName = $candidateSubject?->subject?->name_fr ?? 'la matière sélectionnée';
+        $day = self::DAYS[(int) ($data['day_of_week'] ?? $conflictSlot->day_of_week)] ?? 'ce jour';
+        $existingStart = $conflictSlot->start_time ?: 'heure inconnue';
+        $existingEnd = $conflictSlot->end_time ?: 'heure inconnue';
+        $candidateStart = $periodWindow['start'] ?? 'heure inconnue';
+        $candidateEnd = $periodWindow['end'] ?? 'heure inconnue';
+        $existingRoom = $conflictSlot->room ?: 'sans salle';
+        $candidateRoom = filled($data['room'] ?? null) ? $data['room'] : 'sans salle';
+
+        return [
+            'message' => "Programmation simultanée : {$teacher} est déjà programmé le {$day}, de {$existingStart} à {$existingEnd}, dans {$existingClass} (section {$existingSection}), matière {$existingSubject}, salle {$existingRoom}. Vous souhaitez aussi le programmer de {$candidateStart} à {$candidateEnd}, dans {$candidateClassName} (section {$candidateSection}), matière {$candidateSubjectName}, salle {$candidateRoom}. Les deux classes seront donc prises en charge au même moment. Confirmez-vous cette programmation ?",
+            'action' => $action,
+            'cancelUrl' => $cancelUrl,
+            'method' => array_key_exists('_method', $data) ? 'PUT' : 'POST',
+            'fields' => [
+                'class_group_id' => (string) ($data['class_group_id'] ?? ''),
+                'class_subject_id' => (string) ($data['class_subject_id'] ?? ''),
+                'day_of_week' => (string) ($data['day_of_week'] ?? ''),
+                'period_index' => (string) ($data['period_index'] ?? ''),
+                'periods_count' => (string) ($data['periods_count'] ?? ''),
+                'room' => (string) ($data['room'] ?? ''),
+                'confirm_teacher_overlap' => '1',
+            ],
+        ];
+    }
+
     private function detectTeacherConflicts(Collection $slots, ?AcademicYear $activeYear): Collection
     {
-        if (! $activeYear) {
-            return collect();
-        }
-
-        return $slots
-            ->filter(fn (TimetableSlot $slot) => (bool) $this->findTeacherConflict(
-                $slot->class_subject_id,
-                $slot->day_of_week,
-                (int) $slot->period_index,
-                (int) $slot->periods_count,
-                $activeYear,
-                $slot->id
-            ))
-            ->pluck('id')
-            ->values();
+        // Les chevauchements inter-classes sont autorisés après confirmation lors de l'enregistrement.
+        return collect();
     }
 
     private function buildClassSummary(ClassGroup $classGroup, Collection $slots, TimetableSetting $setting): array

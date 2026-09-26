@@ -14,6 +14,8 @@
 
 @section('content')
 
+<div class="enseignant-dashboard -mx-2 -mt-2 -mb-2 space-y-6 lg:-mx-4 lg:-mt-4 lg:-mb-4">
+
 @if($noStaff)
 <div class="bg-amber-50 border border-amber-200 rounded-xl p-6 text-center">
     <p class="text-amber-700 font-semibold inline-flex items-center justify-center gap-2">
@@ -175,6 +177,7 @@
             'gridRows' => $gridRows,
             'slots' => $mySlots,
             'conflicts' => collect(),
+            'compact' => true,
             'teacherSubjectCount' => $mySlots->pluck('classSubject.subject_id')->unique()->count(),
         ])
     </div>
@@ -182,4 +185,6 @@
 </div>
 
 @endif
+
+</div>
 @endsection

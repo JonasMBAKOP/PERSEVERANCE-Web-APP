@@ -210,6 +210,28 @@ class StaffController extends Controller
     }
 
     // ── FORMULAIRE CRÉATION ───────────────────────────────────────────────
+    public function archived()
+    {
+        abort_unless(Auth::user()->hasRole('super-admin'), 403);
+        $staff = Staff::onlyTrashed()->with(['user', 'positions'])->latest('deleted_at')->paginate(15);
+        return view('staff.archived', compact('staff'));
+    }
+
+    public function restoreArchived(int $staff)
+    {
+        abort_unless(Auth::user()->hasRole('super-admin'), 403);
+        $staff = Staff::withTrashed()->findOrFail($staff);
+        $staff->restore();
+        $staff->update(['is_active' => true]);
+        $user = $staff->user;
+        if ($user?->trashed()) {
+            $user->restore();
+        }
+        $user?->update(['is_active' => true]);
+        AuditLog::log('restored', $staff, ['name' => $staff->full_name]);
+        return back()->with('success', "Dossier de {$staff->full_name} restaure avec succes.");
+    }
+
     public function create()
     {
         return view('staff.create', $this->formData());
@@ -395,7 +417,7 @@ class StaffController extends Controller
                 ->unique()
                 ->count();
 
-            $scheduleTotalHours = $scheduleSlots->sum('periods_count');
+            $scheduleTotalHours = $this->countOccupiedPeriods($scheduleSlots);
         }
 
         return view('staff.show', compact(
@@ -510,6 +532,19 @@ class StaffController extends Controller
         return $logoSrc;
     }
 
+    private function countOccupiedPeriods($slots): int
+    {
+        $occupied = [];
+
+        foreach ($slots as $slot) {
+            for ($offset = 0; $offset < max(1, (int) $slot->periods_count); $offset++) {
+                $occupied[$slot->day_of_week . ':' . ((int) $slot->period_index + $offset)] = true;
+            }
+        }
+
+        return count($occupied);
+    }
+
     private function formatPaySlipPeriod(?string $value): string
     {
         if (blank($value)) {
@@ -542,9 +577,58 @@ class StaffController extends Controller
         }
 
         $staff = $query->get();
+        $isVacataireFilter = $contractFilter === 'vacataire';
+        $needsWeeklyHours = blank($contractFilter) || $isVacataireFilter;
+        $weeklyHours = collect();
+
+        if ($needsWeeklyHours && ($activeYear = AcademicYear::active()) && $staff->isNotEmpty()) {
+            $assignmentsBySubject = TeacherAssignment::query()
+                ->where('academic_year_id', $activeYear->id)
+                ->whereIn('staff_id', $staff->pluck('id'))
+                ->get(['staff_id', 'class_subject_id'])
+                ->groupBy('class_subject_id');
+
+            if ($assignmentsBySubject->isNotEmpty()) {
+                $occupiedPeriods = [];
+
+                TimetableSlot::query()
+                    ->where('academic_year_id', $activeYear->id)
+                    ->whereIn('class_subject_id', $assignmentsBySubject->keys())
+                    ->get(['class_subject_id', 'day_of_week', 'period_index', 'periods_count'])
+                    ->each(function (TimetableSlot $slot) use ($assignmentsBySubject, &$occupiedPeriods): void {
+                        foreach ($assignmentsBySubject->get($slot->class_subject_id, collect()) as $assignment) {
+                            $staffId = (int) $assignment->staff_id;
+                            $occupiedPeriods[$staffId] ??= [];
+
+                            for ($offset = 0; $offset < max(1, (int) $slot->periods_count); $offset++) {
+                                $occupiedPeriods[$staffId][
+                                    $slot->day_of_week . ':' . ((int) $slot->period_index + $offset)
+                                ] = true;
+                            }
+                        }
+                    });
+
+                $weeklyHours = collect($occupiedPeriods)
+                    ->map(fn (array $periods): int => count($periods));
+            }
+        }
         $data = $this->staffDocumentContext(new Staff());
         $data['staff'] = $staff;
         $data['contractFilter'] = $contractFilter;
+        $data['showContractColumn'] = blank($contractFilter);
+        $data['isVacataireFilter'] = $isVacataireFilter;
+        $data['showWeeklyColumns'] = $isVacataireFilter;
+        $data['weeklyHours'] = $weeklyHours;
+        $data['vacataireWeeklyTotal'] = $staff
+            ->where('contract_type', 'vacataire')
+            ->sum(fn (Staff $member): float => $weeklyHours->get($member->id, 0) * (float) ($member->hourly_rate ?? 0));
+        $data['permanentMonthlyTotal'] = $staff
+            ->where('contract_type', 'permanent')
+            ->sum(fn (Staff $member): float => (float) ($member->monthly_salary ?? 0));
+        $data['semiPermanentMonthlyTotal'] = $staff
+            ->whereIn('contract_type', ['semi_permanent', 'stagiaire'])
+            ->sum(fn (Staff $member): float => (float) ($member->monthly_salary ?? 0));
+        $data['monthlyGrandTotal'] = $data['permanentMonthlyTotal'] + $data['semiPermanentMonthlyTotal'];
         $data['contractLabel'] = $contractFilter
             ? (Staff::contractLabels()[$contractFilter] ?? ucfirst(str_replace('_', ' ', $contractFilter)))
             : 'Tous les contrats';
@@ -822,51 +906,30 @@ class StaffController extends Controller
     // ── DÉSACTIVATION (soft delete) ─────────────────────────────────────────
     public function destroy(Staff $staff)
     {
-        // if ($staff->titularClasses()->exists()) {
-        //     return back()->with('error',
-        //         'Impossible de supprimer ce membre : il est titulaire d\'au moins une classe.');
-        // }
-
-        // Vérifier s'il a des assignations actives
-        $hasAssignments = $staff->teacherAssignments()->count() > 0;
-
-        if ($hasAssignments) {
-            return back()->with('error',
-                "Impossible de supprimer {$staff->full_name} : "
-                . "il/elle a des cours assignés.");
-        }
-
+        $authUser = Auth::user();
         $name = $staff->full_name;
-        $user = $staff->user; // Récupérer le User avant suppression du Staff
+        $user = $staff->user;
 
-        if ($staff->photo) {
-            Storage::disk('public')->delete($staff->photo);
+        if (!$authUser->hasRole('super-admin')) {
+            $staff->update(['is_active' => false]);
+            $user?->update(['is_active' => false]);
+            AuditLog::log('deactivated', $staff, ['name' => $name], ['is_active' => false]);
+
+            return redirect()
+                ->route('staff.index')
+                ->with('success', "Dossier de {$name} désactivé. Les opérations historiques sont conservées.");
         }
 
-        $staff->positions()->delete();
+        // L'archivage conserve les IDs, les relations et les photos historiques.
+        $staff->update(['is_active' => false]);
         $staff->delete();
-        
-        // Supprimer aussi le compte utilisateur associé s'il existe
-        if ($user) {
-            $user->delete();
-        }
-
-        AuditLog::log('deleted', null, ['name' => $name], []);
+        $user?->update(['is_active' => false]);
+        $user?->delete();
+        AuditLog::log('deleted', $staff, ['name' => $name], ['archived' => true]);
 
         return redirect()
             ->route('staff.index')
-            ->with('success', "Dossier de {$name} supprimé.");
-
-        // $oldValues = $staff->toArray();
-        // $this->deletePhoto($staff);
-        // $staff->update(['is_active' => false, 'user_id' => null]);
-        // $staff->delete();
-
-        // AuditLog::log('deleted', null, $oldValues);
-
-        // return redirect()
-        //     ->route('staff.index')
-        //     ->with('success', "Fiche de {$name} archivée.");
+            ->with('success', "Dossier de {$name} archivé définitivement. Les opérations historiques sont conservées.");
     }
 
     // ── TOGGLE ACTIF / INACTIF ──────────────────────────────────────────────
@@ -877,7 +940,16 @@ class StaffController extends Controller
         //         'Impossible de désactiver ce membre : il est titulaire d\'au moins une classe.');
         // }
 
-        $staff->update(['is_active' => !$staff->is_active]);
+        $isActive = ! $staff->is_active;
+
+        $staff->update(['is_active' => $isActive]);
+
+        // Le statut du compte de connexion doit toujours suivre celui du dossier RH.
+        $user = $staff->user;
+        if ($isActive && $user?->trashed()) {
+            $user->restore();
+        }
+        $user?->update(['is_active' => $isActive]);
         $status = $staff->is_active ? 'activé(e)' : 'désactivé(e)';
 
         AuditLog::log('status_changed', $staff);

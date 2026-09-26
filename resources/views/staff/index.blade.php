@@ -5,6 +5,9 @@
 @section('page-subtitle', 'Détails et informations complètes du personnel')
 
 @section('content')
+@if(auth()->user()->hasRole('super-admin'))
+<div class="mb-4 text-right"><a href="{{ route('staff.archived') }}" class="text-sm font-semibold text-gray-600 hover:text-gray-900">Voir les dossiers RH archives</a></div>
+@endif
 <div x-data="{ viewMode: 'grid' }">
 
     <div class="mb-6 flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">

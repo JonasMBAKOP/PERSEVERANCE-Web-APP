@@ -37,6 +37,16 @@ class Student extends Model
         ];
     }
 
+    public function setFirstNameAttribute($value): void
+    {
+        $this->attributes['first_name'] = mb_strtoupper(trim((string) $value), 'UTF-8');
+    }
+
+    public function setLastNameAttribute($value): void
+    {
+        $this->attributes['last_name'] = mb_strtoupper(trim((string) $value), 'UTF-8');
+    }
+
     // ── Relations ──────────────────────────────────────────────────────────
     public function enrollments()
     {

@@ -61,7 +61,7 @@
             <div class="mb-5 rounded-3xl border border-blue-100 bg-blue-50 px-5 py-4">
                 <p class="text-sm font-semibold text-blue-700">Instructions</p>
                 <p class="mt-2 text-sm text-slate-600">
-                    Seul le champ pertinent à votre type de contrat apparaît. Pour un personnel permanent, modifiez le salaire mensuel. Pour un vacataire, modifiez uniquement le tarif horaire.
+                    Seul le champ pertinent à votre type de contrat apparaît. Pour un personnel permanent ou sémi-permanent, modifiez le salaire mensuel. Pour un vacataire, modifiez uniquement le tarif horaire.
                 </p>
             </div>
 

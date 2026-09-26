@@ -68,7 +68,7 @@
             <button @click="open = !open"
                     class="flex items-center gap-2 p-1.5 rounded-lg
                            hover:bg-gray-100 transition-colors">
-                @if($navUser->photo || $navUser->staff?->photo)
+                @if($navUser->photo && \Illuminate\Support\Facades\Storage::disk('public')->exists($navUser->photo))
                     <img src="{{ $navUser->photo_url }}"
                          alt="{{ $navUser->name }}"
                          class="w-8 h-8 rounded-full object-cover flex-shrink-0">

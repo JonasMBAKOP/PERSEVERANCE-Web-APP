@@ -32,6 +32,9 @@
 @endpush
 
 @section('content')
+@if(auth()->user()->hasRole('super-admin'))
+<div class="mb-4 text-right"><a href="{{ route('users.archived') }}" class="text-sm font-semibold text-gray-600 hover:text-gray-900">Voir les comptes archives</a></div>
+@endif
 
 {{-- ── BARRE D'ACTIONS ─────────────────────────────────────────────────── --}}
 <div class="flex flex-col sm:flex-row sm:items-center justify-between

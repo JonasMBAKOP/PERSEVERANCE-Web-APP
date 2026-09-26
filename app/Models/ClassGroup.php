@@ -40,7 +40,7 @@ class ClassGroup extends Model
 
     public function titularStaff()
     {
-        return $this->belongsTo(Staff::class, 'titular_staff_id');
+        return $this->belongsTo(Staff::class, 'titular_staff_id')->withTrashed();
     }
 
     public function classSubjects()
