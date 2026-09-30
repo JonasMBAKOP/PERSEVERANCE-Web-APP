@@ -17,6 +17,7 @@ use App\Services\EnrollmentService;
 use App\Services\StudentDocumentService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -687,6 +688,13 @@ class StudentController extends Controller
                 DB::table('student_payments')
                     ->where('student_enrollment_id', $enrollment->id)
                     ->delete();
+                // bulletin_sends references the enrollment without cascade delete.
+                // Move its history after the replacement enrollment is created.
+                if (Schema::hasTable('bulletin_sends')) {
+                    DB::table('bulletin_sends')
+                        ->where('student_enrollment_id', $enrollment->id)
+                        ->delete();
+                }
                 $enrollment->delete();
 
                 $newEnrollment = StudentEnrollment::create([
@@ -786,7 +794,7 @@ class StudentController extends Controller
     private function snapshotTransferRows(int $enrollmentId): array
     {
         $tables = [
-            'discipline_incidents', 'discipline_records',
+            'discipline_incidents', 'discipline_records', 'bulletin_sends',
         ];
 
         $rows = [];
@@ -810,7 +818,7 @@ class StudentController extends Controller
             'students', 'student_enrollments', 'student_payments',
             'student_subjects', 'grades', 'absences', 'bulletin_reports',
             'manual_insolvables', 'discipline_incidents', 'discipline_records',
-            'infirmary_visits',
+            'infirmary_visits', 'bulletin_sends',
         ] as $table) {
             if (! \Illuminate\Support\Facades\Schema::hasTable($table)) {
                 continue;
@@ -836,13 +844,17 @@ class StudentController extends Controller
         array $rows
     ): void {
         foreach ($rows as $table => $tableRows) {
-            if (!in_array($table, ['discipline_incidents', 'discipline_records'], true)) {
+            if (!in_array($table, ['discipline_incidents', 'discipline_records', 'bulletin_sends'], true)) {
                 continue;
             }
 
             foreach ($tableRows as $row) {
                 unset($row['id']);
                 $row['student_enrollment_id'] = $newEnrollment->id;
+                if ($table === 'bulletin_sends') {
+                    // The old bulletin report belongs to the deleted enrollment.
+                    $row['bulletin_report_id'] = null;
+                }
                 if (array_key_exists('class_group_id', $row)) {
                     $row['class_group_id'] = $newClass->id;
                 }

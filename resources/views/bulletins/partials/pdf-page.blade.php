@@ -532,7 +532,7 @@
 
                         $gradeClass = $isAbsent ? 'grade-absent' : (
                             $grade === null ? '' : (
-                            $grade >= 12 ? 'grade-good' : ($grade >= 10 ? 'grade-avg' : 'grade-bad')
+                            $grade >= 10 ? 'grade-good' : 'grade-bad'
                         ));
                     @endphp
                     <tr>

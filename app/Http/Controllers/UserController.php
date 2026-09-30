@@ -47,7 +47,7 @@ class UserController extends Controller
             );
         }
 
-        $users = $query->paginate(15)->withQueryString();
+        $users = $query->paginate(30)->withQueryString();
 
         // Statistiques — exclure super-admin pour les non-super-admins
         $statsQuery = User::query();

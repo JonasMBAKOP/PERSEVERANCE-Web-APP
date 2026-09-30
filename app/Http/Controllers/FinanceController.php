@@ -14,6 +14,7 @@ use App\Models\StudentEnrollment;
 use App\Models\StudentPayment;
 use App\Models\User;
 use App\Models\ManualInsolvable;
+use App\Services\PaymentReconciliationService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -188,6 +189,7 @@ class FinanceController extends Controller
         ]);
 
         $this->cleanupOverpaidPayments($enrollment);
+        app(PaymentReconciliationService::class)->reconcileEnrollment($enrollment);
 
         $feeStructure = $enrollment->classGroup()->with('feeStructures.installments')->first()?->feeStructures->first();
 
@@ -273,6 +275,11 @@ class FinanceController extends Controller
                 'was_bulk' => (bool) $payment->is_bulk,
             ]);
         });
+
+        $enrollment = StudentEnrollment::find($enrollmentId);
+        if ($enrollment) {
+            app(PaymentReconciliationService::class)->reconcileEnrollment($enrollment);
+        }
 
         return redirect()->route('finances.student', $enrollmentId)
             ->with('success', 'Paiement supprimé. Les soldes financiers ont été recalculés.');
@@ -424,6 +431,7 @@ class FinanceController extends Controller
             'notes'                 => $request->notes,
         ]);
 
+        app(PaymentReconciliationService::class)->reconcileEnrollment($enrollment);
         AuditLog::log('payment_recorded', $payment);
 
         return redirect()
@@ -438,6 +446,7 @@ class FinanceController extends Controller
         $request->validate([
             'amount_paid'       => ['required', 'numeric', 'min:0'],
             'scholarship_amount' => ['nullable', 'numeric', 'min:0'],
+            'payment_date'      => ['required', 'date', 'before_or_equal:today'],
         ]);
 
         $feeStructure = $enrollment->classGroup()->with('feeStructures.installments')->first()?->feeStructures->first();
@@ -583,6 +592,7 @@ class FinanceController extends Controller
             'snapshot_total_remaining' => $totalRemaining,
         ])->saveQuietly();
 
+        app(PaymentReconciliationService::class)->reconcileEnrollment($enrollment);
         AuditLog::log('bulk_payment_recorded', $bulkPayment);
 
         if ($request->ajax()) {

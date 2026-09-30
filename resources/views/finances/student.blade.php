@@ -409,6 +409,13 @@
                        class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-100">
             </div>
 
+            <div>
+                <label class="block text-xs text-gray-500 mb-1">Date du paiement</label>
+                <input type="date" name="payment_date" value="{{ now()->toDateString() }}"
+                       max="{{ now()->toDateString() }}" required
+                       class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-100">
+            </div>
+
             <div class="flex items-center gap-3">
                 <label class="inline-flex items-center gap-2 text-sm text-gray-600">
                     <input type="checkbox" id="scholarship-toggle" class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
@@ -440,11 +447,16 @@ function openBulkPaymentModal() {
         modal.classList.remove('hidden');
         modal.classList.add('flex');
         const input = modal.querySelector('input[name="amount_paid"]');
+        const paymentDate = modal.querySelector('input[name="payment_date"]');
         const scholarshipToggle = modal.querySelector('#scholarship-toggle');
         const scholarshipBlock = modal.querySelector('#scholarship-block');
         if (input) {
             input.value = '0';
             input.focus();
+        }
+        if (paymentDate) {
+            const now = new Date();
+            paymentDate.value = [now.getFullYear(), String(now.getMonth() + 1).padStart(2, '0'), String(now.getDate()).padStart(2, '0')].join('-');
         }
         if (scholarshipToggle) {
             scholarshipToggle.checked = false;

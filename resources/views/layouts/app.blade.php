@@ -93,6 +93,20 @@
 
     {{-- Script sidebar responsive --}}
     <script>
+        // Resolve the user's timezone without hard-coding a country in the application.
+        (() => {
+            try {
+                const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+                const current = document.cookie.match(/(?:^|; )app_timezone=([^;]*)/);
+                if (timezone && decodeURIComponent(current?.[1] || '') !== timezone) {
+                    document.cookie = `app_timezone=${encodeURIComponent(timezone)}; path=/; max-age=31536000; SameSite=Lax`;
+                    window.location.reload();
+                }
+            } catch (_) {
+                // The server fallback remains active when timezone detection is unavailable.
+            }
+        })();
+
         function toggleSidebar() {
             const sidebar  = document.getElementById('sidebar');
             const overlay  = document.getElementById('sidebar-overlay');

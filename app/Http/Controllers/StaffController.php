@@ -185,7 +185,7 @@ class StaffController extends Controller
 
         $staff = $query->orderBy('last_name')
                        ->orderBy('first_name')
-                       ->paginate(15)
+                       ->paginate(30)
                        ->withQueryString();
 
         $activeYear = AcademicYear::active();

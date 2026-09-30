@@ -20,8 +20,15 @@
     html, body {
         margin: 0;
         padding: 0;
-        font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        font-family: 'Times New Roman', Times, serif !important;
         color: #111827;
+        -webkit-font-smoothing: antialiased;
+        text-rendering: optimizeLegibility;
+    }
+
+    .bulletin-page,
+    .bulletin-page * {
+        font-family: 'Times New Roman', Times, serif !important;
     }
 
     body {
@@ -243,15 +250,22 @@
     .notes-table {
         width: 100%;
         border-collapse: collapse;
-        font-size: 8.5px;
+        font-size: 9px;
         margin-bottom: 10px;
         border: 1px solid #9CA3AF;
     }
 
     .notes-table th,
     .notes-table td {
-        padding: 5px 6px;
+        padding: 2px 4px;
+        font-size: 9px !important;
+        line-height: 1.02;
         border: 1px solid #9CA3AF;
+    }
+
+    .notes-table thead th {
+        font-size: 8.2px !important;
+        line-height: 1;
     }
 
     .notes-table thead {
@@ -302,7 +316,7 @@
     }
 
     .grade-good { color: var(--vert); }
-    .grade-avg { color: var(--or); }
+    .grade-avg { color: var(--vert); }
     .grade-bad { color: var(--rouge); }
     .grade-absent { color: #9CA3AF; font-style: italic; }
 
@@ -686,6 +700,15 @@
     .stat-cell .slabel { font-size: 6px; font-weight: 700; color: #6B7280; text-transform: uppercase; }
     .stat-cell .svalue { font-size: 11px; font-weight: 900; color: var(--bleu-dark); margin-top: 2px; }
     .stat-cell .smeta { font-size: 6px; color: #9CA3AF; }
+
+    .coptan-stats-primary,
+    .coptan-stats-secondary,
+    .perseverance-stats-primary,
+    .perseverance-stats-secondary {
+        padding: 3px 6px !important;
+        gap: 1px !important;
+        line-height: 1.02 !important;
+    }
     .prev-trims {
         display: grid;
         grid-template-columns: 1fr 1fr;

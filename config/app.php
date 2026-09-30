@@ -65,7 +65,8 @@ return [
     |
     */
 
-    'timezone' => 'UTC',
+    // The request middleware can replace this with the browser's valid IANA timezone.
+    'timezone' => env('APP_TIMEZONE', date_default_timezone_get()),
 
     /*
     |--------------------------------------------------------------------------
