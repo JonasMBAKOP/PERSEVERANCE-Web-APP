@@ -34,6 +34,7 @@
         @media print { .no-print { display: none !important; } }
     </style>
 </head>
+@php($isAttendanceSheet = $isAttendanceSheet ?? false)
 <body>
 <div class="toolbar no-print" style="text-align: center;">
     <button type="button" class="print-button" onclick="window.print()">Imprimer</button>
@@ -85,6 +86,9 @@
                 <th>Heures par semaine</th>
                 <th>Total</th>
             @endif
+            @if($isAttendanceSheet)
+                <th>Signature</th>
+            @endif
         </tr>
         </thead>
         <tbody>
@@ -107,11 +111,15 @@
                         <td>—</td>
                     @endif
                 @endif
+                @if($isAttendanceSheet)
+                    <td style="height: 34px;"></td>
+                @endif
             </tr>
         @endforeach
         </tbody>
     </table>
 
+    @if(! $isAttendanceSheet)
     <div class="salary-summary">
         @if(blank($contractFilter))
             <div class="salary-summary__row">
@@ -147,6 +155,7 @@
             </div>
         @endif
     </div>
+    @endif
 </div>
 </body>
 </html>

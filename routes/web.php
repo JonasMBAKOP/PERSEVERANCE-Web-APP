@@ -435,6 +435,8 @@ Route::middleware(['auth', 'permission:view-staff'])
             ->name('salaries');
         Route::get('/salaries/print', [StaffController::class, 'printSalaryList'])
             ->name('salaries.print');
+        Route::get('/salaries/attendance-sheet', [StaffController::class, 'salaryAttendanceSheet'])
+            ->name('salaries.attendance-sheet');
         Route::get('/lists/print', [StaffController::class, 'printList'])
             ->name('lists.print');
         Route::get('/{staff}/pay-slip', [StaffController::class, 'paySlip'])

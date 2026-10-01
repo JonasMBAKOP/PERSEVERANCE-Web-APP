@@ -426,6 +426,37 @@ class StaffController extends Controller
         ));
     }
 
+    public function salaryAttendanceSheet(Request $request)
+    {
+        $month = $request->input('month', now()->format('Y-m'));
+        validator(['month' => $month], ['month' => ['required', 'date_format:Y-m']])->validate();
+        $monthDate = \Carbon\Carbon::createFromFormat('Y-m', $month);
+        abort_unless($monthDate && $monthDate->format('Y-m') === $month, 422);
+
+        $staff = Staff::with(['positions', 'user'])
+            ->whereIn('contract_type', ['permanent', 'semi_permanent', 'stagiaire'])
+            ->orderBy('last_name')
+            ->orderBy('first_name')
+            ->get();
+
+        $data = $this->staffDocumentContext(new Staff());
+        $data['staff'] = $staff;
+        $data['contractFilter'] = null;
+        $data['showContractColumn'] = true;
+        $data['isVacataireFilter'] = false;
+        $data['showWeeklyColumns'] = false;
+        $data['weeklyHours'] = collect();
+        $data['vacataireWeeklyTotal'] = 0;
+        $data['permanentMonthlyTotal'] = 0;
+        $data['semiPermanentMonthlyTotal'] = 0;
+        $data['monthlyGrandTotal'] = 0;
+        $data['isAttendanceSheet'] = true;
+        $data['attendanceMonth'] = $monthDate->locale('fr')->translatedFormat('F Y');
+        $data['documentTitle'] = 'FICHE D\'ÉMARGEMENT DES SALAIRES - ' . mb_strtoupper($data['attendanceMonth']);
+
+        return view('staff.documents.salary-list', $data);
+    }
+
     public function printList(Request $request)
     {
         $query = Staff::with(['positions']);
@@ -642,13 +673,18 @@ class StaffController extends Controller
     public function paySlip(Staff $staff, ?Request $request = null)
     {
         $data = $this->staffDocumentContext($staff);
+        $isVacataire = $staff->contract_type === 'vacataire';
         // Prefill with any saved slip for the current month
         $currentPeriod = now()->format('Y-m');
-        $saved = StaffPaySlip::where('staff_id', $staff->id)
-            ->where('period', $currentPeriod)
-            ->first();
+        $saved = $isVacataire
+            ? StaffPaySlip::where('staff_id', $staff->id)->latest('id')->first()
+            : StaffPaySlip::where('staff_id', $staff->id)->where('period', $currentPeriod)->first();
 
         $data['amountReceived'] = $saved?->amount_received ?? null;
+        $data['hoursWorked'] = $isVacataire ? ($saved?->hours_worked ?? null) : null;
+        $data['isVacataire'] = $isVacataire;
+        $data['monthlySalary'] = $staff->monthly_salary;
+        $data['hourlyRate'] = $staff->hourly_rate;
         $data['periodLabel'] = now()->locale('fr')->translatedFormat('F Y');
         $data['previewMode'] = false;
 
@@ -657,19 +693,26 @@ class StaffController extends Controller
 
     public function previewPaySlip(Request $request, Staff $staff)
     {
-        $request->validate([
-            'amount_received' => ['nullable', 'numeric', 'min:0'],
-            'period' => ['nullable', 'string'],
-        ]);
+        $isVacataire = $staff->contract_type === 'vacataire';
+        $request->validate($isVacataire
+            ? ['hours_worked' => ['required', 'numeric', 'min:0']]
+            : ['period' => ['required', 'date_format:Y-m']]);
 
-        $amountReceived = $request->input('amount_received');
+        $hoursWorked = $isVacataire ? (float) $request->input('hours_worked') : null;
+        $amountReceived = $isVacataire
+            ? $hoursWorked * (float) ($staff->hourly_rate ?? 0)
+            : (float) ($staff->monthly_salary ?? 0);
         $period = $request->input('period');
 
         // Preview should not persist; saving is done explicitly via storePaySlip()
 
         $data = $this->staffDocumentContext($staff);
         $data['amountReceived'] = $amountReceived;
-        $data['periodLabel'] = $this->formatPaySlipPeriod($period);
+        $data['hoursWorked'] = $hoursWorked;
+        $data['isVacataire'] = $isVacataire;
+        $data['monthlySalary'] = $staff->monthly_salary;
+        $data['hourlyRate'] = $staff->hourly_rate;
+        $data['periodLabel'] = $isVacataire ? 'Paiement à la demande' : $this->formatPaySlipPeriod($period);
         $data['previewMode'] = true;
 
         return view('staff.documents.pay-slip', $data);
@@ -677,20 +720,41 @@ class StaffController extends Controller
 
     public function storePaySlip(Request $request, Staff $staff)
     {
-        $request->validate([
-            'amount_received' => ['nullable', 'numeric', 'min:0'],
-            'period' => ['nullable', 'string'],
-        ]);
+        $isVacataire = $staff->contract_type === 'vacataire';
+        $request->validate($isVacataire
+            ? ['hours_worked' => ['required', 'numeric', 'min:0']]
+            : ['period' => ['required', 'date_format:Y-m']]);
 
-        $amountReceived = $request->input('amount_received');
-        $period = $request->input('period');
+        $hoursWorked = $isVacataire ? (float) $request->input('hours_worked') : null;
+        $amountReceived = $isVacataire
+            ? $hoursWorked * (float) ($staff->hourly_rate ?? 0)
+            : (float) ($staff->monthly_salary ?? 0);
+        $period = $isVacataire ? null : $request->input('period');
 
-        StaffPaySlip::updateOrCreate(
-            ['staff_id' => $staff->id, 'period' => $period],
-            ['amount_received' => $amountReceived]
-        );
+        if ($isVacataire) {
+            StaffPaySlip::create([
+                'staff_id' => $staff->id,
+                'period' => null,
+                'hours_worked' => $hoursWorked,
+                'amount_received' => $amountReceived,
+            ]);
+        } else {
+            StaffPaySlip::updateOrCreate(
+                ['staff_id' => $staff->id, 'period' => $period],
+                ['hours_worked' => null, 'amount_received' => $amountReceived]
+            );
+        }
 
-        return redirect()->back()->with('success', 'Montant enregistré.');
+        $data = $this->staffDocumentContext($staff);
+        $data['amountReceived'] = $amountReceived;
+        $data['hoursWorked'] = $hoursWorked;
+        $data['isVacataire'] = $isVacataire;
+        $data['monthlySalary'] = $staff->monthly_salary;
+        $data['hourlyRate'] = $staff->hourly_rate;
+        $data['periodLabel'] = $isVacataire ? 'Paiement à la demande' : $this->formatPaySlipPeriod($period);
+        $data['previewMode'] = true;
+
+        return view('staff.documents.pay-slip', $data);
     }
 
     public function annualPaySlip(Staff $staff)

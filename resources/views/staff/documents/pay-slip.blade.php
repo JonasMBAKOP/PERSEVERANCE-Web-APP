@@ -39,6 +39,7 @@
     </style>
 </head>
 <body>
+@php($isVacataire = $isVacataire ?? $staff->contract_type === 'vacataire')
 <div class="toolbar no-print">
     <button type="button" class="print-button" onclick="window.print()">Imprimer</button>
 </div>
@@ -83,7 +84,7 @@
         <tr>
             <th>Salaire convenu</th>
             <td>
-                @if(in_array($staff->contract_type, ['permanent', 'semi_permanent'], true))
+                @if(in_array($staff->contract_type, ['permanent', 'semi_permanent', 'stagiaire'], true))
                     {{ $staff->monthly_salary ? number_format($staff->monthly_salary) . ' FCFA / mois' : 'À renseigner' }}
                 @else
                     {{ $staff->hourly_rate ? number_format($staff->hourly_rate) . ' FCFA / h' : 'À renseigner' }}
@@ -94,8 +95,8 @@
 
     <div class="totals">
         <div class="totals__item">
-            <span class="totals__label">Période : </span>
-            <span class="totals__value">{{ $periodLabel }}</span>
+            <span class="totals__label">{{ $isVacataire ? 'Heures effectuees :' : 'Periode :' }} </span>
+            <span class="totals__value">{{ $isVacataire ? number_format((float) ($hoursWorked ?? 0), 2, ',', ' ') . ' h' : $periodLabel }}</span>
         </div>
         <div class="totals__item" style="justify-content: flex-end;">
             <span class="totals__label">Salaire Perçu : </span>
@@ -149,7 +150,7 @@
         <tr>
             <th>Salaire convenu</th>
             <td>
-                @if(in_array($staff->contract_type, ['permanent', 'semi_permanent'], true))
+                @if(in_array($staff->contract_type, ['permanent', 'semi_permanent', 'stagiaire'], true))
                     {{ $staff->monthly_salary ? number_format($staff->monthly_salary) . ' FCFA / mois' : 'À renseigner' }}
                 @else
                     {{ $staff->hourly_rate ? number_format($staff->hourly_rate) . ' FCFA / h' : 'À renseigner' }}
@@ -160,8 +161,8 @@
 
     <div class="totals">
         <div class="totals__item">
-            <span class="totals__label">Période : </span>
-            <span class="totals__value">{{ $periodLabel }}</span>
+            <span class="totals__label">{{ $isVacataire ? 'Heures effectuees :' : 'Periode :' }} </span>
+            <span class="totals__value">{{ $isVacataire ? number_format((float) ($hoursWorked ?? 0), 2, ',', ' ') . ' h' : $periodLabel }}</span>
         </div>
         <div class="totals__item" style="justify-content: flex-end;">
             <span class="totals__label">Salaire Perçu : </span>

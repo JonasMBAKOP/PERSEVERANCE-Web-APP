@@ -5,7 +5,7 @@
 @section('page-subtitle', 'Liste des membres du personnel par type de contrat')
 
 @section('content')
-<div>
+<div x-data="{ attendanceOpen: false, attendanceMonth: '{{ now()->format('Y-m') }}' }">
     <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
         <div>
             <h2 class="text-2xl font-bold text-gray-900">Salaires</h2>
@@ -61,7 +61,29 @@
                 </svg>
                 Imprimer la fiche
             </a>
+            <button type="button" @click="attendanceOpen = true"
+                    class="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-[#1A3A6B] bg-white px-4 py-2 text-sm font-semibold text-[#1A3A6B] hover:bg-blue-50 sm:w-auto">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 3v3m8-3v3M4 9h16M6 5h12a2 2 0 0 1 2 2v12H4V7a2 2 0 0 1 2-2Z"/>
+                </svg>
+                Fiche d'émargement
+            </button>
         </form>
+    </div>
+
+    <div x-cloak x-show="attendanceOpen" x-transition.opacity class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 px-4"
+         @click.self="attendanceOpen = false" @keydown.escape.window="attendanceOpen = false">
+        <div class="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl" @click.stop>
+            <div class="flex items-start justify-between gap-4">
+                <div><h3 class="text-lg font-bold text-slate-900">Fiche d'émargement</h3><p class="mt-1 text-sm text-slate-500">Choisissez le mois des salaires à émarger.</p></div>
+                <button type="button" @click="attendanceOpen = false" aria-label="Fermer" class="text-2xl leading-none text-slate-400 hover:text-slate-700">&times;</button>
+            </div>
+            <form method="GET" action="{{ route('staff.salaries.attendance-sheet') }}" target="_blank" class="mt-6">
+                <label for="attendance-month" class="block text-sm font-semibold text-slate-700">Mois</label>
+                <input id="attendance-month" name="month" type="month" x-model="attendanceMonth" required class="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:border-[#1A3A6B] focus:outline-none focus:ring-2 focus:ring-blue-100">
+                <div class="mt-6 flex justify-end gap-3"><button type="button" @click="attendanceOpen = false" class="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50">Annuler</button><button type="submit" class="rounded-lg bg-[#1A3A6B] px-4 py-2 text-sm font-semibold text-white hover:bg-[#14304f]">Afficher la fiche</button></div>
+            </form>
+        </div>
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
