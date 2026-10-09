@@ -36,7 +36,7 @@
                 Importer
             </button> --}}
 
-            @if($listPrintParams)
+            @if($listPrintParams && ! $isTeacher)
             <a href="{{ route('students.documents.lists', $listPrintParams) }}"
                target="_blank"
                class="inline-flex items-center gap-2 px-4 py-2 border border-[#1A3A6B] text-[#1A3A6B] bg-white text-sm font-semibold rounded-lg hover:bg-gray-50 shadow-sm transition-all">
@@ -58,7 +58,7 @@
     </div>
 
     {{-- Onglets inscription / renouvellement --}}
-    @if($activeYear && $selectedYear?->is_active)
+    @if($activeYear && $selectedYear?->is_active && ! $isTeacher)
     <div class="flex flex-wrap items-center gap-3">
         <a href="{{ route('students.index', array_merge(request()->except('renewal'), ['year_id' => $selectedYear->id])) }}"
            class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold border transition-all
@@ -111,7 +111,10 @@
 
             <div class="w-full sm:w-56">
                 <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Année</label>
-                <select name="year_id" onchange="this.form.submit()"
+                @if($isTeacher)
+                <input type="hidden" name="year_id" value="{{ $activeYear?->id }}">
+                @endif
+                <select name="year_id" onchange="this.form.submit()" {{ $isTeacher ? 'disabled' : '' }}
                         class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-[#1A3A6B] focus:border-[#1A3A6B] transition-all">
                     @foreach($years as $year)
                     <option value="{{ $year->id }}"
@@ -126,12 +129,17 @@
             {{-- Section --}}
             <div class="w-full sm:w-48">
                 <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Section</label>
-                <select name="section_id" onchange="this.form.submit()"
+                @if($isTeacher && $availableSectionIds->count() === 1)
+                <input type="hidden" name="section_id" value="{{ $selectedSectionId }}">
+                @endif
+                <select name="section_id" onchange="this.form.submit()" {{ $isTeacher && $availableSectionIds->count() === 1 ? 'disabled' : '' }}
                         class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-[#1A3A6B] focus:border-[#1A3A6B] transition-all">
+                    @if(! $isTeacher || $availableSectionIds->count() > 1)
                     <option value="">Toutes</option>
+                    @endif
                     @foreach($sections as $section)
                     <option value="{{ $section->id }}"
-                            {{ request('section_id') == $section->id ? 'selected' : '' }}>
+                            {{ $selectedSectionId == $section->id ? 'selected' : '' }}>
                         {{ $section->name }}
                     </option>
                     @endforeach
@@ -141,12 +149,17 @@
             {{-- Classe --}}
             <div class="w-full sm:w-56">
                 <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Classe</label>
-                <select name="class_id" onchange="this.form.submit()"
+                @if($isTeacher && $availableClassIds->count() === 1)
+                <input type="hidden" name="class_id" value="{{ $selectedClassId }}">
+                @endif
+                <select name="class_id" onchange="this.form.submit()" {{ $isTeacher && $availableClassIds->count() === 1 ? 'disabled' : '' }}
                         class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-[#1A3A6B] focus:border-[#1A3A6B] transition-all">
+                    @if(! $isTeacher || $availableClassIds->count() > 1)
                     <option value="">Toutes les classes</option>
+                    @endif
                     @foreach($classes as $class)
                     <option value="{{ $class->id }}"
-                            {{ request('class_id') == $class->id ? 'selected' : '' }}>
+                            {{ $selectedClassId == $class->id ? 'selected' : '' }}>
                         {{ $class->full_name }}
                     </option>
                     @endforeach

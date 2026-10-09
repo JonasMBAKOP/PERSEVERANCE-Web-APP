@@ -38,11 +38,11 @@ class StoreStudentRequest extends FormRequest
             'address'               => ['nullable', 'string'],
             // Parents / tuteur
             'father_name'           => ['nullable', 'string', 'max:150'],
-            'father_phone'          => ['nullable', 'string', 'max:30'],
+            'father_phone'          => ['nullable', 'string', 'max:255'],
             'mother_name'           => ['nullable', 'string', 'max:150'],
-            'mother_phone'          => ['nullable', 'string', 'max:30'],
+            'mother_phone'          => ['nullable', 'string', 'max:255'],
             'guardian_name'         => ['nullable', 'string', 'max:150'],
-            'guardian_phone'        => ['nullable', 'string', 'max:30'],
+            'guardian_phone'        => ['nullable', 'string', 'max:255'],
             'guardian_relationship' => ['nullable', 'string', 'max:100'],
             // Matricule
             'matricule'             => ['nullable', 'string', 'max:30'],

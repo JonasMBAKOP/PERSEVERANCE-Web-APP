@@ -24,11 +24,25 @@
 <style>
     .grades-detail-page .grades-table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
     .grades-detail-page .grades-table-scroll table { min-width: 620px; }
+    .grades-detail-page .grades-table-scroll.single-subject-table table { min-width: 560px; }
     @media (max-width: 1023px) {
         .grades-detail-page .grades-table-scroll th:first-child,
         .grades-detail-page .grades-table-scroll td:first-child { width: 105px !important; min-width: 105px !important; }
         .grades-detail-page .grades-table-scroll th:last-child,
         .grades-detail-page .grades-table-scroll td:last-child { width: 60px !important; min-width: 60px !important; }
+        .grades-detail-page .grades-table-scroll.single-subject-table th:first-child,
+        .grades-detail-page .grades-table-scroll.single-subject-table td:first-child {
+            width: 82px !important;
+            min-width: 82px !important;
+            max-width: 100px !important;
+            padding-left: .5rem !important;
+            padding-right: .5rem !important;
+            white-space: normal;
+            overflow-wrap: anywhere;
+        }
+        .grades-detail-page .grades-table-scroll.single-subject-table table { table-layout: fixed; }
+        .grades-detail-page .grades-table-scroll.single-subject-table th:first-child > *,
+        .grades-detail-page .grades-table-scroll.single-subject-table td:first-child > * { min-width: 0; }
     }
 </style>
 <div class="grades-detail-page -mx-2 -mt-2 -mb-2 lg:-mx-4 lg:-mt-4 lg:-mb-4">
@@ -98,7 +112,7 @@
         </form>
         @endcan
 
-        @can('manage-academic-years')
+        @can('validate-grades')
         <a href="{{ route('grades.bordereau', [$classGroup, $sequence]) }}"
            target="_blank" rel="noopener noreferrer"
            class="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-blue-200
@@ -133,7 +147,10 @@
 </div>
 @else
 
-<div class="grades-table-scroll bg-white rounded-2xl shadow-sm border border-gray-100">
+@php
+    $singleSubject = $displaySubjects->count() === 1;
+@endphp
+<div class="grades-table-scroll {{ $singleSubject ? 'single-subject-table' : '' }} bg-white rounded-2xl shadow-sm border border-gray-100">
     <table class="w-full"
            style="border-collapse:separate;border-spacing:0;">
         <thead>

@@ -35,6 +35,9 @@
 </head>
 <body>
 @include('students.documents.partials.print-toolbar')
+<style>
+    .infirmary-report td:nth-child(6) { white-space: pre-line; }
+</style>
 <main class="page infirmary-report">
     @include('grades.partials.bordereau-header', [
         'docTitleFr' => 'REGISTRE DES CONSULTATIONS INFIRMERIE',

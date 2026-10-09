@@ -632,13 +632,13 @@ Route::middleware(['auth', 'permission:view-grades'])
         // DÃƒÆ’Ã‚Â©tail des notes (accessible directeur, censeur, super-admin avec permission manage-academic-years)
         Route::middleware('permission:view-grades')->group(function () {
             Route::get('/{classGroup}/detail/{sequence}', [GradeController::class, 'detail'])
-                ->middleware('permission:manage-academic-years')
+                ->middleware('role:super-admin|directeur|censeur|secretaire')
                 ->name('detail');
             Route::get('/{classGroup}/bordereau/{sequence}', [GradeController::class, 'bordereau'])
-                ->middleware('permission:manage-academic-years')
+                ->middleware('role:super-admin|directeur|censeur|secretaire')
                 ->name('bordereau');
             Route::get('/{classGroup}/bordereau/{sequence}/pdf', [GradeController::class, 'bordereauPdf'])
-                ->middleware('permission:manage-academic-years')
+                ->middleware('role:super-admin|directeur|censeur|secretaire')
                 ->name('bordereau.pdf');
         });
         
@@ -649,7 +649,7 @@ Route::middleware(['auth', 'permission:view-grades'])
         
         // Verrouiller/DÃƒÆ’Ã‚Â©verrouiller les notes (admin uniquement - vÃƒÆ’Ã‚Â©rifiÃƒÆ’Ã‚Â© dans le contrÃƒÆ’Ã‚Â´leur)
         Route::patch('/{classGroup}/lock/{sequence}', [GradeController::class, 'toggleLock'])
-            ->middleware('permission:view-grades')
+            ->middleware('role:super-admin|directeur|censeur|secretaire')
             ->name('lock');
     });
 

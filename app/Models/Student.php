@@ -81,6 +81,33 @@ class Student extends Model
             : asset('images/default-avatar.png');
     }
 
+    /**
+     * Returns the student's parent contacts in the format used by the infirmary.
+     * Phone fields may contain one number per line for backward-compatible storage.
+     */
+    public function parentPhoneLines(): array
+    {
+        return collect([
+            ['value' => $this->father_phone, 'label' => 'Père'],
+            ['value' => $this->mother_phone, 'label' => 'Mère'],
+            ['value' => $this->guardian_phone, 'label' => filled($this->guardian_relationship)
+                ? 'Tuteur (' . trim($this->guardian_relationship) . ')'
+                : 'Tuteur'],
+        ])->flatMap(function (array $contact) {
+            return collect(preg_split('/[\r\n]+/', (string) $contact['value']))
+                ->map(fn ($phone) => trim((string) $phone))
+                ->filter()
+                ->map(fn ($phone) => $phone . ' (' . $contact['label'] . ')');
+        })->unique()->values()->all();
+    }
+
+    public function parentPhoneDisplay(): ?string
+    {
+        $phones = $this->parentPhoneLines();
+
+        return $phones !== [] ? implode("\n", $phones) : null;
+    }
+
     // Génère un matricule automatique
     public static function generateMatricule(): string
     {

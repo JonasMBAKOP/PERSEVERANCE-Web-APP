@@ -24,7 +24,13 @@ class BulletinController extends Controller
 {
     public function __construct(
         private GradeCalculationService $calc
-    ) {}
+    ) {
+        $user = auth()->user();
+        if ($user?->hasRole('enseignant')
+            && ! $user->hasAnyRole(['super-admin', 'directeur', 'censeur', 'prefet-des-etudes', 'surveillant-general', 'assistant-direction'])) {
+            abort(403);
+        }
+    }
 
     // ── PAGE DE SÉLECTION ─────────────────────────────────────────────────
     public function index(Request $request)

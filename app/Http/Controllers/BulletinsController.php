@@ -20,7 +20,13 @@ class BulletinsController extends Controller
 {
     public function __construct(
         private readonly BulletinService $bulletins
-    ) {}
+    ) {
+        $user = auth()->user();
+        if ($user?->hasRole('enseignant')
+            && ! $user->hasAnyRole(['super-admin', 'directeur', 'censeur', 'prefet-des-etudes', 'surveillant-general', 'assistant-direction'])) {
+            abort(403);
+        }
+    }
 
     public function index(Request $request)
     {

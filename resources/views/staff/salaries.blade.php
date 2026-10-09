@@ -38,7 +38,7 @@
 
             <div class="relative w-full sm:w-auto">
                 <select name="contract" onchange="this.form.submit()"
-                        class="w-full min-w-[220px] cursor-pointer appearance-none rounded-lg border border-gray-200 bg-white py-2 pl-3 pr-9 text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        class="w-full min-w-[190px] cursor-pointer appearance-none rounded-lg border border-gray-200 bg-white py-2 pl-3 pr-9 text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500">
                     <option value="">Tous les contrats</option>
                     @foreach(\App\Models\Staff::contractLabels() as $value => $label)
                         <option value="{{ $value }}" {{ request('contract') === $value ? 'selected' : '' }}>
@@ -64,7 +64,7 @@
             <button type="button" @click="attendanceOpen = true"
                     class="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-[#1A3A6B] bg-white px-4 py-2 text-sm font-semibold text-[#1A3A6B] hover:bg-blue-50 sm:w-auto">
                 <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 3v3m8-3v3M4 9h16M6 5h12a2 2 0 0 1 2 2v12H4V7a2 2 0 0 1 2-2Z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 9V4h12v5M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5h-2M6 14h12v6H6v-6Z"/>
                 </svg>
                 Fiche d'émargement
             </button>

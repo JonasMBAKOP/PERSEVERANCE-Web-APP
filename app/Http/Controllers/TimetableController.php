@@ -35,20 +35,37 @@ class TimetableController extends Controller
         $activeYear = AcademicYear::active();
         $setting = TimetableSetting::current();
         $grid = $this->buildGrid($setting);
-        $sections = Section::orderBy('id')->get();
+        $user = auth()->user();
+        $teacherRestricted = $user?->hasRole('enseignant')
+            && ! $user->hasAnyRole(['super-admin', 'directeur', 'censeur', 'prefet-des-etudes', 'surveillant-general', 'assistant-direction']);
+        $teacherClassIds = collect();
+
+        if ($teacherRestricted && $activeYear && $user->staff) {
+            $teacherClassIds = ClassSubject::whereHas('teacherAssignments', function ($query) use ($user, $activeYear) {
+                $query->where('staff_id', $user->staff->id)
+                    ->where('academic_year_id', $activeYear->id);
+            })->pluck('class_group_id')->unique()->values();
+        }
 
         $classes = $activeYear
             ? ClassGroup::where('academic_year_id', $activeYear->id)
+                ->when($teacherRestricted, fn ($query) => $query->whereIn('id', $teacherClassIds))
                 ->with(['level.section', 'academicYear'])
                 ->withCount(['classSubjects', 'timetableSlots'])
                 ->orderBy('name')
                 ->get()
             : collect();
+        $sections = $teacherRestricted
+            ? Section::whereIn('id', $classes->pluck('level.section_id')->filter()->unique())->orderBy('id')->get()
+            : Section::orderBy('id')->get();
 
         $selectedClassId = $request->integer('class_id') ?: null;
         $selectedClass = null;
 
         if ($selectedClassId && $activeYear) {
+            if ($teacherRestricted && ! $teacherClassIds->contains($selectedClassId)) {
+                abort(403);
+            }
             $selectedClass = ClassGroup::where('academic_year_id', $activeYear->id)
                 ->with([
                     'level.section',
@@ -85,6 +102,7 @@ class TimetableController extends Controller
             $conflicts = $this->detectTeacherConflicts($slots, $activeYear);
             $summary = $this->buildClassSummary($selectedClass, $slots, $setting);
         }
+        $selectedSectionId = $selectedClass?->level?->section_id;
 
         return view('timetable.index', [
             'days' => self::DAYS,
@@ -96,6 +114,8 @@ class TimetableController extends Controller
             'classes' => $classes,
             'selectedClassId' => $selectedClassId,
             'selectedClass' => $selectedClass,
+            'selectedSectionId' => $selectedSectionId,
+            'teacherRestricted' => $teacherRestricted,
             'slots' => $slots,
             'conflicts' => $conflicts,
             'summary' => $summary,

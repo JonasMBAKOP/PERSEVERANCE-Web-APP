@@ -36,10 +36,12 @@
         <form method="GET" action="{{ route('timetable.index') }}" class="grid gap-4 lg:grid-cols-[1fr_1.5fr_auto] lg:items-end">
             <div>
                 <label class="mb-1.5 block text-xs font-bold uppercase tracking-wide text-gray-500">Section</label>
-                <select id="sectionFilter" onchange="filterClasses(this.value)" class="w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm focus:border-[#1A3A6B] focus:outline-none">
-                    <option value="">Toutes les sections</option>
+                <select id="sectionFilter" onchange="filterClasses(this.value)" {{ $teacherRestricted && $sections->count() === 1 ? 'disabled' : '' }} class="w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm focus:border-[#1A3A6B] focus:outline-none">
+                    @if(! $teacherRestricted)
+                        <option value="">Toutes les sections</option>
+                    @endif
                     @foreach($sections as $section)
-                        <option value="{{ $section->id }}">{{ $section->name }}</option>
+                        <option value="{{ $section->id }}" {{ (int) $selectedSectionId === (int) $section->id ? 'selected' : '' }}>{{ $section->name }}</option>
                     @endforeach
                 </select>
             </div>
@@ -58,10 +60,12 @@
 
             <div class="flex flex-wrap gap-2">
                 @can('manage-timetable')
+                    @if(! $teacherRestricted)
                     <a href="{{ route('timetable.settings') }}" class="inline-flex items-center justify-center gap-2 rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-bold text-gray-700 transition hover:bg-gray-50">
                         <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                         Configurer
                     </a>
+                    @endif
                 @endcan
                 @if($selectedClass)
                     <a href="{{ route('timetable.print', $selectedClass) }}" target="_blank" class="inline-flex items-center justify-center gap-2 rounded-xl border border-[#1A3A6B] px-4 py-2.5 text-sm font-bold text-[#1A3A6B] transition hover:bg-[#1A3A6B] hover:text-white">
@@ -79,9 +83,11 @@
         </form>
     </div>
 
+    @if(! $teacherRestricted)
     <div class="rounded-2xl border border-blue-100 bg-blue-50 p-4 text-sm font-semibold text-blue-900">
         <strong>Grille active :</strong> {{ $setting->period_duration_minutes }} min par période, {{ $setting->max_periods_per_day }} période(s) maximum par jour. Les pauses sont intégrées automatiquement dans les horaires.
     </div>
+    @endif
 
     @if(!$selectedClass)
         <div class="rounded-2xl border border-dashed border-gray-200 bg-white p-10 text-center shadow-sm">
@@ -237,6 +243,11 @@ function filterClasses(sectionId) {
         option.hidden = sectionId ? option.dataset.section !== sectionId : false;
     });
 }
+
+document.addEventListener('DOMContentLoaded', () => {
+    const sectionFilter = document.getElementById('sectionFilter');
+    if (sectionFilter) filterClasses(sectionFilter.value);
+});
 
 function timetableManager() {
     return {

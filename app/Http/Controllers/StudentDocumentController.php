@@ -117,6 +117,7 @@ class StudentDocumentController extends Controller
 
     public function bulkLists(Request $request): View
     {
+        $this->abortIfRestrictedTeacher();
         $year    = $this->documents->yearFromRequest($request->integer('year_id') ?: null);
         $filters = $this->filtersFromRequest($request);
 
@@ -153,6 +154,7 @@ class StudentDocumentController extends Controller
 
     public function bulkListsWord(Request $request)
     {
+        $this->abortIfRestrictedTeacher();
         $year    = $this->documents->yearFromRequest($request->integer('year_id') ?: null);
         $filters = $this->filtersFromRequest($request);
 
@@ -214,6 +216,15 @@ class StudentDocumentController extends Controller
             'class_id'   => $request->integer('class_id') ?: null,
             'section_id' => $request->integer('section_id') ?: null,
         ];
+    }
+
+    private function abortIfRestrictedTeacher(): void
+    {
+        $user = auth()->user();
+        if ($user?->hasRole('enseignant')
+            && ! $user->hasAnyRole(['super-admin', 'directeur', 'censeur', 'prefet-des-etudes', 'surveillant-general', 'assistant-direction'])) {
+            abort(403);
+        }
     }
 
     private function describeScope(array $filters, $year): string

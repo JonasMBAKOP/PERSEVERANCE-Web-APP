@@ -15,7 +15,28 @@
     </style>
 </head>
 <body>
-@php($isVacataire = $isVacataire ?? $staff->contract_type === 'vacataire')
+@php
+    $isVacataire = $isVacataire ?? ($staff->contract_type === 'vacataire');
+    $hourlyRate = $hourlyRate ?? $staff->hourly_rate ?? 0;
+    $monthlySalary = $monthlySalary ?? $staff->monthly_salary ?? 0;
+    $hoursWorked = $hoursWorked ?? null;
+    $periodStart = $activeYear && $activeYear->start_date
+        ? \Carbon\Carbon::parse($activeYear->start_date)->startOfMonth()
+        : now()->startOfMonth();
+    $periodEnd = $activeYear && $activeYear->end_date
+        ? \Carbon\Carbon::parse($activeYear->end_date)->endOfMonth()
+        : now()->endOfMonth();
+    $periodCursor = $periodStart->copy();
+    $periodOptions = collect();
+    while ($periodCursor->lte($periodEnd)) {
+        $periodOptions->push([
+            'value' => $periodCursor->format('Y-m'),
+            'label' => $periodCursor->locale('fr')->translatedFormat('F Y'),
+        ]);
+        $periodCursor->addMonth();
+    }
+    $selectedPeriod = old('period', now()->format('Y-m'));
+@endphp
 <div class="panel">
     <div class="title">Preparation du bulletin de paie</div>
     <div class="subtitle">{{ $isVacataire ? 'Renseignez les heures effectuees. Le salaire est calcule automatiquement.' : 'Le salaire mensuel configure sera utilise pour la periode choisie.' }}</div>
@@ -33,24 +54,6 @@
                 </div>
                 <div>
                     <label for="period">Periode</label>
-                    @php
-                        $periodStart = $activeYear && $activeYear->start_date
-                            ? \Carbon\Carbon::parse($activeYear->start_date)->startOfMonth()
-                            : now()->startOfMonth();
-                        $periodEnd = $activeYear && $activeYear->end_date
-                            ? \Carbon\Carbon::parse($activeYear->end_date)->endOfMonth()
-                            : now()->endOfMonth();
-                        $periodCursor = $periodStart->copy();
-                        $periodOptions = collect();
-                        while ($periodCursor->lte($periodEnd)) {
-                            $periodOptions->push([
-                                'value' => $periodCursor->format('Y-m'),
-                                'label' => $periodCursor->locale('fr')->translatedFormat('F Y'),
-                            ]);
-                            $periodCursor->addMonth();
-                        }
-                        $selectedPeriod = old('period', now()->format('Y-m'));
-                    @endphp
                     <select id="period" name="period" required>
                         @foreach($periodOptions as $option)
                             <option value="{{ $option['value'] }}" {{ $selectedPeriod === $option['value'] ? 'selected' : '' }}>
@@ -65,6 +68,17 @@
         <div class="actions"><button type="submit" class="btn" style="background:#0b5f3a;">Enregistrer et afficher</button><a href="{{ route('staff.pay-slip.annual', $staff) }}" target="_blank" class="btn" style="background:#0b5f3a;">Recapitulatif annuel</a></div>
     </form>
 </div>
-@if($isVacataire)<script>const hoursInput=document.getElementById('hours_worked');const amountOutput=document.getElementById('calculated-amount');const hourlyRate={{ (float) ($hourlyRate ?? $staff->hourly_rate ?? 0) }};const refreshAmount=()=>{amountOutput.textContent=new Intl.NumberFormat('fr-FR').format((Number(hoursInput.value)||0)*hourlyRate)+' FCFA';};hoursInput.addEventListener('input',refreshAmount);refreshAmount();</script>@endif
+@if ($isVacataire)
+    <script>
+        const hoursInput = document.getElementById('hours_worked');
+        const amountOutput = document.getElementById('calculated-amount');
+        const hourlyRate = {{ (float) $hourlyRate }};
+        const refreshAmount = () => {
+            amountOutput.textContent = new Intl.NumberFormat('fr-FR').format((Number(hoursInput.value) || 0) * hourlyRate) + ' FCFA';
+        };
+        hoursInput.addEventListener('input', refreshAmount);
+        refreshAmount();
+    </script>
+@endif
 </body>
 </html>

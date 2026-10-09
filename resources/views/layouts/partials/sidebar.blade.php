@@ -176,13 +176,13 @@
             </div>
         @endcanany
 
-        @can('manage-academic-years')
+        @if(auth()->user()->can('validate-grades') || auth()->user()->hasAnyRole(['super-admin', 'directeur', 'censeur', 'secretaire']))
             <x-sidebar-item
                 icon="eye"
                 label="Vue Globale"
                 href="{{ route('grades.index')}}"
                 :active="request()->routeIs('grades.index')" />
-        @endcan
+        @endif
 
         @canany(['view-grades', 'enter-grades'])
             <x-sidebar-item
@@ -208,6 +208,7 @@
             :active="request()->routeIs('grades.validate*')" />
         @endcan --}}
 
+        @if(! auth()->user()->hasRole('enseignant') || auth()->user()->hasAnyRole(['super-admin', 'directeur', 'censeur', 'prefet-des-etudes', 'surveillant-general', 'assistant-direction']))
         @can('view-bulletins')
             <x-sidebar-item
                 icon="document"
@@ -215,6 +216,7 @@
                 href="{{ route('bulletins.index') }}"
                 :active="request()->routeIs('bulletins.*')" />
         @endcan
+        @endif
         {{-- @endcanany --}}
         
 

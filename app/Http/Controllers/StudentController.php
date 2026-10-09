@@ -8,6 +8,7 @@ use App\Http\Requests\UpdateStudentRequest;
 use App\Models\AcademicYear;
 use App\Models\AuditLog;
 use App\Models\ClassGroup;
+use App\Models\ClassSubject;
 use App\Models\InfirmaryVisit;
 use App\Models\Section;
 use App\Models\Student;
@@ -31,13 +32,25 @@ class StudentController extends Controller
     public function index(Request $request)
     {
         $activeYear = AcademicYear::active();
-        $selectedYearId = $request->input('year_id', $activeYear?->id);
+        $user = auth()->user();
+        $isTeacher = $user?->hasRole('enseignant')
+            && ! $user->hasAnyRole(['super-admin', 'directeur', 'censeur', 'prefet-des-etudes', 'surveillant-general', 'assistant-direction']);
+        $teacherClassIds = collect();
+
+        if ($isTeacher && $activeYear && $user->staff) {
+            $teacherClassIds = ClassSubject::whereHas('teacherAssignments', function ($query) use ($user, $activeYear) {
+                $query->where('staff_id', $user->staff->id)
+                    ->where('academic_year_id', $activeYear->id);
+            })->pluck('class_group_id')->unique()->values();
+        }
+
+        $selectedYearId = $isTeacher ? $activeYear?->id : $request->input('year_id', $activeYear?->id);
         $selectedYear   = $selectedYearId
             ? AcademicYear::find($selectedYearId)
             : null;
 
         $query = Student::query();
-        $renewalFilter = $request->input('renewal') === 'pending';
+        $renewalFilter = ! $isTeacher && $request->input('renewal') === 'pending';
 
         // Filtrer par classe / année
         if ($selectedYear) {
@@ -57,25 +70,59 @@ class StudentController extends Controller
             }
         }
 
-        // Filtrer par classe spécifique
-        if ($request->filled('class_id')) {
-            $query->whereHas('enrollments', function ($q) use ($request, $selectedYear) {
-                $q->where('class_group_id', $request->class_id);
+        if ($isTeacher) {
+            $query->whereHas('enrollments', function ($enrollments) use ($selectedYear, $teacherClassIds) {
+                $enrollments->where('academic_year_id', $selectedYear?->id)
+                    ->where('status', StudentEnrollment::STATUS_ACTIVE)
+                    ->whereIn('class_group_id', $teacherClassIds);
+            });
+        }
 
-                if ($selectedYear) {
+        $years = $isTeacher
+            ? collect([$activeYear])->filter()
+            : AcademicYear::orderByDesc('start_date')->get();
+        $classes = $selectedYear
+            ? ClassGroup::where('academic_year_id', $selectedYear->id)
+                ->when($isTeacher, fn ($query) => $query->whereIn('id', $teacherClassIds))
+                ->with('level.section')->orderBy('name')->get()
+            : collect();
+        $sections = Section::whereIn('id', $classes->pluck('level.section_id')->filter()->unique())->orderBy('id')->get();
+        $availableSectionIds = $sections->pluck('id')->values();
+        $requestedSectionId = $request->filled('section_id') ? $request->integer('section_id') : null;
+        $selectedSectionId = $isTeacher && $availableSectionIds->count() === 1
+            ? $availableSectionIds->first()
+            : ($availableSectionIds->contains($requestedSectionId) ? $requestedSectionId : null);
+        if ($selectedSectionId) {
+            $classes = $classes->filter(fn ($class) => (int) $class->level?->section_id === (int) $selectedSectionId)->values();
+        }
+        $availableClassIds = $classes->pluck('id')->values();
+        $selectedClassId = $isTeacher && $availableClassIds->count() === 1
+            ? $availableClassIds->first()
+            : ($availableClassIds->contains($request->integer('class_id')) ? $request->integer('class_id') : null);
+
+        // Filtrer par classe spécifique
+        if ($selectedClassId) {
+            $query->whereHas('enrollments', function ($q) use ($selectedClassId, $selectedYear, $renewalFilter) {
+                $q->where('class_group_id', $selectedClassId);
+
+                if ($renewalFilter && $selectedYear) {
+                    $q->whereHas('academicYear', fn ($y) => $y->where('start_date', '<', $selectedYear->start_date));
+                } elseif ($selectedYear) {
                     $q->where('academic_year_id', $selectedYear->id);
                 }
             });
         }
 
         // Filtrer par section
-        if ($request->filled('section_id')) {
-            $query->whereHas('enrollments', function ($q) use ($request, $selectedYear) {
+        if ($selectedSectionId) {
+            $query->whereHas('enrollments', function ($q) use ($selectedSectionId, $selectedYear, $renewalFilter) {
                 $q->whereHas('classGroup.level', fn($levelQuery) =>
-                    $levelQuery->where('section_id', $request->section_id)
+                    $levelQuery->where('section_id', $selectedSectionId)
                 );
 
-                if ($selectedYear) {
+                if ($renewalFilter && $selectedYear) {
+                    $q->whereHas('academicYear', fn ($y) => $y->where('start_date', '<', $selectedYear->start_date));
+                } elseif ($selectedYear) {
                     $q->where('academic_year_id', $selectedYear->id);
                 }
             });
@@ -106,57 +153,57 @@ class StudentController extends Controller
                 },
             ])
             ->orderBy('last_name')->orderBy('first_name')
-            ->paginate(20)->withQueryString();
+            ->paginate(50)->withQueryString();
 
-        $years    = AcademicYear::orderByDesc('start_date')->get();
-        $sections = Section::orderBy('id')->get();
-        $classes  = $selectedYear
-            ? ClassGroup::where('academic_year_id', $selectedYear->id)
-                ->with('level.section')->orderBy('name')->get()
-            : collect();
-
-        // Stats (uniquement inscriptions actives)
+        // Les indicateurs reprennent exactement le périmètre de la liste filtrée.
+        $statsQuery = clone $query;
         $stats = [
-            'total'     => $selectedYear
-                ? StudentEnrollment::where('academic_year_id', $selectedYear->id)->count()
-                : StudentEnrollment::where('status', StudentEnrollment::STATUS_ACTIVE)->count(),
-            'boys'      => $selectedYear
-                ? StudentEnrollment::where('academic_year_id', $selectedYear->id)
-                    ->where('status', StudentEnrollment::STATUS_ACTIVE)
-                    ->whereHas('student', fn($q) => $q->where('gender', 'M'))
-                    ->count()
-                : 0,
-            'girls'     => $selectedYear
-                ? StudentEnrollment::where('academic_year_id', $selectedYear->id)
-                    ->where('status', StudentEnrollment::STATUS_ACTIVE)
-                    ->whereHas('student', fn($q) => $q->where('gender', 'F'))
-                    ->count()
-                : 0,
+            'total' => (clone $statsQuery)->count(),
+            'boys' => (clone $statsQuery)->where('gender', 'M')->count(),
+            'girls' => (clone $statsQuery)->where('gender', 'F')->count(),
             'repeating' => $selectedYear
-                ? StudentEnrollment::where('academic_year_id', $selectedYear->id)
-                    ->where('status', StudentEnrollment::STATUS_ACTIVE)
-                    ->where('is_repeating', true)->count()
+                ? (clone $statsQuery)->whereHas('enrollments', function ($q) use ($selectedYear) {
+                    $q->where('academic_year_id', $selectedYear->id)->where('is_repeating', true);
+                })->count()
                 : 0,
         ];
 
         // Année éditable = active uniquement
         $isYearEditable = $selectedYear && $selectedYear->is_active;
-        $pendingRenewal = $activeYear
-            ? $this->enrollments->pendingRenewalCount($activeYear)
+        $pendingRenewal = ! $isTeacher && $activeYear
+            ? (clone $this->pendingRenewalQuery($activeYear, $selectedSectionId, $selectedClassId))->count()
             : 0;
 
         $listPrintParams = $this->documents->listPrintParamsFromIndexFilters(
             $selectedYear,
-            $request->input('class_id'),
-            $request->input('section_id'),
+            $selectedClassId,
+            $selectedSectionId,
             $renewalFilter
         );
+
+        if ($isTeacher) {
+            $listPrintParams = null;
+        }
 
         return view('students.index', compact(
             'students', 'years', 'sections', 'classes',
             'selectedYear', 'stats', 'activeYear', 'isYearEditable',
-            'renewalFilter', 'pendingRenewal', 'listPrintParams'
+            'renewalFilter', 'pendingRenewal', 'listPrintParams', 'isTeacher',
+            'availableSectionIds', 'availableClassIds', 'selectedSectionId', 'selectedClassId'
         ));
+    }
+
+    private function pendingRenewalQuery(AcademicYear $activeYear, ?int $sectionId, ?int $classId)
+    {
+        return Student::query()
+            ->whereDoesntHave('enrollments', fn ($q) => $q
+                ->where('academic_year_id', $activeYear->id)
+                ->where('status', StudentEnrollment::STATUS_ACTIVE))
+            ->whereHas('enrollments', function ($q) use ($activeYear, $sectionId, $classId) {
+                $q->whereHas('academicYear', fn ($year) => $year->where('start_date', '<', $activeYear->start_date))
+                    ->when($classId, fn ($query) => $query->where('class_group_id', $classId))
+                    ->when($sectionId, fn ($query) => $query->whereHas('classGroup.level', fn ($level) => $level->where('section_id', $sectionId)));
+            });
     }
 
     // ── FORMULAIRE CRÉATION ───────────────────────────────────────────────

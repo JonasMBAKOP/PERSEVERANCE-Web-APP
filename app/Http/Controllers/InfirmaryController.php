@@ -13,6 +13,7 @@ use App\Models\StudentEnrollment;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class InfirmaryController extends Controller
@@ -27,6 +28,7 @@ class InfirmaryController extends Controller
             ->orderByDesc('visit_time')
             ->paginate(20)
             ->withQueryString();
+        $visits->getCollection()->each(fn (InfirmaryVisit $visit) => $this->prepareParentPhones($visit));
 
         $classes = $activeYear
             ? StudentEnrollment::active()
@@ -121,7 +123,11 @@ class InfirmaryController extends Controller
             return back()->withInput()->with('error', 'Cet eleve n est pas inscrit dans l annee scolaire active.');
         }
 
-        $this->createVisit($data, $student, $enrollment, $request);
+        DB::transaction(function () use ($data, $student, $enrollment, $request): void {
+            $this->persistParentContacts($student, $data['parent_contacts'] ?? []);
+            $student->refresh();
+            $this->createVisit($data, $student, $enrollment, $request);
+        });
 
         return redirect()->route('infirmary.index')->with('success', 'La consultation a ete enregistree.');
     }
@@ -139,6 +145,10 @@ class InfirmaryController extends Controller
             'temperature' => ['nullable', 'numeric', 'between:30,45'],
             'visit_reason' => ['required', 'string', 'max:3000'],
             'treatment' => ['nullable', 'string', 'max:3000'],
+            'parent_contacts' => ['nullable', 'array'],
+            'parent_contacts.*.phone' => ['nullable', 'string', 'max:100'],
+            'parent_contacts.*.type' => ['nullable', 'in:father,mother,guardian'],
+            'parent_contacts.*.relationship' => ['nullable', 'string', 'max:100'],
         ]);
 
         $visit->update([
@@ -187,7 +197,7 @@ class InfirmaryController extends Controller
             ->orderByDesc('visit_time')
             ->paginate(20);
 
-        return view('infirmary.patient', compact('student', 'visits'));
+        return view('infirmary.patient-final', compact('student', 'visits'));
     }
 
     public function print(Request $request): View
@@ -199,6 +209,7 @@ class InfirmaryController extends Controller
             ->orderByDesc('visit_date')
             ->orderByDesc('visit_time')
             ->get();
+        $visits->each(fn (InfirmaryVisit $visit) => $this->prepareParentPhones($visit));
 
         $school = SchoolSetting::instance();
         $phones = SchoolPhone::orderByDesc('is_primary')->orderBy('id')->get();
@@ -231,6 +242,10 @@ class InfirmaryController extends Controller
             'temperature' => ['nullable', 'numeric', 'between:30,45'],
             'visit_reason' => ['required', 'string', 'max:3000'],
             'treatment' => ['nullable', 'string', 'max:3000'],
+            'parent_contacts' => ['nullable', 'array'],
+            'parent_contacts.*.phone' => ['nullable', 'string', 'max:100'],
+            'parent_contacts.*.type' => ['nullable', 'in:father,mother,guardian'],
+            'parent_contacts.*.relationship' => ['nullable', 'string', 'max:100'],
         ]);
     }
 
@@ -251,7 +266,7 @@ class InfirmaryController extends Controller
             'student_gender' => $student->gender,
             'class_name' => $classGroup?->full_name,
             'student_age' => $student->date_of_birth ? Carbon::parse($student->date_of_birth)->age : null,
-            'parent_phone' => $this->parentPhones($student),
+            'parent_phone' => $student->parentPhoneDisplay(),
             'temperature' => $data['temperature'] ?? null,
             'visit_reason' => trim($data['visit_reason']),
             'treatment' => filled($data['treatment'] ?? null) ? trim($data['treatment']) : null,
@@ -268,16 +283,71 @@ class InfirmaryController extends Controller
 
     private function parentPhones(Student $student): ?string
     {
-        $phones = collect([
-            $student->father_phone,
-            $student->mother_phone,
-            $student->guardian_phone,
-        ])->filter(fn ($phone) => filled($phone))
-            ->map(fn ($phone) => trim($phone))
-            ->unique()
-            ->values();
+        return $student->parentPhoneDisplay();
+    }
 
-        return $phones->isNotEmpty() ? $phones->implode("\n") : null;
+    private function prepareParentPhones(InfirmaryVisit $visit): void
+    {
+        $display = $visit->student?->parentPhoneDisplay();
+
+        if (! filled($display) && filled($visit->parent_phone)) {
+            $display = collect(preg_split('/[\r\n]+/', (string) $visit->parent_phone))
+                ->map(fn ($phone) => trim((string) $phone))
+                ->filter()
+                ->unique()
+                ->implode("\n");
+        }
+
+        if ($visit->student) {
+            // The table already renders the three contact fields independently.
+            // Put the fully labeled snapshot in one field so every number stays on its own line.
+            $visit->student->setAttribute('father_phone', $display);
+            $visit->student->setAttribute('mother_phone', null);
+            $visit->student->setAttribute('guardian_phone', null);
+        }
+
+        $visit->setAttribute('parent_phone', null);
+    }
+
+    private function persistParentContacts(Student $student, array $contacts): void
+    {
+        $contacts = collect($contacts)
+            ->filter(fn ($contact) => is_array($contact) && filled($contact['phone'] ?? null))
+            ->map(fn ($contact) => [
+                'phone' => trim((string) ($contact['phone'] ?? '')),
+                'type' => $contact['type'] ?? 'father',
+                'relationship' => trim((string) ($contact['relationship'] ?? '')),
+            ])
+            ->filter(fn ($contact) => $contact['phone'] !== '');
+
+        if ($contacts->isEmpty()) {
+            return;
+        }
+
+        $values = [];
+        foreach (['father', 'mother', 'guardian'] as $type) {
+            $existing = preg_split('/[\r\n]+/', (string) match ($type) {
+                'father' => $student->father_phone,
+                'mother' => $student->mother_phone,
+                default => $student->guardian_phone,
+            });
+            $incoming = $contacts->where('type', $type)->pluck('phone')->all();
+            $phones = collect(array_merge($existing ?: [], $incoming))
+                ->map(fn ($phone) => trim((string) $phone))
+                ->filter()
+                ->unique()
+                ->values()
+                ->implode("\n");
+
+            $values[$type === 'father' ? 'father_phone' : ($type === 'mother' ? 'mother_phone' : 'guardian_phone')] = $phones ?: null;
+        }
+
+        $relationship = $contacts->where('type', 'guardian')->pluck('relationship')->filter()->first();
+        if ($relationship !== null) {
+            $values['guardian_relationship'] = $relationship;
+        }
+
+        $student->update($values);
     }
 
     private function currentAcademicYear(): ?AcademicYear
