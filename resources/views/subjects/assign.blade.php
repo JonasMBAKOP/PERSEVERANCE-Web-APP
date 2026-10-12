@@ -126,7 +126,6 @@
             <div class="col-span-1 text-center">Coef.</div>
             <div class="col-span-3">Enseignant assigné</div>
             <div class="col-span-1 text-center">H/Sem</div>
-            <div class="col-span-1 text-center">Statut</div>
             <div class="col-span-1"></div>
         </div>
 
@@ -171,29 +170,9 @@
                             </div>
                         </div>
 
-                        {{-- Toggle + Delete (mobile header) --}}
+                        {{-- Supprimer (mobile header) --}}
                         <div class="flex items-center gap-2 flex-shrink-0">
-                            <input type="hidden"
-                                name="subjects[{{ $cs->subject_id }}][is_active]"
-                                value="0">
-                            <label class="relative inline-flex cursor-pointer">
-                                <input type="checkbox"
-                                    name="subjects[{{ $cs->subject_id }}][is_active]"
-                                    value="1"
-                                    {{ $cs->is_active ? 'checked' : '' }}
-                                    {{ $hasGrades ? 'disabled' : '' }}
-                                    class="sr-only peer">
-                                <div class="w-9 h-5 bg-gray-200 rounded-full peer
-                                            peer-checked:bg-green-500
-                                            after:content-[''] after:absolute
-                                            after:top-[2px] after:left-[2px]
-                                            after:bg-white after:rounded-full
-                                            after:h-4 after:w-4 after:transition-all
-                                            peer-checked:after:translate-x-4">
-                                </div>
-                            </label>
-                            @if(!$hasGrades)
-                            <button type="button" onclick="removeRow(this)"
+                            <button type="button" onclick="removeRow(this, {{ $hasGrades ? 'true' : 'false' }}, @js($cs->subject->name_fr))"
                                     class="p-1 rounded text-gray-300
                                         hover:text-red-500 transition-colors">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor"
@@ -205,7 +184,6 @@
                                             V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                                 </svg>
                             </button>
-                            @endif
                         </div>
                     </div>
 
@@ -315,33 +293,10 @@
                             </div>
                         </div>
 
-                        {{-- Statut (desktop) --}}
-                        <div class="hidden sm:flex sm:col-span-1 justify-center">
-                            <input type="hidden"
-                                name="subjects[{{ $cs->subject_id }}][is_active]"
-                                value="0">
-                            <label class="relative inline-flex cursor-pointer">
-                                <input type="checkbox"
-                                    name="subjects[{{ $cs->subject_id }}][is_active]"
-                                    value="1"
-                                    {{ $cs->is_active ? 'checked' : '' }}
-                                    {{ $hasGrades ? 'disabled' : '' }}
-                                    class="sr-only peer">
-                                <div class="w-10 h-5 bg-gray-200 rounded-full peer
-                                            peer-checked:bg-green-500
-                                            after:content-[''] after:absolute
-                                            after:top-[2px] after:left-[2px]
-                                            after:bg-white after:rounded-full
-                                            after:h-4 after:w-4 after:transition-all
-                                            peer-checked:after:translate-x-5">
-                                </div>
-                            </label>
-                        </div>
-
                         {{-- Supprimer (desktop) --}}
                         <div class="hidden sm:flex sm:col-span-1 justify-center">
-                            @if(!$hasGrades)
-                            <button type="button" onclick="removeRow(this)"
+                            @if(true)
+                            <button type="button" onclick="removeRow(this, {{ $hasGrades ? 'true' : 'false' }}, @js($cs->subject->name_fr))"
                                     class="p-1.5 rounded-lg text-gray-300
                                         hover:text-red-500 hover:bg-red-50
                                         transition-colors">
@@ -754,7 +709,11 @@ function chargerClasse() {
 }
 
 // ── Supprimer une ligne ──────────────────────────────────────────────────────
-function removeRow(btn) {
+function removeRow(btn, hasGrades = false, subjectName = 'cette matière') {
+    const warning = hasGrades
+        ? `La matière « ${subjectName} » possède déjà des notes. La supprimer retirera définitivement son affectation à cette classe ainsi que les notes, absences, programmations et autres données liées. Voulez-vous continuer ?`
+        : `Retirer la matière « ${subjectName} » de cette classe ?`;
+    if (!confirm(warning)) return;
     if (!confirm('Retirer cette matière ?')) return;
     // Remonter jusqu'au div parent de la ligne (border-b)
     const row = btn.closest('[class*="border-b"]');
@@ -763,6 +722,33 @@ function removeRow(btn) {
 }
 
 // ── Ajouter une matière ──────────────────────────────────────────────────────
+// Supprimer les controles de statut : la suppression est desormais la seule action disponible.
+function removeStatusControls(root = document) {
+    root.querySelectorAll('.grid').forEach(grid => {
+        Array.from(grid.children).forEach(column => {
+            if (column.querySelector('input[name*="[is_active]"]')) column.remove();
+        });
+    });
+    root.querySelectorAll('input[name*="[is_active]"]').forEach(input => {
+        const label = input.closest('label');
+        if (label) label.remove();
+        else input.remove();
+    });
+    root.querySelectorAll('[title="Notes existantes"]').forEach(icon => icon.closest('div')?.remove());
+}
+removeStatusControls();
+document.addEventListener('DOMContentLoaded', () => removeStatusControls());
+
+removeRow = function (btn, hasGrades = false, subjectName = 'cette matiere') {
+    const warning = hasGrades
+        ? `La matiere « ${subjectName} » possede deja des notes. La suppression retirera definitivement cette affectation et les donnees liees. Voulez-vous continuer ?`
+        : `Retirer la matiere « ${subjectName} » de cette classe ?`;
+    if (!confirm(warning)) return;
+    const row = btn.closest('[class*="border-b"]');
+    if (row) row.remove();
+    document.getElementById('mainForm').dispatchEvent(new Event('change'));
+};
+
 const typeConfig = {
     general:   { label: 'GÉNÉRALE',  bg: '#DBEAFE', text: '#1D4ED8' },
     technical: { label: 'TECHNIQUE', bg: '#EDE9FE', text: '#6D28D9' },
@@ -949,6 +935,7 @@ function confirmAddSubject() {
 
     document.getElementById('emptyState')?.remove();
     document.getElementById('subjectsTable').appendChild(div);
+    removeStatusControls(div);
 
     // Retirer du select disponible
     sel.remove(sel.selectedIndex);

@@ -65,8 +65,9 @@ return [
     |
     */
 
-    // The request middleware can replace this with the browser's valid IANA timezone.
-    'timezone' => env('APP_TIMEZONE', date_default_timezone_get()),
+    // Cameroon currently uses GMT+1. Keep this explicit until multi-country
+    // timezone selection is introduced.
+    'timezone' => 'Africa/Douala',
 
     /*
     |--------------------------------------------------------------------------

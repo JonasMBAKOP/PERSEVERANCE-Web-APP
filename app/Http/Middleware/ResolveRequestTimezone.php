@@ -9,11 +9,9 @@ class ResolveRequestTimezone
 {
     public function handle(Request $request, Closure $next)
     {
-        $timezone = $request->cookie('app_timezone');
-
-        if (! is_string($timezone) || ! in_array($timezone, timezone_identifiers_list(), true)) {
-            $timezone = config('app.timezone', date_default_timezone_get());
-        }
+        // Keep the application timezone authoritative. Browser timezone cookies
+        // must not make stored dates drift away from Cameroon time.
+        $timezone = config('app.timezone', 'Africa/Douala');
 
         config(['app.timezone' => $timezone]);
         date_default_timezone_set($timezone);

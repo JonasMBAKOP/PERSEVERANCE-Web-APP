@@ -13,6 +13,7 @@ use App\Models\Subject;
 use App\Models\SubjectCategory;
 use App\Models\TeacherAssignment;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class SubjectController extends Controller
@@ -278,16 +279,12 @@ class SubjectController extends Controller
             ->toArray();
 
         // ── GESTION DES MATIÈRES ──────────────────────────────────────────
-        // Supprimer celles sans notes, désactiver celles avec notes
-        \App\Models\ClassSubject::where('class_group_id', $classGroup->id)
-            ->whereNotIn('subject_id', $submittedSubjectIds)
-            ->whereDoesntHave('grades')
-            ->delete();
+        // Une matière retirée est réellement désassignée, même si elle possède des notes.
+        $subjectsToRemove = \App\Models\ClassSubject::where('class_group_id', $classGroup->id)
+            ->when($submittedSubjectIds !== [], fn ($query) => $query->whereNotIn('subject_id', $submittedSubjectIds))
+            ->get();
 
-        \App\Models\ClassSubject::where('class_group_id', $classGroup->id)
-            ->whereNotIn('subject_id', $submittedSubjectIds)
-            ->whereHas('grades')
-            ->update(['is_active' => false]);
+        DB::transaction(fn () => $subjectsToRemove->each->delete());
 
         // Créer ou mettre à jour
         foreach ($request->input('subjects', []) as $item) {
