@@ -33,8 +33,7 @@ class StudentController extends Controller
     {
         $activeYear = AcademicYear::active();
         $user = auth()->user();
-        $isTeacher = $user?->hasRole('enseignant')
-            && ! $user->hasAnyRole(['super-admin', 'directeur', 'censeur', 'prefet-des-etudes', 'surveillant-general', 'assistant-direction']);
+        $isTeacher = $user?->isTeacherOnly() ?? false;
         $teacherClassIds = collect();
 
         if ($isTeacher && $activeYear && $user->staff) {

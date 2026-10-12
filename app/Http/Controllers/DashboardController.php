@@ -56,11 +56,12 @@ class DashboardController extends Controller
         if ($user->hasRole('fondateur'))                return redirect()->route('dashboard.directeur');
         if ($user->hasRole('censeur'))                  return redirect()->route('dashboard.censeur');
         if ($user->hasRole('econome'))                  return redirect()->route('dashboard.econome');
-        if ($user->hasRole('enseignant'))               return redirect()->route('dashboard.enseignant');
         if ($user->hasRole('assistant-direction'))     return redirect()->route('assistant-direction.dashboard');
         if ($user->hasRole('surveillant-general'))      return redirect()->route('dashboard.surveillant');
         if ($user->hasRole('surveillant-de-secteur'))   return redirect()->route('dashboard.surveillant-secteur');
         if ($user->hasRole('secretaire'))               return redirect()->route('dashboard.secretaire');
+        if ($user->hasRole('infirmier'))               return redirect()->route('infirmary.dashboard');
+        if ($user->hasRole('enseignant'))              return redirect()->route('dashboard.enseignant');
 
         return redirect()->route('dashboard.econome');
     }

@@ -41,14 +41,27 @@ class User extends Authenticatable
             $this->hasRole('directeur')              => route('directeur.dashboard'),
             $this->hasRole('censeur')                => route('censeur.dashboard'),
             $this->hasRole('econome')                => route('econome.dashboard'),
-            $this->hasRole('enseignant')             => route('enseignant.dashboard'),
             $this->hasRole('assistant-direction')   => route('assistant-direction.dashboard'),
             $this->hasRole('surveillant-general')    => route('surveillant.dashboard'),
             $this->hasRole('surveillant-de-secteur') => route('surveillant-secteur.dashboard'),
             $this->hasRole('secretaire')             => route('secretaire.dashboard'),
             $this->hasRole('infirmier')              => route('infirmary.dashboard'),
+            $this->hasRole('enseignant')             => route('enseignant.dashboard'),
             default                                  => route('login'),
         };
+    }
+
+    /**
+     * Les restrictions de périmètre propres à un enseignant ne s'appliquent
+     * que lorsque ce compte ne possède aucun autre rôle.
+     */
+    public function isTeacherOnly(): bool
+    {
+        if (! $this->hasRole('enseignant')) {
+            return false;
+        }
+
+        return $this->getRoleNames()->every(fn (string $role) => $role === 'enseignant');
     }
 
     // URL de la photo du compte de connexion uniquement.

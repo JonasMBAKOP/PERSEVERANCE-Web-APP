@@ -36,8 +36,7 @@ class TimetableController extends Controller
         $setting = TimetableSetting::current();
         $grid = $this->buildGrid($setting);
         $user = auth()->user();
-        $teacherRestricted = $user?->hasRole('enseignant')
-            && ! $user->hasAnyRole(['super-admin', 'directeur', 'censeur', 'prefet-des-etudes', 'surveillant-general', 'assistant-direction']);
+        $teacherRestricted = $user?->isTeacherOnly() ?? false;
         $teacherClassIds = collect();
 
         if ($teacherRestricted && $activeYear && $user->staff) {

@@ -208,7 +208,7 @@
             :active="request()->routeIs('grades.validate*')" />
         @endcan --}}
 
-        @if(! auth()->user()->hasRole('enseignant') || auth()->user()->hasAnyRole(['super-admin', 'directeur', 'censeur', 'prefet-des-etudes', 'surveillant-general', 'assistant-direction']))
+        @if(! auth()->user()->isTeacherOnly())
         @can('view-bulletins')
             <x-sidebar-item
                 icon="document"

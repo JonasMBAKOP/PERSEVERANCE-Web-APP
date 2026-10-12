@@ -33,7 +33,7 @@ class ClassManagementController extends Controller
         /** @var \App\Models\User $user */
         $user = Auth::user();
 
-        return ! $this->isClassAdmin() && $user->hasAnyRole(['enseignant', 'assistant-direction']);
+        return ! $this->isClassAdmin() && $user->isTeacherOnly();
     }
 
     /** IDs des classes où l'enseignant est affecté pour l'année donnée */

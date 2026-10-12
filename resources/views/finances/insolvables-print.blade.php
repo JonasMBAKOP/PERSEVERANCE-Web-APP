@@ -41,10 +41,10 @@ td { font-size: 11px; }
 @php($classGroup = (object) ['academicYear' => $selectedYear])
 @include('grades.partials.bordereau-header', [
     'docTitleFr' => 'LISTE DES ELEVES INSOLVABLES',
-    'docSubtitle' => $installmentLabel . ' - Liste générée le ' . now()->format('d/m/Y'),
+    'docSubtitle' => $installmentLabel . ' - ' . number_format($summary['count']) . ' Élèves concernés - Liste générée le ' . now()->format('d/m/Y'),
     'forPdf' => false,
 ])
-<div class="summary">
+{{-- <div class="summary">
     <div class="box">
         <span>Élèves concernés</span>
         <b>{{ number_format($summary['count']) }}</b>
@@ -61,7 +61,7 @@ td { font-size: 11px; }
         <span>Reste à payer</span>
         <b>{{ number_format($summary['remaining']) }} FCFA</b>
     </div>
-</div>
+</div> --}}
 <table>
     <thead>
         <tr>
