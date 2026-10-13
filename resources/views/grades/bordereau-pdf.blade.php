@@ -16,7 +16,7 @@
 
         @page {
             size: A4 landscape;
-            margin: 0;
+            margin: 5mm;
         }
 
         * {
@@ -40,7 +40,7 @@
             max-width: none;
             min-height: 210mm;
             margin: 0 auto;
-            padding: 1mm;
+            padding: 0;
             background: white;
         }
 
@@ -48,7 +48,7 @@
             display: grid;
             grid-template-columns: repeat(5, minmax(0, 1fr));
             gap: 10px;
-            margin: 18px 0 16px;
+            margin: 12px 0 22px;
         }
 
         .info-item {
@@ -157,6 +157,7 @@
         .footer-note {
             font-size: 9px;
             color: var(--muted);
+            display: none;
         }
 
         body {
@@ -289,12 +290,14 @@
         .data-table th:first-child,
         .data-table td:first-child { width: 22px; }
         .data-table th:nth-child(2),
-        .data-table td.name { min-width: 180px; }
-        .data-table th:nth-child(n+3):not(:nth-last-child(-n+2)) { width: 34px; min-width: 34px; max-width: 34px; }
+        .data-table td.name { min-width: 160px; }
+        .data-table th:nth-child(n+3):not(:nth-last-child(-n+2)) { width: 38px; min-width: 38px; max-width: 38px; }
         .data-table th:nth-last-child(2),
         .data-table td:nth-last-child(2),
         .data-table th:last-child,
         .data-table td:last-child { width: 30px; }
+        /* Les statistiques doivent apparaître une seule fois, après les lignes. */
+        .data-table tfoot { display: table-row-group; }
     </style>
 </head>
 <body>

@@ -5,22 +5,22 @@
     <title>Bordereau Effectif de Notes — {{ $classGroup->full_name }}</title>
     @include('students.documents.partials.base-styles')
     <style>
-        @page { size: A4 landscape; margin: 0; }
+        @page { size: A4 landscape; margin: 5mm; }
         body { background: #eef1f5; }
-        .page { width: 100%; max-width: none; box-sizing: border-box; margin: 0 auto; padding: 1mm; background: #fff; }
+        .page { width: 100%; max-width: none; box-sizing: border-box; margin: 0 auto; padding: 24px; background: #fff; }
         .print-toolbar { margin-bottom: 10px; }
         .document-card { border: 1px solid #CBD5E1; border-radius: 18px; padding: 18px; margin-bottom: 14px; }
         .header-row { display: grid; grid-template-columns: 1fr auto; gap: 16px; align-items: start; }
         .header-left { display: grid; gap: 4px; }
         .document-label { font-size: 10px; letter-spacing: .18em; text-transform: uppercase; color: #475569; font-weight: 700; }
         .document-title { font-size: 26px; font-weight: 900; color: #1A3A6B; letter-spacing: .03em; margin: 0; }
-        .info-row { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; margin-top: 18px; }
+        .info-row { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; margin: 12px 0 22px; }
         .info-item { padding: 14px 16px; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 14px; }
         .bordereau-table th:first-child,
         .bordereau-table td:first-child { width: 22px; }
         .bordereau-table th:nth-child(2),
-        .bordereau-table td:nth-child(2) { min-width: 180px; }
-        .bordereau-table th:nth-child(n+3):not(:nth-last-child(-n+2)) { width: 34px; min-width: 34px; max-width: 34px; }
+        .bordereau-table td:nth-child(2) { min-width: 160px; }
+        .bordereau-table th:nth-child(n+3):not(:nth-last-child(-n+2)) { width: 38px; min-width: 38px; max-width: 38px; }
         .bordereau-table th:nth-last-child(2),
         .bordereau-table td:nth-last-child(2),
         .bordereau-table th:last-child,
@@ -52,7 +52,7 @@
         .page-number { margin-top: 12px; font-size: 10px; text-align: right; color: #475569; }
         @media print {
             html, body { width: 100%; margin: 0; padding: 0; background: #fff; }
-            .page { width: 100%; max-width: none; margin: 0; padding: 1mm; }
+            .page { width: 100%; max-width: none; margin: 0; padding: 0; }
             .page-number { color: transparent; }
             .page-number::before { content: "Page " counter(page) " sur " counter(pages); color: #475569; position: fixed; bottom: 8mm; right: 8mm; }
         }
@@ -60,6 +60,7 @@
         .no-print { display: block; }
         @media print { .no-print { display: none !important; } }
         thead { display: table-row-group; }
+        tfoot { display: table-row-group; }
     </style>
 </head>
 <body>
@@ -80,7 +81,7 @@
                     <th style="min-width:18px;">N°</th>
                     <th style="min-width:160px; text-align:left;">Noms et Prénoms</th>
                     @foreach($subjects as $subject)
-                        <th style="width: 34px; min-width: 34px; max-width: 34px;"><div class="subject-label">{{ $subject->subject->name_fr }} ({{ $subject->coefficient == (int) $subject->coefficient ? (int) $subject->coefficient : $subject->coefficient }})</div></th>
+                        <th style="width: 38px; min-width: 38px; max-width: 38px;"><div class="subject-label">{{ $subject->subject->name_fr }} ({{ $subject->coefficient == (int) $subject->coefficient ? (int) $subject->coefficient : $subject->coefficient }})</div></th>
                     @endforeach
                     <th style="width: 34px; min-width: 34px; max-width: 34px;"><div class="subject-label">MOYENNE ({{ $totalCoefficient }})</div></th>
                     <th style="width: 30px; min-width: 30px; max-width: 30px;"><div class="subject-label">RANG</div></th>
@@ -156,8 +157,8 @@
             </tfoot>
         </table>
     </div>
-    <div class="summary-note">Document imprimable : si la classe dépasse l'espace vertical, la pagination est normale.</div>
-    <div class="page-number">Page 1 sur 1</div>
+    {{-- <div class="summary-note">Document imprimable : si la classe dépasse l'espace vertical, la pagination est normale.</div>
+    <div class="page-number">Page 1 sur 1</div> --}}
 </div>
 </body>
 </html>
