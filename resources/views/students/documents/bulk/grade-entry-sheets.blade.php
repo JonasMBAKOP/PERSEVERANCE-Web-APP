@@ -5,7 +5,7 @@
 <title>Bordereaux de saisie — {{ $classGroup->full_name }}</title>
 @include('students.documents.partials.base-styles')
 <style>
-    :root{--primary:#1A3A6B;--border:#D1D5DB;--muted:#475569}
+    :root{--primary:#1A3A6B;--border:#9CA3AF;--muted:#475569}
     @page{size:A4 portrait; margin:5mm 5mm 5mm 5mm}
     html,body{margin:0;padding:0;font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif;color:#111827;background:#ffffff}
     body{padding:0 !important; margin:0 !important; background:#ffffff !important;}
@@ -13,7 +13,9 @@
     .page-content{width:100%;margin:0;padding:0}
     /* reuse bordereau styles for header */
     .data-table{width:100%;border-collapse:collapse;font-size:11px;margin:0}
-    .data-table th,.data-table td{border:1px solid var(--border);padding:6px 6px;text-align:center;vertical-align:middle}
+    .data-table th,.data-table td{border:1.5px solid var(--border);padding:6px 6px;text-align:center;vertical-align:middle}
+    .data-table th.evaluation-column,
+    .data-table td.evaluation-cell{box-sizing:border-box;overflow:hidden;white-space:nowrap}
     .data-table th{background:#F2F4F7;font-weight:900;color:var(--primary);font-size:13px}
     .data-table td.name{text-align:left;font-weight:700;text-transform:uppercase;padding-left:8px}
     .bordereau-header__title{font-size:21px;font-weight:900;color:var(--primary);text-transform:uppercase;letter-spacing:.06em}
@@ -27,8 +29,13 @@
     @media print {
         /* Reserve space for a left binding without changing the screen preview. */
         .page{padding-left:8mm !important;}
+        .data-table{table-layout:fixed;}
+        .data-table th:first-child,
+        .data-table td:first-child{width:28px;min-width:28px;max-width:28px;}
+        .data-table th.evaluation-column,
+        .data-table td.evaluation-cell{box-sizing:border-box;width:18px;min-width:18px;max-width:18px;padding-left:0;padding-right:0;}
         .data-table th:nth-child(2),
-        .data-table td:nth-child(2){width:160px;min-width:160px;max-width:160px;}
+        .data-table td:nth-child(2){width:45%;min-width:0;max-width:none;}
     }
 </style>
 </head>
@@ -41,6 +48,15 @@
         ->with(['sequences' => fn($q) => $q->orderBy('number')])
         ->orderBy('number')
         ->get();
+
+    $classGroup->loadMissing('level.section');
+    $isCoptan = ! str_contains(strtolower((string) ($school->full_name ?? '')), 'perseverance');
+    $isAnglophone = $classGroup->level?->section?->isAnglophone() ?? false;
+    if ($isCoptan) {
+        $trimesters->each(function ($trimester) use ($isAnglophone) {
+            $trimester->setRelation('sequences', $trimester->sequences->take($isAnglophone ? 2 : 3)->values());
+        });
+    }
 
     $studentsList = $students->values();
 @endphp
@@ -79,17 +95,16 @@
                             <th class="name-header" rowspan="2">Noms et Prénoms</th>
                             @foreach($trimesters as $tri)
                                 @php $seqCount = $tri->sequences->count(); @endphp
-                                <th colspan="{{ $seqCount + 1 }}">TRIMESTRE {{ $tri->number }}</th>
+                                <th colspan="{{ $seqCount }}">TRIMESTRE {{ $tri->number }}</th>
                             @endforeach
                         </tr>
                         <tr>
                             @foreach($trimesters as $tri)
                                 @php $seqCount = $tri->sequences->count(); $i = 1; @endphp
                                 @foreach($tri->sequences as $seq)
-                                    <th>E{{ $i }}</th>
+                                    <th class="evaluation-column">E{{ $i }}</th>
                                     @php $i++; @endphp
                                 @endforeach
-                                <th>T{{ $tri->number }}</th>
                             @endforeach
                         </tr>
                     </thead>
@@ -102,9 +117,8 @@
                                 <td class="name">{{ $full }}</td>
                                 @foreach($trimesters as $tri)
                                     @foreach($tri->sequences as $seq)
-                                        <td></td>
+                                        <td class="evaluation-cell"></td>
                                     @endforeach
-                                    <td></td> {{-- Trimestre total cell --}}
                                 @endforeach
                             </tr>
                             @php $idx++; @endphp
