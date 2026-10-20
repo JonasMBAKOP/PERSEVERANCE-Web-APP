@@ -6,7 +6,7 @@
 @include('students.documents.partials.base-styles')
 <style>
     :root{--primary:#1A3A6B;--border:#D1D5DB;--muted:#475569}
-    @page{size:A4 portrait; margin:5mm}
+    @page{size:A4 portrait; margin:5mm 5mm 5mm 5mm}
     html,body{margin:0;padding:0;font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif;color:#111827;background:#ffffff}
     body{padding:0 !important; margin:0 !important; background:#ffffff !important;}
     .page{width:100%;margin:0;padding:0;background:white;box-sizing:border-box;page-break-after:always;display:block;}
@@ -24,6 +24,12 @@
     .signature-box{border:1px dashed var(--border);min-height:48px;display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--muted)}
     /* make name header span two rows visually balanced */
     .data-table th.name-header{vertical-align:middle}
+    @media print {
+        /* Reserve space for a left binding without changing the screen preview. */
+        .page{padding-left:8mm !important;}
+        .data-table th:nth-child(2),
+        .data-table td:nth-child(2){width:160px;min-width:160px;max-width:160px;}
+    }
 </style>
 </head>
 <body>
