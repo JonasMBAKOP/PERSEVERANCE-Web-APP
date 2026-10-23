@@ -191,13 +191,20 @@ class InfirmaryController extends Controller
 
     public function patient(Student $student): View
     {
+        $activeYear = $this->currentAcademicYear();
+        $currentEnrollment = $student->enrollments()
+            ->active()
+            ->when($activeYear, fn ($query) => $query->where('academic_year_id', $activeYear->id))
+            ->with('classGroup')
+            ->first();
+
         $visits = $student->infirmaryVisits()
             ->with(['recordedBy', 'academicYear'])
             ->orderByDesc('visit_date')
             ->orderByDesc('visit_time')
             ->paginate(20);
 
-        return view('infirmary.patient-final', compact('student', 'visits'));
+        return view('infirmary.patient-final', compact('student', 'visits', 'currentEnrollment'));
     }
 
     public function print(Request $request): View

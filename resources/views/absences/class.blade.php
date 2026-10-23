@@ -153,9 +153,9 @@
                     <tbody class="divide-y divide-gray-50">
                         @foreach($enrollments as $e)
                         @php
-                            $totalH    = $e->absences->sum('hours');
-                            $justH     = $e->absences->where('is_justified', true)->sum('hours');
-                            $unjustH   = $e->absences->where('is_justified', false)->sum('hours');
+                            $totalH    = $e->absences->sum('effective_hours');
+                            $justH     = $e->absences->where('is_justified', true)->sum('effective_hours');
+                            $unjustH   = $e->absences->where('is_justified', false)->sum('effective_hours');
                             $alertColor= $unjustH >= 30 ? 'text-red-600' : ($unjustH >= 10 ? 'text-yellow-600' : 'text-gray-300');
                         @endphp
                         @if($totalH > 0)
@@ -184,7 +184,7 @@
                         </tr>
                         @endif
                         @endforeach
-                        @if($enrollments->sum(fn($e) => $e->absences->sum('hours')) == 0)
+                        @if($enrollments->sum(fn($e) => $e->absences->sum('effective_hours')) == 0)
                         <tr>
                             <td colspan="5" class="px-5 py-8 text-center text-gray-400 italic">
                                 Aucune absence enregistrée pour cette classe.
@@ -239,7 +239,7 @@
                                 {{ $abs->classSubject?->subject?->name ?? '—' }}
                             </td>
                             <td class="px-4 py-3 text-center font-black" style="color:#1A3A6B;">
-                                {{ number_format($abs->hours, 1) }}h
+                                {{ number_format($abs->effective_hours, 1) }}h
                             </td>
                             <td class="px-4 py-3 text-center">
                                 @if($abs->is_justified)

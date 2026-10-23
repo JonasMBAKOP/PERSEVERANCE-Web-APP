@@ -730,6 +730,7 @@ Route::middleware(['auth', 'permission:view-absences'])
         //         ->name('record');
 
         Route::get('/',                    [AbsenceController::class, 'index'])->name('index');
+        Route::get('/print',               [AbsenceController::class, 'print'])->name('print');
         Route::get('/student/{enrollment}',[AbsenceController::class, 'student'])->name('student');
         Route::get('/api/students',        [AbsenceController::class, 'apiStudents'])->name('api.students');
 

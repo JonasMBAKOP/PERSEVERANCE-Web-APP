@@ -30,12 +30,7 @@
                         @if($ab->status === 'present' && $ab->delay_minutes > 0)
                             Retard : {{ $ab->delay_minutes }} min
                         @else
-                            Absent(e) : {{ number_format(
-                                $ab->timetable_slot_id === null && $ab->class_subject_id === null
-                                    ? config('attendance.daily_absence_hours', 0)
-                                    : (float) $ab->hours,
-                                1, '.', ''
-                            ) }}h
+                            Absent(e) : {{ number_format((float) $ab->effective_hours, 1, '.', '') }}h
                         @endif
                     </p>
                 </div>

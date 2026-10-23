@@ -9,12 +9,12 @@
 <div class="-mx-2 -mt-2 bg-white rounded-2xl shadow-sm border border-gray-100 p-5 mb-5">
     <form method="GET" action="{{ route('absences.index') }}"
           class="flex flex-wrap gap-3 items-end">
-        <div class="min-w-[14rem]">
+        <div class="min-w-[12rem]">
             <label class="block text-xs font-bold text-gray-500 uppercase
                            tracking-wider mb-1.5">
                 Section
             </label>
-            <select name="section_id" onchange="this.form.submit()"
+            <select name="section_id" onchange="this.form.elements.class_id.value=''; this.form.submit()"
                     class="w-full px-3 py-2.5 pr-10 border border-gray-200 rounded-xl
                            text-sm focus:outline-none bg-white font-medium"
                     style="color:#1A3A6B;">
@@ -27,7 +27,7 @@
                 @endforeach
             </select>
         </div>
-        <div class="flex-1 min-w-48">
+        <div class="flex-1 min-w-[12rem]">
             <label class="block text-xs font-bold text-gray-500 uppercase
                            tracking-wider mb-1.5">
                 Classe
@@ -49,6 +49,15 @@
                 @endforeach
             </select>
         </div>
+        <button type="button" data-open-absence-print
+           class="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[#1A3A6B]
+                  text-[#1A3A6B] text-sm font-bold transition-all hover:bg-[#1A3A6B] hover:text-white">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2 2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2m-2 0v3H8v-3m-4-5h.01M18 12h.01"/>
+            </svg>
+            Imprimer
+        </button>
         @can('manage-absences')
         <a href="{{ route('absences.create', ['class_id' => request('class_id')]) }}"
            class="flex items-center gap-2 px-5 py-2.5 rounded-xl text-white
@@ -63,6 +72,23 @@
         </a>
         @endcan
     </form>
+</div>
+
+<div data-absence-print-modal class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 p-4">
+    <div class="w-full max-w-lg rounded-2xl bg-white p-5 shadow-2xl">
+        <div class="mb-4 flex items-center justify-between"><h3 class="text-base font-black text-[#1A3A6B]">Période de la liste des absences</h3><button type="button" data-close-absence-print class="text-2xl leading-none text-gray-400" aria-label="Fermer">&times;</button></div>
+        <div class="space-y-3">
+            <label class="block text-xs font-bold uppercase tracking-wider text-gray-500">Période</label>
+            <select data-print-period class="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm font-medium text-[#1A3A6B]">
+                <option value="journalier">Journalier</option><option value="hebdomadaire">Hebdomadaire</option><option value="mensuel">Mensuel</option><option value="annuel" selected>Annuel</option><option value="entre-2-dates">Entre 2 dates</option>
+            </select>
+            <div data-print-field="journalier"><label class="block text-xs font-bold text-gray-500">Date</label><input data-print-date type="date" class="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm"></div>
+            <div data-print-field="hebdomadaire" class="hidden"><label class="block text-xs font-bold text-gray-500">Semaine</label><input data-print-week type="week" class="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm"></div>
+            <div data-print-field="mensuel" class="hidden"><label class="block text-xs font-bold text-gray-500">Mois</label><input data-print-month type="month" class="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm"></div>
+            <div data-print-field="entre-2-dates" class="hidden grid grid-cols-2 gap-3"><div><label class="block text-xs font-bold text-gray-500">Début</label><input data-print-start type="date" class="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm"></div><div><label class="block text-xs font-bold text-gray-500">Fin</label><input data-print-end type="date" class="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm"></div></div>
+        </div>
+        <div class="mt-5 flex justify-end gap-2"><button type="button" data-close-absence-print class="rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-bold text-gray-600">Annuler</button><button type="button" data-submit-absence-print class="rounded-xl bg-[#1A3A6B] px-4 py-2.5 text-sm font-bold text-white">Imprimer</button></div>
+    </div>
 </div>
 
 {{-- ── TABLEAU ÉLÈVES (si classe sélectionnée) ────────────────────────── --}}
@@ -213,12 +239,7 @@
                         @if($ab->status === 'present' && $ab->delay_minutes > 0)
                             Retard : {{ $ab->delay_minutes }} min
                         @else
-                            Absent(e) : {{ number_format(
-                                $ab->timetable_slot_id === null && $ab->class_subject_id === null
-                                    ? config('attendance.daily_absence_hours', 0)
-                                    : (float) $ab->hours,
-                                1, '.', ''
-                            ) }}h
+                            Absent(e) : {{ number_format((float) $ab->effective_hours, 1, '.', '') }}h
                         @endif
                     </p>
                 </div>
@@ -300,6 +321,44 @@
         if (!link || !link.closest('#recent-absences-list')) return;
         event.preventDefault();
         loadRecentAbsences(link.href);
+    });
+})();
+</script>
+@endpush
+
+@push('scripts')
+<script>
+(() => {
+    const modal = document.querySelector('[data-absence-print-modal]');
+    const openButton = document.querySelector('[data-open-absence-print]');
+    if (!modal || !openButton) return;
+    const period = modal.querySelector('[data-print-period]');
+    const today = new Date().toISOString().slice(0, 10);
+    modal.querySelector('[data-print-date]').value = today;
+    modal.querySelector('[data-print-start]').value = today;
+    modal.querySelector('[data-print-end]').value = today;
+    modal.querySelector('[data-print-month]').value = today.slice(0, 7);
+    const fields = {
+        journalier: ['date', '[data-print-date]'],
+        hebdomadaire: ['week', '[data-print-week]'],
+        mensuel: ['month', '[data-print-month]'],
+        'entre-2-dates': [['start_date', '[data-print-start]'], ['end_date', '[data-print-end]']],
+        annuel: []
+    };
+    const sync = () => modal.querySelectorAll('[data-print-field]').forEach(field => field.classList.toggle('hidden', field.dataset.printField !== period.value));
+    period.addEventListener('change', sync);
+    openButton.addEventListener('click', () => { modal.classList.remove('hidden'); modal.classList.add('flex'); sync(); });
+    modal.querySelectorAll('[data-close-absence-print]').forEach(button => button.addEventListener('click', () => { modal.classList.add('hidden'); modal.classList.remove('flex'); }));
+    modal.addEventListener('click', event => { if (event.target === modal) modal.querySelector('[data-close-absence-print]').click(); });
+    modal.querySelector('[data-submit-absence-print]').addEventListener('click', () => {
+        const url = new URL('{{ route('absences.print') }}', window.location.origin);
+        const query = new URLSearchParams(window.location.search);
+        ['section_id', 'class_id'].forEach(key => { if (query.get(key)) url.searchParams.set(key, query.get(key)); });
+        url.searchParams.set('period_type', period.value);
+        const selected = fields[period.value] || [];
+        (Array.isArray(selected[0]) ? selected : [selected]).forEach(item => { if (item[0]) { const value = modal.querySelector(item[1])?.value; if (value) url.searchParams.set(item[0], value); } });
+        window.open(url.toString(), '_blank');
+        modal.querySelector('[data-close-absence-print]').click();
     });
 })();
 </script>

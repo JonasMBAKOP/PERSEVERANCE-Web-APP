@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class Absence extends Model
 {
+    public const DAILY_ABSENCE_HOURS = 7.0;
+
     protected $fillable = [
         'student_enrollment_id',
         'absence_date',
@@ -40,7 +42,7 @@ class Absence extends Model
         if ($this->status === 'absent'
             && $this->timetable_slot_id === null
             && $this->class_subject_id === null) {
-            $hours = (float) config('attendance.daily_absence_hours', $hours);
+            $hours = self::DAILY_ABSENCE_HOURS;
         }
 
         return $hours + ((int) $this->delay_minutes / 60);

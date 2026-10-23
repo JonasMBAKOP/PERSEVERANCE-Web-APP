@@ -123,7 +123,7 @@ class AttendanceController extends Controller
                     'delay_minutes' => $delayMinutes,
                     'class_subject_id' => null,
                     'timetable_period_index' => null,
-                    'hours' => 0,
+                    'hours' => $status === 'absent' ? Absence::DAILY_ABSENCE_HOURS : 0,
                     'is_justified' => false,
                     'recorded_by' => Auth::id(),
                 ]

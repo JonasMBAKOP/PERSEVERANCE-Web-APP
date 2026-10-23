@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Carbon\Carbon;
 use App\Http\Requests\StoreAbsenceRequest;
 use App\Models\Absence;
 use App\Models\AcademicYear;
@@ -114,7 +115,11 @@ class AbsenceController extends Controller
             : collect();
 
         $selectedClass = $selectedClassId
-            ? ClassGroup::with('level.section')->find($selectedClassId)
+            ? ClassGroup::whereKey($selectedClassId)
+                ->where('academic_year_id', $activeYear?->id)
+                ->when($selectedSectionId, fn ($q) => $q->whereHas('level', fn ($q2) => $q2->where('section_id', $selectedSectionId)))
+                ->with('level.section')
+                ->first()
             : null;
 
         // Stats d'absences par élève pour la classe sélectionnée
@@ -145,7 +150,7 @@ class AbsenceController extends Controller
             $q->where('status', 'active')
               ->when($activeYear, fn($q2) => $q2->where('academic_year_id', $activeYear->id))
               ->when($selectedClassId, fn($q2) => $q2->where('class_group_id', $selectedClassId))
-              ->when(!$selectedClassId && $selectedSectionId, fn($q2) => $q2->whereHas('classGroup.level', fn ($q3) =>
+              ->when($selectedSectionId, fn($q2) => $q2->whereHas('classGroup.level', fn ($q3) =>
                     $q3->where('section_id', $selectedSectionId)
                 ));
         })->where(function ($q) use ($recentType) {
@@ -183,6 +188,139 @@ class AbsenceController extends Controller
             'selectedClass', 'enrollments', 'recentAbsences',
             'selectedSectionId', 'recentType'
         ));
+    }
+
+    public function print(Request $request)
+    {
+        $activeYear = AcademicYear::active();
+        [$periodStart, $periodEnd, $periodLabel] = $this->absencePrintPeriod($request, $activeYear);
+        $selectedSectionId = $request->input('section_id');
+        $selectedClassId = $request->input('class_id');
+
+        $enrollments = StudentEnrollment::query()
+            ->where('status', 'active')
+            ->when($activeYear, fn ($q) => $q->where('academic_year_id', $activeYear->id))
+            ->when($selectedClassId, fn ($q) => $q->where('class_group_id', $selectedClassId))
+            ->when($selectedSectionId, fn ($q) => $q->whereHas(
+                'classGroup.level', fn ($q2) => $q2->where('section_id', $selectedSectionId)
+            ))
+            ->with(['student', 'classGroup.academicYear', 'classGroup.level.section', 'absences.classSubject.subject'])
+            ->get();
+
+        $rows = collect();
+        foreach ($enrollments as $enrollment) {
+            foreach ($enrollment->absences as $absence) {
+                $absenceDate = $absence->absence_date instanceof Carbon
+                    ? $absence->absence_date
+                    : Carbon::parse($absence->absence_date);
+                if ($periodStart && ($absenceDate->lt($periodStart) || $absenceDate->gt($periodEnd))) {
+                    continue;
+                }
+                $hours = method_exists($absence, 'getEffectiveHoursAttribute')
+                    ? (float) $absence->effective_hours
+                    : (float) $absence->hours;
+                if ($hours <= 0) {
+                    continue;
+                }
+                $rows->push([
+                    'classGroup' => $enrollment->classGroup,
+                    'enrollment' => $enrollment,
+                    'absence' => $absence,
+                    'hours' => $hours,
+                ]);
+            }
+        }
+
+        $rows = $rows
+            ->groupBy(fn ($row) => $row['enrollment']->id . '|' . optional($row['absence']->absence_date)->format('Y-m-d'))
+            ->map(function ($sameDayRows) {
+                $row = $sameDayRows->first();
+                $row['hours'] = $sameDayRows->sum('hours');
+                $row['justified_hours'] = $sameDayRows
+                    ->filter(fn ($item) => (bool) $item['absence']->is_justified)
+                    ->sum('hours');
+                $row['unjustified_hours'] = $sameDayRows
+                    ->reject(fn ($item) => (bool) $item['absence']->is_justified)
+                    ->sum('hours');
+                return $row;
+            })
+            ->filter(fn ($row) => $row['hours'] >= 1)
+            ->values();
+
+        $groups = $rows->groupBy(fn ($row) => $row['classGroup']->id)
+            ->sortBy(fn ($group) => $group->first()['classGroup']->full_name);
+        $headerClassGroup = $enrollments->first()?->classGroup
+            ?? ($selectedClassId ? ClassGroup::with(['academicYear', 'level.section'])->find($selectedClassId) : null)
+            ?? ClassGroup::with(['academicYear', 'level.section'])->where('academic_year_id', $activeYear?->id)->first();
+        $school = \App\Models\SchoolSetting::instance();
+        $phones = \App\Models\SchoolPhone::orderByDesc('is_primary')->get();
+        $agreements = \App\Models\SchoolAgreement::orderBy('id')->get();
+        $sectionLabel = $selectedSectionId
+            ? (Section::find($selectedSectionId)?->name ?? 'Section sélectionnée')
+            : 'Toutes les sections';
+        $classLabel = $selectedClassId
+            ? ($headerClassGroup?->full_name ?? 'Classe sélectionnée')
+            : 'Toutes les classes';
+        $filterLabel = 'Section : ' . $sectionLabel . ' — Classe : ' . $classLabel;
+
+        return view('absences.print', compact(
+            'activeYear', 'groups', 'headerClassGroup', 'school', 'phones', 'agreements', 'filterLabel', 'periodLabel'
+        ));
+    }
+
+    private function absencePrintPeriod(Request $request, $activeYear): array
+    {
+        $type = $request->input('period_type', 'annuel');
+        $today = Carbon::today();
+        $start = $today->copy();
+        $end = $today->copy();
+
+        switch ($type) {
+            case 'journalier':
+                $date = $request->input('date', $today->toDateString());
+                $start = Carbon::parse($date)->startOfDay();
+                $end = $start->copy()->endOfDay();
+                $label = 'Journalier : ' . $start->format('d/m/Y');
+                break;
+            case 'hebdomadaire':
+                $week = $request->input('week');
+                if (is_string($week) && preg_match('/^(\\d{4})-W(\\d{2})$/', $week, $matches)
+                    && (int) $matches[2] >= 1 && (int) $matches[2] <= 53) {
+                    $start = Carbon::create((int) $matches[1], 1, 4)
+                        ->setISODate((int) $matches[1], (int) $matches[2], 1)
+                        ->startOfDay();
+                } else {
+                    $start = $today->copy()->startOfWeek();
+                }
+                $end = $start->copy()->endOfWeek();
+                $label = 'Hebdomadaire : du ' . $start->format('d/m/Y') . ' au ' . $end->format('d/m/Y');
+                break;
+            case 'mensuel':
+                $month = $request->input('month');
+                $base = $month && preg_match('/^\\d{4}-\\d{2}$/', $month)
+                    ? Carbon::createFromFormat('Y-m', $month)
+                    : $today->copy();
+                $start = $base->copy()->startOfMonth();
+                $end = $base->copy()->endOfMonth();
+                $label = 'Mensuel : ' . $start->locale('fr')->translatedFormat('F Y');
+                break;
+            case 'entre-2-dates':
+                $start = Carbon::parse($request->input('start_date', $today->toDateString()))->startOfDay();
+                $end = Carbon::parse($request->input('end_date', $today->toDateString()))->endOfDay();
+                if ($end->lt($start)) {
+                    [$start, $end] = [$end->copy()->startOfDay(), $start->copy()->endOfDay()];
+                }
+                $label = 'Du ' . $start->format('d/m/Y') . ' au ' . $end->format('d/m/Y');
+                break;
+            default:
+                $type = 'annuel';
+                $start = $activeYear?->start_date ? Carbon::parse($activeYear->start_date)->startOfDay() : null;
+                $end = $activeYear?->end_date ? Carbon::parse($activeYear->end_date)->endOfDay() : null;
+                $label = 'Annuel : ' . ($activeYear?->label ?? 'Année scolaire active');
+                break;
+        }
+
+        return [$start, $end, $label];
     }
 
     // ── FORMULAIRE DE SAISIE ──────────────────────────────────────────────
@@ -300,7 +438,7 @@ class AbsenceController extends Controller
                 ],
                 [
                     'status'       => $isAbsent ? 'absent' : 'present',
-                    'hours'        => $isAbsent ? (float) config('attendance.daily_absence_hours', 0) : 0,
+                    'hours'        => $isAbsent ? Absence::DAILY_ABSENCE_HOURS : 0,
                     'arrival_time' => null,
                     'observation'  => null,
                     'delay_minutes'=> 0,
