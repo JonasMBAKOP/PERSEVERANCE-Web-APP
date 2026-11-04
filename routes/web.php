@@ -351,6 +351,10 @@ Route::middleware(['auth', 'permission:view-subjects'])
     ->group(function () {
         Route::get('/', [SubjectController::class, 'index'])
              ->name('index');
+        Route::get('/print', [SubjectController::class, 'printList'])
+             ->name('print');
+        Route::get('/print/pdf', [SubjectController::class, 'printListPdf'])
+             ->name('print.pdf');
 
         Route::middleware('permission:manage-subjects')->group(function () {
             // CatÃƒÆ’Ã‚Â©gories (avant wildcards)
@@ -431,22 +435,24 @@ Route::middleware(['auth', 'permission:view-staff'])
             ->name('presences.store');
         Route::get('/planning-passage/preview', [StaffController::class, 'previewPassagePlanning'])
             ->name('passage-planning.preview');
-        Route::get('/salaries', [StaffController::class, 'salaries'])
-            ->name('salaries');
-        Route::get('/salaries/print', [StaffController::class, 'printSalaryList'])
-            ->name('salaries.print');
-        Route::get('/salaries/attendance-sheet', [StaffController::class, 'salaryAttendanceSheet'])
-            ->name('salaries.attendance-sheet');
+        Route::middleware('permission:manage-staff')->group(function () {
+            Route::get('/salaries', [StaffController::class, 'salaries'])
+                ->name('salaries');
+            Route::get('/salaries/print', [StaffController::class, 'printSalaryList'])
+                ->name('salaries.print');
+            Route::get('/salaries/attendance-sheet', [StaffController::class, 'salaryAttendanceSheet'])
+                ->name('salaries.attendance-sheet');
+            Route::get('/{staff}/pay-slip', [StaffController::class, 'paySlip'])
+                ->name('pay-slip');
+            Route::post('/{staff}/pay-slip', [StaffController::class, 'storePaySlip'])
+                ->name('pay-slip.store');
+            Route::post('/{staff}/pay-slip/preview', [StaffController::class, 'previewPaySlip'])
+                ->name('pay-slip.preview');
+            Route::get('/{staff}/pay-slip/annual', [StaffController::class, 'annualPaySlip'])
+                ->name('pay-slip.annual');
+        });
         Route::get('/lists/print', [StaffController::class, 'printList'])
             ->name('lists.print');
-        Route::get('/{staff}/pay-slip', [StaffController::class, 'paySlip'])
-            ->name('pay-slip');
-        Route::post('/{staff}/pay-slip', [StaffController::class, 'storePaySlip'])
-            ->name('pay-slip.store');
-        Route::post('/{staff}/pay-slip/preview', [StaffController::class, 'previewPaySlip'])
-            ->name('pay-slip.preview');
-        Route::get('/{staff}/pay-slip/annual', [StaffController::class, 'annualPaySlip'])
-            ->name('pay-slip.annual');
 
         Route::middleware('permission:manage-staff')->group(function () {
             Route::get('/{staff}/salary', [StaffController::class, 'editSalary'])

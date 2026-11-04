@@ -6,12 +6,17 @@ use App\Http\Requests\AssignSubjectsRequest;
 use App\Http\Requests\StoreSubjectRequest;
 use App\Http\Requests\UpdateSubjectRequest;
 use App\Models\AuditLog;
+use App\Models\AcademicYear;
 use App\Models\ClassGroup;
 use App\Models\ClassSubject;
 // use App\Models\Staff;
 use App\Models\Subject;
 use App\Models\SubjectCategory;
 use App\Models\TeacherAssignment;
+use App\Models\SchoolAgreement;
+use App\Models\SchoolPhone;
+use App\Models\SchoolSetting;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -45,7 +50,10 @@ class SubjectController extends Controller
             );
         }
 
-        $subjects   = $query->orderBy('code')->paginate(20)
+        $subjects   = $query->orderBy('name_fr')
+                            ->orderBy('name_en')
+                            ->orderBy('code')
+                            ->paginate(20)
                             ->withQueryString();
         $categories = SubjectCategory::with('section')
                                      ->withCount('subjects')
@@ -54,6 +62,10 @@ class SubjectController extends Controller
 
         // Données par section pour l'onglet "Par Section"
         $sections    = \App\Models\Section::orderBy('id')->get();
+        $activeYear = AcademicYear::active();
+        $classesForFilters = $activeYear
+            ? ClassGroup::where('academic_year_id', $activeYear->id)->with('level.section')->orderBy('name')->get()
+            : collect();
         $allSubjects = Subject::with('category.section')
             ->orderBy('name_fr')
             ->get();
@@ -82,8 +94,48 @@ class SubjectController extends Controller
 
         return view('subjects.index', compact(
             'subjects', 'categories', 'stats',
-            'sections', 'sectionData', 'lastAudit'
+            'sections', 'sectionData', 'lastAudit', 'classesForFilters'
         ));
+    }
+
+    public function printList(Request $request)
+    {
+        return view('subjects.print', $this->printListData($request) + ['forPdf' => false]);
+    }
+
+    public function printListPdf(Request $request)
+    {
+        $data = $this->printListData($request) + ['forPdf' => true];
+        $filename = 'liste-des-matieres-' . str_replace(' ', '-', strtolower($data['docSubtitle'])) . '.pdf';
+
+        return Pdf::loadView('subjects.print', $data)->setPaper('a4', 'portrait')->stream($filename);
+    }
+
+    private function printListData(Request $request): array
+    {
+        $year = AcademicYear::active();
+        abort_unless($year, 404, 'Aucune année scolaire active.');
+        $sectionId = $request->integer('section_id') ?: null;
+        $classId = $request->integer('class_id') ?: null;
+        $classes = ClassGroup::where('academic_year_id', $year->id)
+            ->when($sectionId, fn ($q) => $q->whereHas('level', fn ($l) => $l->where('section_id', $sectionId)))
+            ->when($classId, fn ($q) => $q->whereKey($classId))
+            ->with(['level.section', 'academicYear', 'classSubjects' => fn ($q) => $q
+                ->where('is_active', true)
+                ->with(['subject', 'teacherAssignments' => fn ($a) => $a->where('academic_year_id', $year->id)->with('staff')])
+                ->orderBy('subject_id')])
+            ->orderBy('name')->get();
+        abort_if($classId && $classes->isEmpty(), 404, 'Classe introuvable pour les filtres choisis.');
+        $section = $sectionId ? \App\Models\Section::find($sectionId) : null;
+        return [
+            'classes' => $classes,
+            'academicYear' => $year,
+            'school' => SchoolSetting::instance(),
+            'phones' => SchoolPhone::orderByDesc('is_primary')->get(),
+            'agreements' => SchoolAgreement::orderBy('id')->get(),
+            'docTitle' => 'Liste des matières',
+            'docSubtitle' => ($section?->name ?? 'Toutes les sections') . ' — ' . ($classId ? ($classes->first()?->full_name ?? 'Classe') : 'Toutes les classes'),
+        ];
     }
 
     // ── CRÉATION ──────────────────────────────────────────────────────────

@@ -110,7 +110,7 @@
                     :class="activeTab === 'subjects' ? 'border-b-2 font-bold text-gray-800' : 'text-gray-400 hover:text-gray-600'"
                     class="px-6 py-4 text-sm font-semibold whitespace-nowrap transition-all border-b-2 border-transparent focus:outline-none"
                     :style="activeTab === 'subjects' ? 'color: #A24E0C; border-color: #A24E0C;' : ''">
-                Matières & Coefficients
+                Matières & Barèmes
             </button>
             
             {{-- Onglets Placeholders --}}
@@ -407,7 +407,7 @@
                     <tr class="bg-gray-50/50 border-b border-gray-100 text-gray-400 font-bold uppercase tracking-wider text-[10px]">
                         <th class="text-left px-6 py-4">Matière</th>
                         <th class="text-center px-6 py-4">Catégorie</th>
-                        <th class="text-center px-6 py-4">Coefficient</th>
+                        <th class="text-center px-6 py-4">Barème</th>
                         <th class="text-center px-6 py-4">Volume Horaire</th>
                         <th class="text-left px-6 py-4">Enseignant Assigné</th>
                     </tr>
@@ -430,7 +430,7 @@
                             </span>
                         </td>
                         <td class="px-6 py-4 text-center font-bold text-gray-800">
-                            {{ $cs->coefficient }}
+                            {{ rtrim(rtrim(number_format((float) $cs->grading_scale, 2, '.', ''), '0'), '.') }}
                         </td>
                         <td class="px-6 py-4 text-center text-gray-500 font-medium">
                             {{ $cs->hours_per_week ? $cs->hours_per_week . ' h/semaine' : 'Non défini' }}

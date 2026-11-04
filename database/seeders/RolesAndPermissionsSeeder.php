@@ -100,7 +100,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'view-announcements',
             'view-messages', 'send-messages',
             'view-reports', 'export-reports',
-            'view-staff', 'manage-staff',
+            'view-staff',
             'view-grades', 'enter-grades',
             'view-bulletins', 'manage-bulletins',
         ]);

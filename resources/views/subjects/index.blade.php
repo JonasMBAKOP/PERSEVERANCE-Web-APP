@@ -25,6 +25,9 @@
 <div x-data="{
     tab: '{{ request('tab', 'all') }}',
     fabOpen: false,
+    printListModal: false,
+    selectedPrintSection: '',
+    classesBySection: @js($classesForFilters->groupBy(fn ($class) => $class->level?->section_id)->map(fn ($classes) => $classes->map(fn ($class) => ['id' => $class->id, 'name' => $class->full_name])->values())),
     categoryModal: {{ $errors->has('section_id') || $errors->has('code') || $errors->has('name') ? 'true' : 'false' }},
     categoryListModal: {{ request()->boolean('categories') ? 'true' : 'false' }},
     editCategory: null,
@@ -57,6 +60,10 @@
     </div>
 
     <div class="flex items-center gap-3 flex-wrap justify-end">
+        <button type="button" @click="printListModal = true" class="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-bold text-gray-700 transition hover:border-[#1A3A6B]/30 hover:bg-blue-50 whitespace-nowrap">
+            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5h-2M6 14h12v7H6z"/></svg>
+            Liste
+        </button>
         {{-- Filtre type --}}
         {{-- <div x-show="tab === 'all'" class="flex items-center gap-2">
             <span class="text-xs font-semibold text-gray-400 uppercase
@@ -128,6 +135,13 @@
             Catégories
         </button>
         @endcan
+    </div>
+</div>
+
+<div x-show="printListModal" x-cloak x-transition.opacity @keydown.escape.window="printListModal = false" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/40 p-4">
+    <div @click.outside="printListModal = false" class="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl">
+        <div class="flex items-start justify-between gap-4"><div><h2 class="text-lg font-black text-gray-900">Imprimer la liste des matières</h2><p class="mt-1 text-sm text-gray-500">Choisissez la section et la classe à présenter dans le document.</p></div><button type="button" @click="printListModal = false" class="rounded-lg p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700" aria-label="Fermer"><svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button></div>
+        <form method="GET" action="{{ route('subjects.print') }}" target="_blank" class="mt-6 space-y-4"><div><label class="mb-1.5 block text-sm font-semibold text-gray-700">Section</label><select name="section_id" x-model="selectedPrintSection" @change="$refs.printClass.value = ''" class="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm text-gray-800 outline-none focus:border-[#1A3A6B]"><option value="">Toutes les sections</option>@foreach($sections as $section)<option value="{{ $section->id }}">{{ $section->name }}</option>@endforeach</select></div><div><label class="mb-1.5 block text-sm font-semibold text-gray-700">Classe</label><select name="class_id" x-ref="printClass" class="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm text-gray-800 outline-none focus:border-[#1A3A6B]"><option value="">Toutes les classes</option><template x-for="(classes, sectionId) in classesBySection" :key="sectionId"><template x-if="selectedPrintSection === '' || selectedPrintSection === String(sectionId)"><template x-for="item in classes" :key="item.id"><option :value="item.id" x-text="item.name"></option></template></template></template></select></div><div class="flex justify-end gap-3 border-t border-gray-100 pt-5"><button type="button" @click="printListModal = false" class="rounded-xl px-4 py-2.5 text-sm font-bold text-gray-600 transition hover:bg-gray-100">Annuler</button><button type="submit" class="inline-flex items-center gap-2 rounded-xl bg-[#1A3A6B] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#163450]"><svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2 2h16a2 2 0 0 1 2 2v5h-2M6 14h12v7H6z"/></svg>Générer la liste</button></div></form>
     </div>
 </div>
 
