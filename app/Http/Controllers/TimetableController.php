@@ -35,7 +35,8 @@ class TimetableController extends Controller
         $activeYear = AcademicYear::active();
         $setting = TimetableSetting::current();
         $grid = $this->buildGrid($setting);
-        $user = auth()->user();
+        /** @var User $user */
+        $user = Auth::user();
         $teacherRestricted = $user?->isTeacherOnly() ?? false;
         $teacherClassIds = collect();
 
@@ -383,6 +384,7 @@ class TimetableController extends Controller
 
     public function printTeacher(Staff $staff)
     {
+        /** @var User $user */
         $user = Auth::user();
         $canViewAnyStaff = $user->hasAnyRole(['super-admin', 'directeur', 'censeur', 'assistant-direction']);
         abort_unless($canViewAnyStaff || $user->staff?->is($staff), 403);

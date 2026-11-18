@@ -90,6 +90,11 @@ class Staff extends Model
         return $this->hasMany(StaffPresence::class);
     }
 
+    public function salaryAdvances()
+    {
+        return $this->hasMany(SalaryAdvance::class);
+    }
+
     public function titularClasses()
     {
         return $this->hasMany(ClassGroup::class, 'titular_staff_id');
@@ -180,6 +185,19 @@ class Staff extends Model
         }
 
         return $parts ? implode(' / ', $parts) : 'À renseigner';
+    }
+
+    public function getRemainingSalaryAdvanceBalanceAttribute(): int
+    {
+        return (int) $this->salaryAdvances()
+            ->withSum('repayments as repaid_amount', 'amount')
+            ->get()
+            ->sum(fn ($advance): int => (int) max(0, (float) ($advance->amount ?? 0) - (float) ($advance->repaid_amount ?? 0)));
+    }
+
+    public function salaryToReceive(float $grossAmount, int $repaymentAmount = 0): float
+    {
+        return round(max(0, (float) $grossAmount - max(0, $repaymentAmount)), 2);
     }
 
     public function isTeacher(): bool

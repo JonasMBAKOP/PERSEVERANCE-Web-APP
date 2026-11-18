@@ -461,6 +461,20 @@ Route::middleware(['auth', 'permission:view-staff'])
                 ->name('salary.update');
         });
 
+        Route::middleware('role:super-admin|directeur')
+            ->prefix('advances')
+            ->name('advances.')
+            ->group(function () {
+                Route::get('/', [\App\Http\Controllers\SalaryAdvanceController::class, 'index'])->name('index');
+                Route::get('/create', [\App\Http\Controllers\SalaryAdvanceController::class, 'create'])->name('create');
+                Route::post('/', [\App\Http\Controllers\SalaryAdvanceController::class, 'store'])->name('store');
+                Route::get('/{advance}/edit', [\App\Http\Controllers\SalaryAdvanceController::class, 'edit'])->name('edit');
+                Route::put('/{advance}', [\App\Http\Controllers\SalaryAdvanceController::class, 'update'])->name('update');
+                Route::delete('/{advance}', [\App\Http\Controllers\SalaryAdvanceController::class, 'destroy'])->name('destroy');
+                Route::post('/{advance}/repayments', [\App\Http\Controllers\SalaryAdvanceController::class, 'storeRepayment'])->name('repayments.store');
+                Route::get('/{advance}', [\App\Http\Controllers\SalaryAdvanceController::class, 'show'])->name('show');
+            });
+
         Route::get('/{staff}', [StaffController::class, 'show'])->name('show');
     });
 

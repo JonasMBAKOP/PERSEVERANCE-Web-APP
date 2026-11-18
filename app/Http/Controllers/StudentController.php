@@ -21,6 +21,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Auth;
 
 class StudentController extends Controller
 {
@@ -32,7 +33,8 @@ class StudentController extends Controller
     public function index(Request $request)
     {
         $activeYear = AcademicYear::active();
-        $user = auth()->user();
+        /** @var User $user */
+        $user = Auth::user();
         $isTeacher = $user?->isTeacherOnly() ?? false;
         $teacherClassIds = collect();
 

@@ -21,7 +21,8 @@ class BulletinsController extends Controller
     public function __construct(
         private readonly BulletinService $bulletins
     ) {
-        $user = auth()->user();
+        /** @var User $user */
+        $user = Auth::user();
         if ($user?->isTeacherOnly()) {
             abort(403);
         }

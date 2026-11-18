@@ -91,6 +91,11 @@
                 @endif
             </td>
         </tr>
+        <tr><th>Bon à rembourser</th><td>{{ number_format((int) ($advanceBalanceBefore ?? $remainingAdvanceAmount ?? $staff->remaining_salary_advance_balance ?? 0), 0, ',', ' ') }} FCFA</td></tr>
+        @if(($repaymentAmount ?? 0) > 0)
+            <tr><th>Remboursement sur salaire</th><td>{{ number_format((int) $repaymentAmount, 0, ',', ' ') }} FCFA</td></tr>
+            <tr><th>Solde après remboursement</th><td>{{ number_format((int) ($remainingAdvanceAmount ?? 0), 0, ',', ' ') }} FCFA</td></tr>
+        @endif
     </table>
 
     <div class="totals">
@@ -157,6 +162,11 @@
                 @endif
             </td>
         </tr>
+        <tr><th>Bon à rembourser</th><td>{{ number_format((int) ($advanceBalanceBefore ?? $remainingAdvanceAmount ?? $staff->remaining_salary_advance_balance ?? 0), 0, ',', ' ') }} FCFA</td></tr>
+        @if(($repaymentAmount ?? 0) > 0)
+            <tr><th>Remboursement sur salaire</th><td>{{ number_format((int) $repaymentAmount, 0, ',', ' ') }} FCFA</td></tr>
+            <tr><th>Solde après remboursement</th><td>{{ number_format((int) ($remainingAdvanceAmount ?? 0), 0, ',', ' ') }} FCFA</td></tr>
+        @endif
     </table>
 
     <div class="totals">

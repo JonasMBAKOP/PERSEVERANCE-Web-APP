@@ -77,9 +77,6 @@
             <th>#</th>
             <th>Nom et prénoms</th>
             <th>Poste</th>
-            @if($showContractColumn)
-                <th>Type de contrat</th>
-            @endif
             <th>Numéro</th>
             <th>{{ $isVacataireFilter ? 'Tarif horaire' : 'Salaire' }}</th>
             @if($showWeeklyColumns)
@@ -87,6 +84,7 @@
                 <th>Total</th>
             @endif
             @if($isAttendanceSheet)
+                <th>Bon à rembourser</th>
                 <th>Signature</th>
             @endif
         </tr>
@@ -97,9 +95,6 @@
                 <td>{{ $index + 1 }}</td>
                 <td>{{ $member->full_name }}</td>
                 <td>{{ $member->primaryPosition?->position_label ?? 'Personnel' }}</td>
-                @if($showContractColumn)
-                    <td>{{ $member->contract_label }}</td>
-                @endif
                 <td>{{ $member->phone ?? '—' }}</td>
                 <td>{{ $member->salary_display }}</td>
                 @if($showWeeklyColumns)
@@ -112,6 +107,7 @@
                     @endif
                 @endif
                 @if($isAttendanceSheet)
+                    <td>{{ number_format((int) $member->remaining_salary_advance_balance, 0, ',', ' ') }} FCFA</td>
                     <td style="height: 34px;"></td>
                 @endif
             </tr>

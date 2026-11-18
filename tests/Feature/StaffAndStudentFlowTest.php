@@ -458,4 +458,26 @@ class StaffAndStudentFlowTest extends TestCase
         $this->assertSame(0, StudentPayment::where('student_enrollment_id', $enrollment->id)->count());
         $this->assertNull(StudentEnrollment::withTrashed()->find($enrollment->id));
     }
+
+    public function test_econome_cannot_access_staff_creation_or_edit_routes(): void
+    {
+        $econome = User::factory()->create();
+        $econome->assignRole('econome');
+        $staff = Staff::create([
+            'first_name' => 'Jean',
+            'last_name' => 'Test',
+            'gender' => 'M',
+            'contract_type' => 'vacataire',
+            'is_active' => true,
+        ]);
+
+        $this->assertTrue($econome->can('view-staff'));
+        $this->assertFalse($econome->can('manage-staff'));
+
+        $this->actingAs($econome)
+            ->get(route('staff.create'))
+            ->assertForbidden();
+
+        $this->get(route('staff.edit', $staff))->assertForbidden();
+    }
 }

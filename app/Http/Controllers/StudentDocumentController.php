@@ -11,6 +11,7 @@ use PhpOffice\PhpWord\Element\Section;
 use PhpOffice\PhpWord\IOFactory;
 use PhpOffice\PhpWord\PhpWord;
 use PhpOffice\PhpWord\Shared\Html as WordHtml;
+use Illuminate\Support\Facades\Auth;
 
 class StudentDocumentController extends Controller
 {
@@ -220,7 +221,8 @@ class StudentDocumentController extends Controller
 
     private function abortIfRestrictedTeacher(): void
     {
-        $user = auth()->user();
+        /** @var User $user */
+        $user = Auth::user();
         if ($user?->isTeacherOnly()) {
             abort(403);
         }

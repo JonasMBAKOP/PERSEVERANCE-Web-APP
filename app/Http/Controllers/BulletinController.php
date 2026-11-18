@@ -19,13 +19,15 @@ use App\Services\GradeCalculationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\URL;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Facades\Auth;
 
 class BulletinController extends Controller
 {
     public function __construct(
         private GradeCalculationService $calc
     ) {
-        $user = auth()->user();
+        /** @var User $user */
+        $user = Auth::user();
         if ($user?->isTeacherOnly()) {
             abort(403);
         }

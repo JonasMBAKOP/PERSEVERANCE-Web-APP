@@ -10,7 +10,7 @@
 
     @page {
         size: A4 portrait;
-        margin: 1mm;
+        margin: 5mm 8mm;
     }
 
     * {
@@ -36,12 +36,12 @@
     }
 
     .bulletin-page {
-        width: 208mm;
+        width: 194mm;
         max-width: 100%;
-        min-height: 291mm;
+        min-height: 287mm;
         margin-left: auto;
         margin-right: auto;
-        padding: 3mm 4mm;
+        padding: 5mm 6mm 4mm;
         background: white;
         border: 4px solid var(--bleu);
         box-sizing: border-box;
@@ -288,7 +288,8 @@
     .notes-table th.col-subject,
     .notes-table td.col-subject {
         text-align: left;
-        width: 30%;
+        width: 38%;
+        white-space: nowrap;
     }
 
     .student-photo-fallback span { display: none; }

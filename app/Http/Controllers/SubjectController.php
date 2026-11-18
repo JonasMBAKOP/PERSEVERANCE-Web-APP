@@ -123,6 +123,7 @@ class SubjectController extends Controller
             ->with(['level.section', 'academicYear', 'classSubjects' => fn ($q) => $q
                 ->where('is_active', true)
                 ->with(['subject', 'teacherAssignments' => fn ($a) => $a->where('academic_year_id', $year->id)->with('staff')])
+                ->orderBy(Subject::select('name_fr')->whereColumn('subjects.id', 'class_subjects.subject_id'))
                 ->orderBy('subject_id')])
             ->orderBy('name')->get();
         abort_if($classId && $classes->isEmpty(), 404, 'Classe introuvable pour les filtres choisis.');

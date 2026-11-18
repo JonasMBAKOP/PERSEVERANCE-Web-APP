@@ -10,7 +10,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        DB::statement("ALTER TABLE staff_positions MODIFY COLUMN position VARCHAR(50)");
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement("ALTER TABLE staff_positions MODIFY COLUMN position VARCHAR(50)");
+        }
     }
 
     /**

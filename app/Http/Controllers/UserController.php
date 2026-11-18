@@ -72,14 +72,18 @@ class UserController extends Controller
     // ── FORMULAIRE DE CRÉATION ────────────────────────────────────────────────
     public function archived()
     {
-        abort_unless(Auth::user()->hasRole('super-admin'), 403);
+        /** @var User $user */
+        $user = Auth::user();
+        abort_unless($user->hasRole('super-admin'), 403);
         $users = User::onlyTrashed()->with(['roles', 'staff'])->latest('deleted_at')->paginate(15);
         return view('users.archived', compact('users'));
     }
 
     public function restoreArchived(int $user)
     {
-        abort_unless(Auth::user()->hasRole('super-admin'), 403);
+        /** @var User $user */
+        $user = Auth::user();
+        abort_unless($user->hasRole('super-admin'), 403);
         $user = User::withTrashed()->findOrFail($user);
         $user->restore();
         $user->update(['is_active' => true]);

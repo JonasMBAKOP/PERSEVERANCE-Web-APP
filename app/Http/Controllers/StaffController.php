@@ -6,6 +6,8 @@ use App\Http\Requests\StoreStaffRequest;
 use App\Http\Requests\UpdateStaffRequest;
 use App\Models\AcademicYear;
 use App\Models\AuditLog;
+use App\Models\SalaryAdvance;
+use App\Models\SalaryAdvanceRepayment;
 use App\Models\Staff;
 use App\Models\SchoolSetting;use App\Models\StaffPaySlip;
 use App\Models\TeacherAssignment;
@@ -21,6 +23,7 @@ use Spatie\Permission\Models\Role;
 use App\Models\StaffPosition;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class StaffController extends Controller
 {
@@ -212,14 +215,18 @@ class StaffController extends Controller
     // ── FORMULAIRE CRÉATION ───────────────────────────────────────────────
     public function archived()
     {
-        abort_unless(Auth::user()->hasRole('super-admin'), 403);
+        /** @var User $user */
+        $user = Auth::user();
+        abort_unless($user->hasRole('super-admin'), 403);
         $staff = Staff::onlyTrashed()->with(['user', 'positions'])->latest('deleted_at')->paginate(15);
         return view('staff.archived', compact('staff'));
     }
 
     public function restoreArchived(int $staff)
     {
-        abort_unless(Auth::user()->hasRole('super-admin'), 403);
+        /** @var User $user */
+        $user = Auth::user();
+        abort_unless($user->hasRole('super-admin'), 403);
         $staff = Staff::withTrashed()->findOrFail($staff);
         $staff->restore();
         $staff->update(['is_active' => true]);
@@ -682,6 +689,7 @@ class StaffController extends Controller
 
         $data['amountReceived'] = $saved?->amount_received ?? null;
         $data['hoursWorked'] = $isVacataire ? ($saved?->hours_worked ?? null) : null;
+        $data['remainingAdvanceAmount'] = (int) $staff->remaining_salary_advance_balance;
         $data['isVacataire'] = $isVacataire;
         $data['monthlySalary'] = $staff->monthly_salary;
         $data['hourlyRate'] = $staff->hourly_rate;
@@ -694,14 +702,16 @@ class StaffController extends Controller
     public function previewPaySlip(Request $request, Staff $staff)
     {
         $isVacataire = $staff->contract_type === 'vacataire';
-        $request->validate($isVacataire
-            ? ['hours_worked' => ['required', 'numeric', 'min:0']]
-            : ['period' => ['required', 'date_format:Y-m']]);
+        $request->validate($this->paySlipValidationRules($isVacataire));
 
         $hoursWorked = $isVacataire ? (float) $request->input('hours_worked') : null;
-        $amountReceived = $isVacataire
+        $baseAmount = $isVacataire
             ? $hoursWorked * (float) ($staff->hourly_rate ?? 0)
             : (float) ($staff->monthly_salary ?? 0);
+        $repaymentAmount = $request->boolean('repay_advance') ? (int) $request->input('repayment_amount') : 0;
+        $advanceBalanceBefore = (int) $staff->remaining_salary_advance_balance;
+        $this->validateSalaryDeductionAmount($repaymentAmount, $advanceBalanceBefore, $baseAmount);
+        $amountReceived = $staff->salaryToReceive($baseAmount, $repaymentAmount);
         $period = $request->input('period');
 
         // Preview should not persist; saving is done explicitly via storePaySlip()
@@ -709,6 +719,9 @@ class StaffController extends Controller
         $data = $this->staffDocumentContext($staff);
         $data['amountReceived'] = $amountReceived;
         $data['hoursWorked'] = $hoursWorked;
+        $data['repaymentAmount'] = $repaymentAmount;
+        $data['advanceBalanceBefore'] = $advanceBalanceBefore;
+        $data['remainingAdvanceAmount'] = max(0, $advanceBalanceBefore - $repaymentAmount);
         $data['isVacataire'] = $isVacataire;
         $data['monthlySalary'] = $staff->monthly_salary;
         $data['hourlyRate'] = $staff->hourly_rate;
@@ -721,33 +734,54 @@ class StaffController extends Controller
     public function storePaySlip(Request $request, Staff $staff)
     {
         $isVacataire = $staff->contract_type === 'vacataire';
-        $request->validate($isVacataire
-            ? ['hours_worked' => ['required', 'numeric', 'min:0']]
-            : ['period' => ['required', 'date_format:Y-m']]);
+        $request->validate($this->paySlipValidationRules($isVacataire));
 
         $hoursWorked = $isVacataire ? (float) $request->input('hours_worked') : null;
-        $amountReceived = $isVacataire
+        $baseAmount = $isVacataire
             ? $hoursWorked * (float) ($staff->hourly_rate ?? 0)
             : (float) ($staff->monthly_salary ?? 0);
+        $repayAdvance = $request->boolean('repay_advance');
+        $repaymentAmount = $repayAdvance ? (int) $request->input('repayment_amount') : 0;
         $period = $isVacataire ? null : $request->input('period');
 
-        if ($isVacataire) {
-            StaffPaySlip::create([
-                'staff_id' => $staff->id,
-                'period' => null,
-                'hours_worked' => $hoursWorked,
-                'amount_received' => $amountReceived,
-            ]);
-        } else {
-            StaffPaySlip::updateOrCreate(
-                ['staff_id' => $staff->id, 'period' => $period],
-                ['hours_worked' => null, 'amount_received' => $amountReceived]
-            );
-        }
+        [$amountReceived, $advanceBalanceBefore] = DB::transaction(function () use (
+            $staff,
+            $hoursWorked,
+            $baseAmount,
+            $period,
+            $isVacataire,
+            $repayAdvance,
+            $repaymentAmount
+        ): array {
+            $advanceBalanceBefore = $repayAdvance
+                ? $this->recordSalaryDeductionRepayments($staff, $repaymentAmount, $baseAmount, $period)
+                : (int) $staff->remaining_salary_advance_balance;
+            $amountReceived = $staff->salaryToReceive($baseAmount, $repaymentAmount);
+
+            if ($isVacataire) {
+                StaffPaySlip::create([
+                    'staff_id' => $staff->id,
+                    'period' => null,
+                    'hours_worked' => $hoursWorked,
+                    'amount_received' => $amountReceived,
+                ]);
+            } else {
+                StaffPaySlip::updateOrCreate(
+                    ['staff_id' => $staff->id, 'period' => $period],
+                    ['hours_worked' => null, 'amount_received' => $amountReceived]
+                );
+            }
+
+            return [$amountReceived, $advanceBalanceBefore];
+        });
+        $staff->refresh();
 
         $data = $this->staffDocumentContext($staff);
         $data['amountReceived'] = $amountReceived;
         $data['hoursWorked'] = $hoursWorked;
+        $data['repaymentAmount'] = $repaymentAmount;
+        $data['advanceBalanceBefore'] = $advanceBalanceBefore;
+        $data['remainingAdvanceAmount'] = (int) $staff->remaining_salary_advance_balance;
         $data['isVacataire'] = $isVacataire;
         $data['monthlySalary'] = $staff->monthly_salary;
         $data['hourlyRate'] = $staff->hourly_rate;
@@ -755,6 +789,81 @@ class StaffController extends Controller
         $data['previewMode'] = true;
 
         return view('staff.documents.pay-slip', $data);
+    }
+
+    private function paySlipValidationRules(bool $isVacataire): array
+    {
+        return array_merge(
+            $isVacataire
+                ? ['hours_worked' => ['required', 'numeric', 'min:0']]
+                : ['period' => ['required', 'date_format:Y-m']],
+            [
+                'repay_advance' => ['sometimes', 'boolean'],
+                'repayment_amount' => ['nullable', 'integer', 'min:0', 'required_if:repay_advance,1'],
+            ]
+        );
+    }
+
+    private function validateSalaryDeductionAmount(int $amount, int $balance, float $grossAmount): void
+    {
+        $maximum = min($balance, (int) floor(max(0, $grossAmount)));
+
+        if ($amount > $maximum) {
+            throw ValidationException::withMessages([
+                'repayment_amount' => 'Le montant ne peut dépasser le solde restant ni le salaire brut.',
+            ]);
+        }
+    }
+
+    private function recordSalaryDeductionRepayments(
+        Staff $staff,
+        int $amount,
+        float $grossAmount,
+        ?string $period
+    ): int {
+        $advances = SalaryAdvance::query()
+            ->where('staff_id', $staff->id)
+            ->orderBy('issued_on')
+            ->orderBy('id')
+            ->lockForUpdate()
+            ->get();
+
+        $repaidByAdvance = SalaryAdvanceRepayment::query()
+            ->whereIn('salary_advance_id', $advances->modelKeys())
+            ->selectRaw('salary_advance_id, SUM(amount) as total_repaid')
+            ->groupBy('salary_advance_id')
+            ->pluck('total_repaid', 'salary_advance_id');
+
+        $balances = $advances->mapWithKeys(fn (SalaryAdvance $advance): array => [
+            $advance->id => max(0, (int) $advance->amount - (int) ($repaidByAdvance[$advance->id] ?? 0)),
+        ]);
+        $balanceBefore = (int) $balances->sum();
+        $this->validateSalaryDeductionAmount($amount, $balanceBefore, $grossAmount);
+
+        $unallocatedAmount = $amount;
+        foreach ($advances as $advance) {
+            $repayment = min($unallocatedAmount, (int) $balances[$advance->id]);
+            if ($repayment < 1) {
+                continue;
+            }
+
+            $entry = $advance->repayments()->create([
+                'amount' => $repayment,
+                'repaid_on' => today()->toDateString(),
+                'payment_method' => 'salary_deduction',
+                'reference' => 'Bulletin de paie' . ($period ? ' - ' . $period : ''),
+                'notes' => 'Retenue enregistrée lors de la génération du bulletin de paie.',
+                'recorded_by' => Auth::id(),
+            ]);
+            AuditLog::log('salary_advance_repayment_created', $entry, [], $entry->toArray());
+
+            $unallocatedAmount -= $repayment;
+            if ($unallocatedAmount === 0) {
+                break;
+            }
+        }
+
+        return $balanceBefore;
     }
 
     public function annualPaySlip(Staff $staff)
@@ -970,6 +1079,7 @@ class StaffController extends Controller
     // ── DÉSACTIVATION (soft delete) ─────────────────────────────────────────
     public function destroy(Staff $staff)
     {
+        /** @var User $authUser */
         $authUser = Auth::user();
         $name = $staff->full_name;
         $user = $staff->user;

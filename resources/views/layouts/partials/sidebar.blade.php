@@ -165,6 +165,14 @@
                     href="{{ route('staff.salaries') }}"
                     :active="request()->routeIs('staff.salaries', 'staff.salary.edit')" />    
             @endcan
+
+            @if(auth()->user()->hasAnyRole(['super-admin', 'directeur']))
+                <x-sidebar-item
+                    icon="cash"
+                    label="Bons sur Salaire"
+                    href="{{ route('staff.advances.index') }}"
+                    :active="request()->routeIs('staff.advances.*')" />
+            @endif
         @endcan    
         
 

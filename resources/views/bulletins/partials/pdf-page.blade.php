@@ -38,7 +38,7 @@
         $cols[] = 'Moy.';
     }
     $conditionalColsCount = count($cols);
-    $totalColspan = 3 + $conditionalColsCount + 6; // Groupe + Matiere + Coef + Conditional + (Total + Rang + %Reussite + Max + Min + Mentions)
+    $totalColspan = 3 + $conditionalColsCount + 5; // Groupe + Matiere + Coef + Conditional + (Total + Rang + Max + Min + Mentions)
 
     // Groupement des matières par catégorie
     $groupedDetails = collect($details)
@@ -201,6 +201,22 @@
         white-space: nowrap;
     }
     .bulletin-page { min-height: 0; padding-bottom: 4mm; }
+    .bulletin-page .signatures-row { position: relative; }
+    .bulletin-page .principal-signature-block { position: relative; min-height: 28mm; }
+    .bulletin-page .principal-signature-block .authority-seal {
+        position: absolute !important;
+        width: 42mm !important;
+        height: 42mm !important;
+        right: -1mm;
+        bottom: -7mm;
+        margin: 0 !important;
+        z-index: 5;
+        opacity: .94;
+    }
+    .bulletin-page .principal-signature-block .authority-seal img {
+        max-width: 42mm !important;
+        max-height: 42mm !important;
+    }
     .bulletin-page .signature-authority { margin-bottom: 2px !important; }
     .bulletin-page .authority-seal { height: 17mm !important; margin-top: 0 !important; }
     .bulletin-page .authority-seal img { max-width: 34mm !important; max-height: 17mm !important; }
@@ -348,9 +364,9 @@
             {{-- Photo column --}}
             <td style="width: 82px; padding: 0 10px 0 0; vertical-align: middle; border: none; text-align: center;">
                 @if($studentPhoto)
-                    <img src="{{ $studentPhoto }}" alt="Photo" style="width: 72px; height: 88px; object-fit: cover; border: 1px solid #CBD5E1; border-radius: 4px;">
+                    <img src="{{ $studentPhoto }}" alt="Photo" style="width: 66px; height: 78px; object-fit: cover; border: 1px solid #CBD5E1; border-radius: 4px;">
                 @else
-                    <div class="student-photo-fallback" style="width: 72px; height: 76px; border: 1px solid #D1D5DB; color: #111827; display: flex; align-items: center; justify-content: center; background: #E5E7EB; border-radius: 4px;">
+                    <div class="student-photo-fallback" style="width: 66px; height: 70px; border: 1px solid #D1D5DB; color: #111827; display: flex; align-items: center; justify-content: center; background: #E5E7EB; border-radius: 4px;">
                         <svg width="48" height="48" viewBox="0 0 24 24" fill="#111827" aria-label="Avatar eleve"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7H4z"/></svg>
                         <span>Photo élève</span>
                     </div>
@@ -491,7 +507,6 @@
                 <th class="col-coef" style="text-align: center;">COEF.</th>
                 <th style="text-align: center;">TOTAL /20</th>
                 <th style="text-align: center;">RANG</th>
-                <th style="text-align: center;">%REUSSITE</th>
                 <th style="text-align: center;">MAX</th>
                 <th style="text-align: center;">MIN</th>
                 <th style="text-align: center;">MENTIONS</th>
@@ -542,9 +557,9 @@
                             </td>
                         @endif
                         <td class="col-subject">
-                            <div style="display: flex; justify-content: space-between; align-items: baseline;">
-                                <span style="font-weight: bold; color: #111827;">{{ $detail['subject']->name_fr }}</span>
-                                <span style="font-size: 7.5px; color: #6B7280; font-style: italic;">{{ $detail['teacher'] ?? '—' }}</span>
+                            <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 8px; white-space: nowrap;">
+                                <span style="font-weight: bold; color: #111827; white-space: nowrap;">{{ $detail['subject']->name_fr }}</span>
+                                <span style="font-size: 7.5px; color: #6B7280; font-style: italic; white-space: nowrap;">{{ $detail['teacher'] ?? '—' }}</span>
                             </div>
                         </td>
 
@@ -604,11 +619,6 @@
                         {{-- Rang --}}
                         <td class="col-rank" style="text-align: center;">
                             {{ $detail['rank'] ?? '—' }}
-                        </td>
-
-                        {{-- % Réussite --}}
-                        <td style="text-align: center;">
-                            {{ isset($detail['success_rate']) ? number_format($detail['success_rate'], 1) . '%' : '—' }}
                         </td>
 
                         {{-- Max --}}
@@ -858,18 +868,18 @@
     {{-- ── SIGNATURES ── --}}
     <div class="signatures-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; border-top: 1px dashed #D1D5DB; padding-top: 1px; margin-top: 0;">
         <div style="text-align: center; font-size: 7.5px;">
-            <div style="font-size: 7px; font-weight: 700; color: #6B7280; margin-bottom: 4px;">Date : ...............</div>
-            <div style="font-size: 7.5px; font-weight: 900; text-transform: uppercase; color: #1A3A6B; margin-bottom: 18px;">
+            <div style="font-size: 7px; font-weight: 700; color: #6B7280; margin-bottom: 4px; margin-left: 5mm; text-align: left;">Date : ...............</div>
+            <div style="font-size: 7.5px; font-weight: 900; text-transform: uppercase; color: #1A3A6B; margin-bottom: 10px;">
                 Parent/Tuteur<br><span style="font-style:italic; font-weight:600; font-size:6.5px; color:#9CA3AF;">Parent/tutor</span>
             </div>
             {{-- <div style="border-top: 1px solid #D1D5DB; padding-top: 4px; color: #9CA3AF; font-size: 6.5px;">Signature</div> --}}
         </div>
-        <div style="text-align: center; font-size: 7.5px;">
-            <div style="font-size: 7px; font-weight: 700; color: #6B7280; margin-bottom: 4px;">Date : ...............</div>
-            <div class="signature-authority" style="font-size: 7.5px; font-weight: 900; text-transform: uppercase; color: #1A3A6B; margin-bottom: 18px;">
+        <div class="principal-signature-block" style="text-align: center; font-size: 7.5px;">
+            <div style="font-size: 7px; font-weight: 700; color: #6B7280; margin-bottom: 4px; margin-left: 5mm; text-align: left;">Date : ...............</div>
+            <div class="signature-authority" style="font-size: 7.5px; font-weight: 900; text-transform: uppercase; color: #1A3A6B; margin-bottom: 6px;">
                 La Direction<br><span style="font-style:italic; font-weight:600; font-size:6.5px; color:#9CA3AF;">The Direction</span>
             </div>
-            <div class="authority-seal" style="height: 18mm; display: flex; align-items: center; justify-content: center; margin-top: 1mm;">
+            <div class="authority-seal" style="display: flex; align-items: center; justify-content: center;">
                 @if($sealSrc)
                     <img src="{{ $sealSrc }}" alt="Cachet de la direction" style="max-width: 30mm; max-height: 16mm; object-fit: contain;">
                 @else
