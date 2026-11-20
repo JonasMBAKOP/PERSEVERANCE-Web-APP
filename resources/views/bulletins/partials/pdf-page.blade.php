@@ -201,26 +201,29 @@
         white-space: nowrap;
     }
     .bulletin-page { min-height: 0; padding-bottom: 3mm; }
-    .bulletin-page .signatures-row { position: relative; }
-    .bulletin-page .principal-signature-block { position: relative; min-height: 26mm; }
-    .bulletin-page .principal-signature-block .authority-seal {
+    .bulletin-page .signatures-row { position: relative; min-height: 18mm; }
+    .bulletin-page .principal-signature-block { position: relative; min-height: 0; }
+    .bulletin-page .signature-authority { margin-bottom: 0 !important; }
+    .bulletin-page .independent-authority-seal {
         position: absolute !important;
-        width: 48mm !important;
-        height: 48mm !important;
-        right: -1mm;
-        bottom: -3mm;
+        width: 52mm !important;
+        height: 52mm !important;
+        right: 25mm;
+        bottom: -6mm;
+        display: flex !important;
+        align-items: center;
+        justify-content: center;
         margin: 0 !important;
-        z-index: 5;
-        opacity: .94;
+        z-index: 20;
+        opacity: .96;
+        pointer-events: none;
     }
-    .bulletin-page .principal-signature-block .authority-seal img {
-        max-width: 48mm !important;
-        max-height: 48mm !important;
+    .bulletin-page .independent-authority-seal img {
+        max-width: 52mm !important;
+        max-height: 52mm !important;
+        object-fit: contain;
     }
-    .bulletin-page .signature-authority { margin-bottom: 2px !important; }
-    .bulletin-page .authority-seal { height: 17mm !important; margin-top: 0 !important; }
-    .bulletin-page .authority-seal img { max-width: 34mm !important; max-height: 17mm !important; }
-    .bulletin-page .authority-seal svg { width: 92px; height: 48px; }
+    .bulletin-page .independent-authority-seal svg { width: 92px; height: 48px; }
     .bulletin-page .info-sublabel,
     .bulletin-page .cert-translation,
     .bulletin-page .appr-code-cell em,
@@ -876,22 +879,23 @@
         </div>
         <div class="principal-signature-block" style="text-align: center; font-size: 7.5px;">
             <div style="font-size: 7px; font-weight: 700; color: #6B7280; margin-bottom: 4px; margin-left: 5mm; text-align: left;">Date : ...............</div>
-            <div class="signature-authority" style="font-size: 7.5px; font-weight: 900; text-transform: uppercase; color: #1A3A6B; margin-bottom: 6px;">
+            <div class="signature-authority" style="font-size: 7.5px; font-weight: 900; text-transform: uppercase; color: #1A3A6B; margin-bottom: 0;">
                 La Direction<br><span style="font-style:italic; font-weight:600; font-size:6.5px; color:#9CA3AF;">The Direction</span>
-            </div>
-            <div class="authority-seal" style="display: flex; align-items: center; justify-content: center;">
-                @if($sealSrc)
-                    <img src="{{ $sealSrc }}" alt="Cachet de la direction" style="max-width: 30mm; max-height: 16mm; object-fit: contain;">
-                @else
-                    <svg width="82" height="42" viewBox="0 0 82 42" role="img" aria-label="Emplacement du cachet de la direction">
-                        <circle cx="41" cy="21" r="18" fill="#F3F4F6" stroke="#9CA3AF" stroke-width="1.5"/>
-                        <circle cx="41" cy="21" r="13" fill="none" stroke="#CBD5E1" stroke-width="1"/>
-                        <text x="41" y="24" text-anchor="middle" font-size="7" font-weight="700" fill="#6B7280">CACHET</text>
-                    </svg>
-                @endif
             </div>
             {{-- <div style="border-top: 1px solid #D1D5DB; padding-top: 4px; color: #9CA3AF; font-size: 6.5px;">Signature &amp; Cachet / <em>Stamp</em></div> --}}
         </div>
+    </div>
+
+    <div class="independent-authority-seal">
+        @if($sealSrc)
+            <img src="{{ $sealSrc }}" alt="Cachet de la direction">
+        @else
+            <svg width="82" height="42" viewBox="0 0 82 42" role="img" aria-label="Emplacement du cachet de la direction">
+                <circle cx="41" cy="21" r="18" fill="#F3F4F6" stroke="#9CA3AF" stroke-width="1.5"/>
+                <circle cx="41" cy="21" r="13" fill="none" stroke="#CBD5E1" stroke-width="1"/>
+                <text x="41" y="24" text-anchor="middle" font-size="7" font-weight="700" fill="#6B7280">CACHET</text>
+            </svg>
+        @endif
     </div>
 
     {{-- Pied de page --}}
