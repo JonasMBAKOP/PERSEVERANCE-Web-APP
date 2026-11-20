@@ -200,22 +200,22 @@
         border-radius: 2px;
         white-space: nowrap;
     }
-    .bulletin-page { min-height: 0; padding-bottom: 4mm; }
+    .bulletin-page { min-height: 0; padding-bottom: 3mm; }
     .bulletin-page .signatures-row { position: relative; }
-    .bulletin-page .principal-signature-block { position: relative; min-height: 28mm; }
+    .bulletin-page .principal-signature-block { position: relative; min-height: 26mm; }
     .bulletin-page .principal-signature-block .authority-seal {
         position: absolute !important;
-        width: 42mm !important;
-        height: 42mm !important;
+        width: 48mm !important;
+        height: 48mm !important;
         right: -1mm;
-        bottom: -7mm;
+        bottom: -3mm;
         margin: 0 !important;
         z-index: 5;
         opacity: .94;
     }
     .bulletin-page .principal-signature-block .authority-seal img {
-        max-width: 42mm !important;
-        max-height: 42mm !important;
+        max-width: 48mm !important;
+        max-height: 48mm !important;
     }
     .bulletin-page .signature-authority { margin-bottom: 2px !important; }
     .bulletin-page .authority-seal { height: 17mm !important; margin-top: 0 !important; }
@@ -841,7 +841,7 @@
                     <tr>
                         <th>Type</th>
                         <th>JUSTIFIÉES / JUSTIFIED</th>
-                        <th>NON JUSTIFIED / UNJUSTIFIED</th>
+                        <th>NON JUSTIFIÉES / UNJUSTIFIED</th>
                     </tr>
                 </thead>
                 <tbody>

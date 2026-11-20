@@ -118,9 +118,15 @@ class BulletinController extends Controller
             'class_group_id'   => $classGroup->id,
             'academic_year_id' => $classGroup->academic_year_id,
             'status'           => 'active',
-        ])->with('student')
-          ->get()
-          ->sortBy('student.last_name');
+        ])->with('student')->get();
+
+        $enrollments = $this->sortEnrollmentsByMerit(
+            $enrollments,
+            $classGroup,
+            $request->type,
+            $request->sequence_id,
+            $request->trimester_id
+        );
 
         // Filtrer si sélection partielle
         if ($request->filled('student_ids')) {
@@ -520,6 +526,39 @@ class BulletinController extends Controller
         return null;
     }
 
+    private function sortEnrollmentsByMerit($enrollments, $classGroup, string $type, ?int $sequenceId, ?int $trimesterId)
+    {
+        $averageResolver = function (StudentEnrollment $enrollment) use ($type, $sequenceId, $trimesterId) {
+            if ($type === 'sequentiel' && $sequenceId) {
+                $sequence = Sequence::find($sequenceId);
+                return $sequence ? $this->calc->sequenceAverage($enrollment, $sequence) : null;
+            }
+
+            if ($type === 'trimestriel' && $trimesterId) {
+                $trimester = Trimester::find($trimesterId);
+                return $trimester ? $this->calc->trimesterAverage($enrollment, $trimester) : null;
+            }
+
+            return $this->calc->yearAverage($enrollment);
+        };
+
+        return collect($enrollments)->sort(function (StudentEnrollment $left, StudentEnrollment $right) use ($averageResolver) {
+            $leftAverage = $averageResolver($left);
+            $rightAverage = $averageResolver($right);
+
+            if ($leftAverage !== null && $rightAverage === null) return -1;
+            if ($leftAverage === null && $rightAverage !== null) return 1;
+            if ($leftAverage !== null && $rightAverage !== null && abs($leftAverage - $rightAverage) > 0.001) {
+                return $leftAverage > $rightAverage ? -1 : 1;
+            }
+
+            $leftName = mb_strtoupper(trim(($left->student->last_name ?? '') . ' ' . ($left->student->first_name ?? '')), 'UTF-8');
+            $rightName = mb_strtoupper(trim(($right->student->last_name ?? '') . ' ' . ($right->student->first_name ?? '')), 'UTF-8');
+
+            return strcoll($leftName, $rightName);
+        })->values();
+    }
+
     private function trimesterRank($classGroup, $enrollment, $trimester): array
     {
         $enrollments = StudentEnrollment::where([
@@ -609,8 +648,15 @@ class BulletinController extends Controller
             }
         }
 
-        $fullName = trim($staff->last_name . ' ' . $staff->first_name);
-        return strtoupper($genderPrefix . $fullName);
+        $lastNameWords = preg_split('/\s+/u', trim((string) $staff->last_name), -1, PREG_SPLIT_NO_EMPTY);
+        $firstNameWords = preg_split('/\s+/u', trim((string) $staff->first_name), -1, PREG_SPLIT_NO_EMPTY);
+        $lastName = isset($lastNameWords[0]) ? mb_strtoupper($lastNameWords[0], 'UTF-8') : '';
+        $firstName = isset($firstNameWords[0])
+            ? mb_convert_case($firstNameWords[0], MB_CASE_TITLE, 'UTF-8')
+            : '';
+        $fullName = trim($lastName . ' ' . $firstName);
+
+        return trim($genderPrefix . $fullName);
     }
 
     private function absenceTotalsForPeriod($enrollment, $start, $end): array

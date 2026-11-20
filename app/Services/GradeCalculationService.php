@@ -185,16 +185,15 @@ class GradeCalculationService
             $teacherModel = $cs->teacherAssignments->first()?->staff;
             $teacherFormatted = null;
             if ($teacherModel) {
-                $genderPrefix = '';
-                if ($teacherModel->gender) {
-                    $gender = strtoupper(trim($teacherModel->gender));
-                    if ($gender === 'F' || $gender === 'FEMALE' || $gender === 'FEMME') {
-                        $genderPrefix = 'Mme ';
-                    } else {
-                        $genderPrefix = 'M. ';
-                    }
-                }
-                $teacherFormatted = strtoupper($genderPrefix . trim($teacherModel->last_name . ' ' . $teacherModel->first_name));
+                $gender = strtoupper(trim((string) $teacherModel->gender));
+                $genderPrefix = in_array($gender, ['F', 'FEMALE', 'FEMME'], true) ? 'Mme ' : 'M. ';
+                $lastNameWords = preg_split('/\s+/u', trim((string) $teacherModel->last_name), -1, PREG_SPLIT_NO_EMPTY);
+                $firstNameWords = preg_split('/\s+/u', trim((string) $teacherModel->first_name), -1, PREG_SPLIT_NO_EMPTY);
+                $lastName = isset($lastNameWords[0]) ? mb_strtoupper($lastNameWords[0], 'UTF-8') : '';
+                $firstName = isset($firstNameWords[0])
+                    ? mb_convert_case($firstNameWords[0], MB_CASE_TITLE, 'UTF-8')
+                    : '';
+                $teacherFormatted = trim($genderPrefix . $lastName . ' ' . $firstName);
             }
 
             $appreciation = $grade && $grade->grade !== null

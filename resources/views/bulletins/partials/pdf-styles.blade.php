@@ -10,7 +10,7 @@
 
     @page {
         size: A4 portrait;
-        margin: 5mm 8mm;
+        margin: 5mm 6mm;
     }
 
     * {
@@ -36,7 +36,7 @@
     }
 
     .bulletin-page {
-        width: 194mm;
+        width: 198mm;
         max-width: 100%;
         min-height: 287mm;
         margin-left: auto;
@@ -651,22 +651,40 @@
     .appr-code-cell .meaning { font-size: 5.5px; color: #6B7280; font-style: italic; line-height: 1.2; }
     .conduct-table {
         width: 100%;
+        table-layout: fixed;
         border-collapse: collapse;
         font-size: 7px;
     }
+    .conduct-table th,
+    .conduct-table td {
+        color: #111827;
+    }
+    .conduct-table th:nth-child(1),
+    .conduct-table td:nth-child(1) { width: 42%; }
+    .conduct-table th:nth-child(2),
+    .conduct-table td:nth-child(2),
+    .conduct-table th:nth-child(3),
+    .conduct-table td:nth-child(3) { width: 29%; }
     .conduct-table th {
         background: #F3F4F6;
         font-weight: 700;
         text-transform: uppercase;
         font-size: 6px;
-        padding: 3px 6px;
+        padding: 3px 3px;
         border: 1px solid #E5E7EB;
         text-align: center;
+        overflow-wrap: break-word;
     }
     .conduct-table td {
-        padding: 4px 6px;
+        padding: 4px 3px;
         border: 1px solid #E5E7EB;
         text-align: center;
+        color: #111827;
+    }
+    .conduct-table td:nth-child(2),
+    .conduct-table td:nth-child(3) {
+        color: #000000;
+        font-weight: 900;
     }
     .work-badges {
         display: flex;
