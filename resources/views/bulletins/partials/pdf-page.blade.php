@@ -208,8 +208,8 @@
         position: absolute !important;
         width: 52mm !important;
         height: 52mm !important;
-        right: 22mm;
-        bottom: -5mm;
+        right: 21mm;
+        bottom: -6mm;
         display: flex !important;
         align-items: center;
         justify-content: center;
