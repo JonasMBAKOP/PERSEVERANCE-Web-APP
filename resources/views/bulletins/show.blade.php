@@ -14,7 +14,7 @@ body { background: #E5E7EB; }
 .bulletin-page {
     width: 198mm;
     max-width: calc(100vw - 32px);
-    min-height: 287mm;
+    height: 284mm;
     margin: 20px auto;
     border: 4px solid var(--bleu);
     box-sizing: border-box;

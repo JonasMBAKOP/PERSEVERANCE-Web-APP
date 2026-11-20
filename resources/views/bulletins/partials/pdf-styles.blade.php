@@ -38,7 +38,7 @@
     .bulletin-page {
         width: 198mm;
         max-width: 100%;
-        min-height: 287mm;
+        height: 284mm;
         margin-left: auto;
         margin-right: auto;
         padding: 5mm 6mm 4mm;

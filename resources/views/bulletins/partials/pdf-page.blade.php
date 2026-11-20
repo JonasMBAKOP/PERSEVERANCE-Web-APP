@@ -208,13 +208,13 @@
         position: absolute !important;
         width: 52mm !important;
         height: 52mm !important;
-        right: 25mm;
-        bottom: -6mm;
+        right: 22mm;
+        bottom: -5mm;
         display: flex !important;
         align-items: center;
         justify-content: center;
         margin: 0 !important;
-        z-index: 20;
+        z-index: 9999;
         opacity: .96;
         pointer-events: none;
     }
